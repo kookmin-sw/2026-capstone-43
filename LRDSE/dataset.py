@@ -16,6 +16,43 @@ from src.condition.preprocess import (
 )
 
 
+PROJECT_ROOT = Path(__file__).resolve().parent
+
+
+def resolve_manifest_path(path_str: str) -> str:
+    """
+    Resolve potentially stale absolute paths stored in manifest.csv.
+
+    Typical stale prefix in this project:
+        /.../robot_denoising/LRDSE/...
+    Current root:
+        .../robot_denoising/2026-capstone-43/LRDSE
+    """
+    if not path_str:
+        return path_str
+
+    path = Path(path_str)
+    if path.exists():
+        return str(path)
+
+    # 1) Relative path in manifest -> interpret as project-root relative.
+    if not path.is_absolute():
+        candidate = (PROJECT_ROOT / path).resolve()
+        if candidate.exists():
+            return str(candidate)
+
+    # 2) Stale absolute root -> rewrite by keeping tail after /robot_denoising/LRDSE/.
+    normalized = str(path).replace("\\", "/")
+    marker = "/robot_denoising/LRDSE/"
+    if marker in normalized:
+        suffix = normalized.split(marker, 1)[1]
+        candidate = (PROJECT_ROOT / suffix).resolve()
+        if candidate.exists():
+            return str(candidate)
+
+    return str(path)
+
+
 def load_mono_audio(path, target_sr=16000):
     """
     train.py sample 저장에서 원본 wav를 다시 읽기 위한 compatibility 함수.
@@ -113,6 +150,8 @@ class SpeechEnhancementDataset(Dataset):
             raise FileNotFoundError(f"manifest not found: {self.manifest_path}")
 
         rows = []
+        path_remap_count = 0
+        dropped_invalid_path_count = 0
 
         with self.manifest_path.open("r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -127,6 +166,19 @@ class SpeechEnhancementDataset(Dataset):
                 if not noisy_wav or not clean_wav:
                     continue
 
+                resolved_noisy = resolve_manifest_path(noisy_wav)
+                resolved_clean = resolve_manifest_path(clean_wav)
+
+                if resolved_noisy != noisy_wav or resolved_clean != clean_wav:
+                    path_remap_count += 1
+                    row = dict(row)
+                    row["noisy_wav"] = resolved_noisy
+                    row["clean_wav"] = resolved_clean
+
+                if not Path(row["noisy_wav"]).exists() or not Path(row["clean_wav"]).exists():
+                    dropped_invalid_path_count += 1
+                    continue
+
                 rows.append(row)
 
         if limit is not None:
@@ -136,6 +188,16 @@ class SpeechEnhancementDataset(Dataset):
             raise RuntimeError(f"no valid samples found in manifest: {self.manifest_path}")
 
         self.rows = rows
+
+        if path_remap_count > 0:
+            print(
+                f"[dataset] remapped stale manifest paths: {path_remap_count} rows "
+                f"(root={PROJECT_ROOT})"
+            )
+        if dropped_invalid_path_count > 0:
+            print(
+                f"[dataset] dropped rows with missing files: {dropped_invalid_path_count}"
+            )
 
     def __len__(self):
         return len(self.rows)

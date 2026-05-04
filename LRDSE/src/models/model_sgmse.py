@@ -11,9 +11,8 @@ an SGMSE+/score-based wrapper:
     model predicts score / denoiser / data depending on loss_type
 
 Optional aux_cond support is included for the user's foot_force condition.
-It is injected into the noisy conditioning spectrogram `y` through a lightweight
-Conv1d encoder, so the original SGMSE+ backbone interface does not need to be
-edited.
+It is encoded as context tokens and consumed by attention blocks in the
+backbone (cross-attention style), instead of direct additive injection into `y`.
 """
 
 import time
@@ -24,8 +23,22 @@ from typing import Any, Dict, Optional, Tuple
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-import torch.nn.functional as F
-import pytorch_lightning as pl
+try:
+    import pytorch_lightning as pl
+except ModuleNotFoundError:
+    # train_sgmse.py uses this model in a pure PyTorch loop.
+    # Provide a minimal compatibility shim so pytorch_lightning is optional.
+    class _LightningModuleCompat(nn.Module):
+        def save_hyperparameters(self, *args, **kwargs):
+            return None
+
+        def log(self, *args, **kwargs):
+            return None
+
+    class _PLCompat:
+        LightningModule = _LightningModuleCompat
+
+    pl = _PLCompat()
 from librosa import resample
 from pesq import pesq
 from pystoi import stoi
@@ -33,25 +46,21 @@ from torch_ema import ExponentialMovingAverage
 from torch_pesq import PesqLoss
 from torchaudio import load
 
-from sgmse import sampling
-from sgmse.backbones import BackboneRegistry
-from sgmse.sdes import SDERegistry
-from sgmse.util.other import pad_spec, si_sdr
+from ..lrdse_sgmse import sampling
+from ..lrdse_sgmse.backbones import BackboneRegistry
+from ..lrdse_sgmse.sdes import SDERegistry
+from ..lrdse_sgmse.util.other import pad_spec, si_sdr
 
 
-class AuxConditionToSpec(nn.Module):
+class AuxConditionContextEncoder(nn.Module):
     """
-    Convert foot_force / GRF-like auxiliary condition into a spectrogram-shaped
-    conditioning bias.
+    Encode auxiliary condition tokens for cross-attention.
 
     Expected input:
         aux_cond: [B, aux_cond_dim, K]
 
-    Output after `forward(aux_cond, target)`:
-        aux_map: same shape as target, usually [B, C, F, T]
-
-    This keeps the SGMSE+ backbone unchanged. Instead of changing NCSN++ internals,
-    the encoded aux condition is added to the noisy conditioning spectrogram `y`.
+    Output:
+        context: [B, hidden_dim, K]
     """
 
     def __init__(
@@ -72,37 +81,18 @@ class AuxConditionToSpec(nn.Module):
             ]
             in_ch = hidden_dim
 
-        layers.append(nn.Conv1d(in_ch, 1, kernel_size=1))
+        layers.append(nn.Conv1d(in_ch, hidden_dim, kernel_size=1))
         self.net = nn.Sequential(*layers)
-        self.aux_scale = nn.Parameter(torch.tensor(float(aux_scale_init)))
+        self.out_dim = hidden_dim
+        self.context_scale = nn.Parameter(torch.tensor(float(aux_scale_init)))
 
-    def forward(self, aux_cond: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self, aux_cond: torch.Tensor) -> torch.Tensor:
         if aux_cond.dim() != 3:
             raise ValueError(
                 f"Expected aux_cond shape [B, C_aux, K], got {tuple(aux_cond.shape)}"
             )
-        if target.dim() != 4:
-            raise ValueError(
-                f"Expected target spectrogram shape [B, C, F, T], got {tuple(target.shape)}"
-            )
-        if aux_cond.size(0) != target.size(0):
-            raise ValueError(
-                f"Batch mismatch: aux_cond B={aux_cond.size(0)}, target B={target.size(0)}"
-            )
-
-        _, target_channels, target_freq, target_time = target.shape
-
-        aux = aux_cond.to(device=target.device, dtype=torch.float32)
-        aux = self.net(aux)  # [B, 1, K]
-        aux = F.interpolate(aux, size=target_time, mode="linear", align_corners=False)
-        aux = aux[:, :, None, :].expand(-1, target_channels, target_freq, -1)
-
-        if torch.is_complex(target):
-            aux = aux.to(dtype=target.real.dtype).to(dtype=target.dtype)
-        else:
-            aux = aux.to(dtype=target.dtype)
-
-        return self.aux_scale.to(dtype=aux.dtype) * aux
+        aux = aux_cond.to(dtype=torch.float32)
+        return self.context_scale * self.net(aux)
 
 
 class ScoreModel(pl.LightningModule):
@@ -157,14 +147,17 @@ class ScoreModel(pl.LightningModule):
 
         self.backbone = backbone
         dnn_cls = BackboneRegistry.get_by_name(backbone)
-        self.dnn = dnn_cls(**kwargs)
+        dnn_kwargs = dict(kwargs)
+        if use_aux_cond and backbone == "ncsnpp_v2":
+            dnn_kwargs["aux_context_dim"] = aux_hidden_dim
+        self.dnn = dnn_cls(**dnn_kwargs)
 
         sde_cls = SDERegistry.get_by_name(sde)
         self.sde = sde_cls(**kwargs)
 
         self.use_aux_cond = bool(use_aux_cond)
-        self.aux_encoder = (
-            AuxConditionToSpec(
+        self.aux_context_encoder = (
+            AuxConditionContextEncoder(
                 aux_cond_dim=aux_cond_dim,
                 hidden_dim=aux_hidden_dim,
                 aux_scale_init=aux_scale_init,
@@ -230,6 +223,9 @@ class ScoreModel(pl.LightningModule):
             else:
                 if self.ema.collected_params is not None:
                     self.ema.restore(self.dnn.parameters())
+                    # torch_ema keeps cloned params after restore(); free them to avoid
+                    # persistent extra GPU memory after eval/sample.
+                    self.ema.collected_params = None
         return res
 
     def eval(self, no_ema: bool = False):
@@ -269,9 +265,30 @@ class ScoreModel(pl.LightningModule):
         y: torch.Tensor,
         aux_cond: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        if not self.use_aux_cond or aux_cond is None:
-            return y
-        return y + self.aux_encoder(aux_cond, y)
+        # Keep noisy condition unchanged. Aux information is injected via
+        # cross-attention context inside the backbone attention blocks.
+        return y
+
+    def _encode_aux_context(
+        self,
+        aux_cond: Optional[torch.Tensor],
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> Optional[torch.Tensor]:
+        if not self.use_aux_cond or aux_cond is None or self.aux_context_encoder is None:
+            return None
+        aux_cond = aux_cond.to(device=device, non_blocking=True)
+        aux_ctx = self.aux_context_encoder(aux_cond)
+        return aux_ctx.to(device=device, dtype=dtype)
+
+    def _make_score_fn_with_aux(self, aux_cond: Optional[torch.Tensor]):
+        if aux_cond is None:
+            return self
+
+        def score_fn(x_t, y, t, *args):
+            return self(x_t, y, t, aux_cond=aux_cond)
+
+        return score_fn
 
     def _loss(self, forward_out, x_t, z, t, mean, x):
         sigma = self.sde._std(t)[:, None, None, None]
@@ -341,13 +358,15 @@ class ScoreModel(pl.LightningModule):
         x, y, aux_cond = self._split_batch(batch)
         t = torch.rand(x.shape[0], device=x.device) * (self.sde.T - self.t_eps) + self.t_eps
 
-        y_cond = self._augment_condition(y, aux_cond)
-        mean, std = self.sde.marginal_prob(x, y_cond, t)
+        # Keep the diffusion bridge identical to the original SGMSE+ formulation:
+        # p_t(x_t | x_0, y) uses the observed noisy spectrogram y.
+        # Aux condition is injected only into the score network via forward(..., aux_cond).
+        mean, std = self.sde.marginal_prob(x, y, t)
         z = torch.randn_like(x)
         sigma = std[:, None, None, None]
         x_t = mean + sigma * z
 
-        forward_out = self(x_t, y_cond, t, aux_cond=None)
+        forward_out = self(x_t, y, t, aux_cond=aux_cond)
         loss = self._loss(forward_out, x_t, z, t, mean, x)
         return loss
 
@@ -425,11 +444,16 @@ class ScoreModel(pl.LightningModule):
         aux_cond: Optional[torch.Tensor] = None,
     ):
         y_cond = self._augment_condition(y, aux_cond)
+        aux_context = self._encode_aux_context(
+            aux_cond=aux_cond,
+            device=y.device,
+            dtype=y.real.dtype if torch.is_complex(y) else y.dtype,
+        )
 
         if self.backbone == "ncsnpp_v2":
             dnn_in_x = self._c_in(t) * x_t
             dnn_in_y = self._c_in(t) * y_cond
-            dnn_out = self.dnn(dnn_in_x, dnn_in_y, t)
+            dnn_out = self.dnn(dnn_in_x, dnn_in_y, t, aux_context=aux_context)
 
             if self.network_scaling == "1/sigma":
                 std = self.sde._std(t)
@@ -496,15 +520,14 @@ class ScoreModel(pl.LightningModule):
         sde = self.sde.copy()
         sde.N = N
         kwargs = {"eps": self.t_eps, **kwargs}
-
-        y = self._augment_condition(y, aux_cond)
+        score_fn = self._make_score_fn_with_aux(aux_cond)
 
         if minibatch is None:
             return sampling.get_pc_sampler(
                 predictor_name,
                 corrector_name,
                 sde=sde,
-                score_fn=self,
+                score_fn=score_fn,
                 y=y,
                 **kwargs,
             )
@@ -515,11 +538,13 @@ class ScoreModel(pl.LightningModule):
             samples, ns = [], []
             for i in range(int(ceil(total / minibatch))):
                 y_mini = y[i * minibatch : (i + 1) * minibatch]
+                aux_mini = None if aux_cond is None else aux_cond[i * minibatch : (i + 1) * minibatch]
+                score_fn_mini = self._make_score_fn_with_aux(aux_mini)
                 sampler = sampling.get_pc_sampler(
                     predictor_name,
                     corrector_name,
                     sde=sde,
-                    score_fn=self,
+                    score_fn=score_fn_mini,
                     y=y_mini,
                     **kwargs,
                 )
@@ -542,11 +567,10 @@ class ScoreModel(pl.LightningModule):
         sde = self.sde.copy()
         sde.N = N
         kwargs = {"eps": self.t_eps, **kwargs}
-
-        y = self._augment_condition(y, aux_cond)
+        score_fn = self._make_score_fn_with_aux(aux_cond)
 
         if minibatch is None:
-            return sampling.get_ode_sampler(sde, self, y=y, **kwargs)
+            return sampling.get_ode_sampler(sde, score_fn, y=y, **kwargs)
 
         total = y.shape[0]
 
@@ -554,7 +578,9 @@ class ScoreModel(pl.LightningModule):
             samples, ns = [], []
             for i in range(int(ceil(total / minibatch))):
                 y_mini = y[i * minibatch : (i + 1) * minibatch]
-                sampler = sampling.get_ode_sampler(sde, self, y=y_mini, **kwargs)
+                aux_mini = None if aux_cond is None else aux_cond[i * minibatch : (i + 1) * minibatch]
+                score_fn_mini = self._make_score_fn_with_aux(aux_mini)
+                sampler = sampling.get_ode_sampler(sde, score_fn_mini, y=y_mini, **kwargs)
                 sample, n = sampler()
                 samples.append(sample)
                 ns.append(n)
@@ -565,8 +591,8 @@ class ScoreModel(pl.LightningModule):
     def get_sb_sampler(self, sde, y, sampler_type="ode", N=None, aux_cond=None, **kwargs):
         sde = self.sde.copy()
         sde.N = N if N is not None else sde.N
-        y = self._augment_condition(y, aux_cond)
-        return sampling.get_sb_sampler(sde, self, y=y, sampler_type=sampler_type, **kwargs)
+        score_fn = self._make_score_fn_with_aux(aux_cond)
+        return sampling.get_sb_sampler(sde, score_fn, y=y, sampler_type=sampler_type, **kwargs)
 
     def train_dataloader(self):
         if self.data_module is None:
