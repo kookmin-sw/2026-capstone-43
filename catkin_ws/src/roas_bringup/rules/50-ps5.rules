@@ -1,0 +1,1 @@
+KERNEL=="js*", SUBSYSTEM=="input", ATTRS{idVendor}=="8087", SYMLINK="input/ps5", MODE="0666"
