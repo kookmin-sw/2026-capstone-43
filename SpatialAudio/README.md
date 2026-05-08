@@ -1,7 +1,5 @@
 # SpatialAudio
 
-GitHub-ready collection of the selected spatial-audio experiment folders. Original project indices were compacted and reordered so reusable dataset/pipeline/model code appears before experiment-result bundles.
-
 ## Folder Index
 
 | New |  Type | Description |
