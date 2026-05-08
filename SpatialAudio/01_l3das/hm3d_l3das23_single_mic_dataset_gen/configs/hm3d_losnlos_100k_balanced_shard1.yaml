@@ -1,0 +1,185 @@
+version: "0.1"
+
+paths:
+  hm3d_root: "/home/yu/Project_git/01_dataset/hm3d/hm3d-train-semantic-habitat-v0.2"
+  hm3d_scene_glob: "**/*.basis.glb"
+  hm3d_scene_dataset_config: "/home/yu/Project_git/01_dataset/hm3d/hm3d-train-semantic-habitat-v0.2/hm3d_annotated_train_basis.scene_dataset_config.json"
+  hm3d_semantic_annots_root: "/home/yu/Project_git/01_dataset/hm3d/hm3d-train-semantic-annots-v0.2"
+  dataset_root: "/home/yu/Project_git/01_dataset/hm3d_losnlos_100k_balanced"
+  dry_audio_root: "/home/yu/Project_git/01_dataset/test-clean/LibriSpeech"
+  dry_audio_glob: "**/*.flac"
+  convolution_dry_audio_root: "/home/yu/Project_git/01_dataset/test-clean/LibriSpeech"
+  convolution_dry_audio_glob: "**/*.flac"
+  audio_materials_json: null
+
+simulator:
+  gpu_device_id: 0
+  enable_physics: true
+  load_semantic_mesh: false
+  frustum_culling: true
+  silent: true
+
+sensor_rig:
+  mic_height_m: 1.6
+  rgb_width: 512
+  rgb_height: 512
+  hfov_deg: 90.0
+  enable_depth: true
+  enable_semantic: true
+  write_rgb_png: false
+  write_depth_png: false
+  write_depth_npy: false
+  write_semantic_preview_png: false
+  write_instance_mask_npy: false
+
+mic_sampling:
+  poses_per_scene: 24
+  candidate_pool_size: 8192
+  min_clearance_m: 0.5
+  min_island_radius_m: 1.5
+  require_navigable_snap_confirmation: true
+  navmesh_snap_xy_tolerance_m: 0.02
+  navmesh_snap_vertical_tolerance_m: 0.05
+  probe_radius_m: 0.30
+  min_point_clearance_m: 0.15
+  probe_ignore_hits_within_m: 0.01
+  dense_probe_radius_m: 0.35
+  dense_min_point_clearance_m: 0.15
+  dense_enclosure_hit_fraction_threshold: 0.92
+  reject_if_clearance_unknown: false
+  yaw_mode: "uniform"
+  fixed_yaw_deg: 0.0
+
+source_sampling:
+  rho_min_m: 1.0
+  rho_max_m: 5.0
+  rho_step_m: 0.5
+  z_min_m: -1.2
+  z_max_m: 0.4
+  z_step_m: 0.4
+  theta_sampling_mode: arc_length
+  theta_arc_step_m: 0.5
+  theta_step_deg: 10.0
+  theta_offset_deg: 0.0
+  max_sources_per_mic: 512
+  shuffle_candidates: true
+  min_source_distance_m: 1.0
+  max_source_distance_m: 5.2
+  scene_bounds_margin_m: 0.08
+  probe_radius_m: 0.25
+  min_clearance_m: 0.15
+  probe_ignore_hits_within_m: 0.01
+  dense_probe_radius_m: 0.35
+  dense_min_clearance_m: 0.15
+  dense_enclosure_hit_fraction_threshold: 0.92
+  reject_if_clearance_unknown: false
+  require_navigable_projection: true
+  navmesh_projection_xy_tolerance_m: 0.05
+  navmesh_projection_vertical_tolerance_m: 3.0
+  require_same_floor_as_mic: true
+  same_floor_vertical_tolerance_m: 0.30
+  min_anchor_clearance_m: 0.40
+  min_anchor_island_radius_m: 1.5
+
+los:
+  eps_start_m: 0.03
+  eps_end_m: 0.05
+  max_dist_margin_m: 0.02
+  ignore_hits_within_m: 0.01
+  reject_endpoint_ambiguity: true
+  use_audio_visibility_fallback_when_raycast_empty: true
+  bidirectional_consistency_check: true
+  conservative_on_bidirectional_disagreement: true
+  mark_raycast_empty_unstable_without_fallback: true
+  visibility_ratio_enabled: true
+  visibility_sphere_radius_m: 0.08
+  visibility_num_rays: 9
+
+audio:
+  sample_rate: 48000
+  channel_layout: "ambisonics"
+  channel_count: 4
+  enable_materials: false
+  direct: true
+  indirect: true
+  diffraction: true
+  transmission: false
+  mesh_simplification: false
+  temporal_coherence: false
+  direct_sh_order: 1
+  indirect_sh_order: 1
+  direct_ray_count: 500
+  indirect_ray_count: 5000
+  source_ray_count: 200
+  direct_ray_depth: 10
+  indirect_ray_depth: 200
+  source_ray_depth: 10
+  max_diffraction_order: 10
+  max_ir_length_s: 4.0
+  global_volume: 0.25
+  normalize_peak_dbfs: -1.0
+  clip_peak: 0.999
+  silence_rms_threshold: 1.0e-6
+  write_mic_librispeech_wav: false
+  write_rir_npy: false
+  write_rir_wav: false
+
+speaker_proxy:
+  enabled: true
+  humanoids_root: "/home/yu/Project_git/01_dataset/data/habitat_humanoids"
+  avatar_name: "female_0"
+  urdf_filename: null
+  render_asset_filename: null
+  render_orient_up: [0.0, 0.0, 1.0]
+  render_orient_front: [0.0, 1.0, 0.0]
+  fixed_base: true
+  global_scale: 1.0
+  mass_scale: 1.0
+  force_reload: false
+  maintain_link_order: true
+  face_microphone: true
+  yaw_offset_deg: 180.0
+  render_root_from_floor_anchor: true
+  render_root_height_offset_m: 0.9
+  body_probe_heights_m: [0.4, 0.9, 1.4]
+  body_probe_radius_m: 0.20
+  body_probe_ignore_hits_within_m: 0.01
+  body_min_clearance_m: 0.12
+  reject_if_body_clearance_unknown: false
+
+generation:
+  seed: 1337
+  resume: true
+  overwrite: false
+  fail_fast: false
+  save_topdown_debug: false
+  save_front_overlay: false
+  scene_shard_count: 2
+  scene_shard_index: 1
+  target_glos_count: 25000
+  target_gnlos_count: 25000
+  allowed_geometry_los: []
+  required_in_fov: null
+  stop_when_target_reached: true
+  splits: ["train"]
+  scene_allowlist: []
+  scene_denylist: []
+  max_scenes: null
+  shuffle_scene_order: true
+  max_valid_samples_per_scene: 1600
+
+splits:
+  seed: 1337
+  train_ratio: 1.0
+  val_ratio: 0.0
+  test_ratio: 0.0
+  debug_num_scenes_per_split: 1
+  debug_max_mics_per_scene: 2
+  debug_max_sources_per_mic: 4
+
+qc:
+  reject_invalid_los: true
+  reject_audio_clipped: true
+  reject_audio_silent: true
+  reject_nan_audio: true
+  reject_invalid_projection: true
