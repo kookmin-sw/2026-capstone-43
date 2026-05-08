@@ -141,14 +141,14 @@ python hierarchy_robot_interaction_scene_graph_submission/my_long_term_mem_proje
 
 ### 7.1 방 분리 결과 이미지
 ```md
-<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/dccab6fd-36ea-4df5-89c3-266153c0f6d4" />
-<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/23fd6064-e90f-4bcf-9fc8-faee9cf1fb0d" />
-<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/7e5c69d5-567c-4dca-9b44-eec14db0dcd0" />
-<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/23132425-c3a4-4195-8558-9d2bac3d20b2" />
-<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/f1564cca-2888-4b04-9c37-6684ea625f8e" />
-<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/213a9c54-45c6-4545-9e59-d8f76a575266" />
-<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/49d755d3-e574-4ac6-b8d3-e8f663d519dc" />
-<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/cd54373b-4262-428f-bb6a-2f293b46e306" />
+<img width="708" height="654" alt="9" src="https://github.com/user-attachments/assets/7df81276-5b42-450e-80fd-db56d06c4672" />
+<img width="708" height="654" alt="8" src="https://github.com/user-attachments/assets/fd9f7897-26d1-40f4-9ea7-f96aff4e29f4" />
+<img width="708" height="654" alt="6" src="https://github.com/user-attachments/assets/4c4a1582-b464-4bd6-9245-c3db899da223" />
+<img width="708" height="654" alt="5" src="https://github.com/user-attachments/assets/aee2a039-f5be-4c46-8c86-43087035b166" />
+<img width="708" height="654" alt="4" src="https://github.com/user-attachments/assets/a05f5b52-b137-4c49-9282-a24b14fc4c00" />
+<img width="708" height="654" alt="3" src="https://github.com/user-attachments/assets/7d870580-b98e-4b76-a55c-707be50fa546" />
+<img width="708" height="654" alt="2" src="https://github.com/user-attachments/assets/0a615ba2-0ebe-43a9-80dc-ffe3f911b23b" />
+<img width="708" height="654" alt="1" src="https://github.com/user-attachments/assets/72bc62a4-aeca-4b1d-badf-0bf826dbaf57" />
 ```
 
 ### 7.2 Task 수행 동영상
