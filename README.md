@@ -140,38 +140,21 @@ python hierarchy_robot_interaction_scene_graph_submission/my_long_term_mem_proje
 ## 7. 데모 미디어 (이미지/영상)
 
 ### 7.1 방 분리 결과 이미지
-
-아래 경로에 이미지를 넣고 README에서 바로 표시할 수 있습니다.
-
-- 권장 위치: `docs/media/rooms/`
-- 권장 파일명:
-  - `room_01.png` ... `room_10.png`
-
-README 삽입 예시:
-
 ```md
-![Room 1](docs/media/rooms/room_01.png)
-![Room 2](docs/media/rooms/room_02.png)
+<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/dccab6fd-36ea-4df5-89c3-266153c0f6d4" />
+<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/23fd6064-e90f-4bcf-9fc8-faee9cf1fb0d" />
+<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/7e5c69d5-567c-4dca-9b44-eec14db0dcd0" />
+<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/23132425-c3a4-4195-8558-9d2bac3d20b2" />
+<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/f1564cca-2888-4b04-9c37-6684ea625f8e" />
+<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/213a9c54-45c6-4545-9e59-d8f76a575266" />
+<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/49d755d3-e574-4ac6-b8d3-e8f663d519dc" />
+<img width="708" height="654" alt="image" src="https://github.com/user-attachments/assets/cd54373b-4262-428f-bb6a-2f293b46e306" />
 ```
 
 ### 7.2 Task 수행 동영상
-
-현재 데모 원본:
-
-- `/home/yuchaehee/Downloads/Screencast from 2026-03-30 09-24-44.webm`
-
-권장 방식:
-
-1. 동영상을 YouTube 또는 Drive에 업로드
-2. README에는 썸네일 이미지 + 링크 형태로 첨부
-
-예시:
-
 ```md
 [![Watch Demo](docs/media/rooms/room_01.png)](https://youtu.be/<VIDEO_ID>)
 ```
-
-참고: 대용량 비디오를 repo에 직접 commit하면 저장소가 빠르게 커질 수 있습니다.
 
 ## 8. 메모리/로그 산출물
 
