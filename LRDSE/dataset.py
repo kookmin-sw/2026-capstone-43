@@ -108,6 +108,7 @@ class SpeechEnhancementDataset(Dataset):
         limit=None,
 
         use_condition=True,
+        condition_repr="8ch",
         raw_force_scale=220.0,
         d_force_scale=9220.325595510363,
         condition_smooth_win=1,
@@ -115,6 +116,12 @@ class SpeechEnhancementDataset(Dataset):
         self.manifest_path = Path(manifest_path)
         self.random_crop = random_crop
         self.use_condition = use_condition
+        self.condition_repr = str(condition_repr).strip().lower()
+
+        if self.condition_repr not in {"10ch", "8ch"}:
+            raise ValueError(
+                f"condition_repr must be one of {{'10ch','8ch'}}, got {condition_repr}"
+            )
 
         if win_length != n_fft:
             raise ValueError(
@@ -245,8 +252,12 @@ class SpeechEnhancementDataset(Dataset):
                 cfg=self.cond_cfg,
             )
 
-            sample["cond"] = cond_out["cond_8ch"].float()          # [8, 1024]
-            sample["cond_times"] = cond_out["cond_times"].float()  # [1024]
+            if self.condition_repr == "10ch":
+                sample["cond"] = cond_out["cond_10ch"].float()     # [10, 1024]
+            else:
+                sample["cond"] = cond_out["cond_8ch"].float()      # [8, 1024]
+            sample["cond_times"] = cond_out["cond_times"]  # [1024], float64 monotonic sec
+            sample["query_mono_times"] = cond_out["query_mono_times"]  # [K_audio], float64 monotonic sec
             sample["cond_mask"] = cond_out["cond_mask"].bool()     # [1024]
             sample["real_token_count"] = cond_out["real_token_count"]
 

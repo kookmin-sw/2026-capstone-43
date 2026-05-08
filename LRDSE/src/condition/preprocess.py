@@ -387,7 +387,7 @@ def build_condition_tokens_from_crop_window(
 
     cond = np.zeros((8, condition_num_frames), dtype=np.float32)
     cond_mask = np.zeros((condition_num_frames,), dtype=np.bool_)
-    cond_times = np.zeros((condition_num_frames,), dtype=np.float32)
+    cond_times = np.zeros((condition_num_frames,), dtype=np.float64)
 
     if real_token_count == 0:
         return cond, cond_mask, cond_times, real_token_count
@@ -399,7 +399,7 @@ def build_condition_tokens_from_crop_window(
 
         cond[:, :n] = token_values[:n].T.astype(np.float32)
         cond_mask[:n] = True
-        cond_times[:n] = t_win[:n].astype(np.float32)
+        cond_times[:n] = t_win[:n].astype(np.float64)
 
         return cond, cond_mask, cond_times, real_token_count
 
@@ -427,9 +427,68 @@ def build_condition_tokens_from_crop_window(
 
     cond[:, :] = interp_values.T.astype(np.float32)
     cond_mask[:] = True
-    cond_times[:] = query_times.astype(np.float32)
+    cond_times[:] = query_times.astype(np.float64)
 
     return cond, cond_mask, cond_times, real_token_count
+
+
+def build_cond_10ch_with_time(
+    cond_8ch: np.ndarray,
+    cond_times: np.ndarray,
+    cond_mask: np.ndarray,
+    eps: float = 1e-8,
+) -> np.ndarray:
+    """
+    Build 10-channel condition:
+        0..3: foot_force raw 4ch
+        4..7: foot_force_diff 4ch
+        8   : sin(2*pi*rel_time)
+        9   : cos(2*pi*rel_time)
+    Shape: [10, K]
+    """
+    if cond_8ch.ndim != 2 or cond_8ch.shape[0] != 8:
+        raise ValueError(f"Expected cond_8ch shape [8, K], got {cond_8ch.shape}")
+    if cond_times.ndim != 1 or cond_mask.ndim != 1:
+        raise ValueError(
+            f"Expected cond_times/cond_mask shape [K], got {cond_times.shape}/{cond_mask.shape}"
+        )
+    if cond_8ch.shape[1] != cond_times.shape[0] or cond_8ch.shape[1] != cond_mask.shape[0]:
+        raise ValueError(
+            f"Length mismatch: cond_8ch={cond_8ch.shape}, cond_times={cond_times.shape}, cond_mask={cond_mask.shape}"
+        )
+
+    k = cond_8ch.shape[1]
+    raw_4ch = cond_8ch[0:4].astype(np.float32)
+    diff_4ch = cond_8ch[4:8].astype(np.float32)
+
+    sin_t = np.zeros((k,), dtype=np.float32)
+    cos_t = np.zeros((k,), dtype=np.float32)
+
+    valid_idx = np.where(cond_mask)[0]
+    if valid_idx.size > 0:
+        first = int(valid_idx[0])
+        last = int(valid_idx[-1])
+        t0 = float(cond_times[first])
+        t1 = float(cond_times[last])
+        denom = max(t1 - t0, eps)
+        rel = (cond_times - t0) / denom
+        rel = np.clip(rel, 0.0, 1.0)
+        phase = (2.0 * math.pi) * rel
+        sin_t = np.sin(phase).astype(np.float32)
+        cos_t = np.cos(phase).astype(np.float32)
+        sin_t[~cond_mask] = 0.0
+        cos_t[~cond_mask] = 0.0
+
+    cond_10ch = np.concatenate(
+        [
+            raw_4ch,
+            diff_4ch,
+            sin_t[None, :],
+            cos_t[None, :],
+        ],
+        axis=0,
+    )
+    return cond_10ch
 
 
 def preprocess_condition_for_train(
@@ -466,11 +525,20 @@ def preprocess_condition_for_train(
         cond_8ch:
             [8, 1024] 기본값
 
+        cond_10ch:
+            [10, 1024]
+            channel order:
+                [raw4, diff4, sin(rel_t), cos(rel_t)]
+
         cond_mask:
             [1024]
 
         cond_times:
             [1024]
+
+        query_mono_times:
+            [num_frames]
+            STFT frame query용 절대 monotonic time (sec).
 
         real_token_count:
             crop 구간 안에 실제로 들어온 lowstate sample 수
@@ -521,13 +589,32 @@ def preprocess_condition_for_train(
     )
 
     cond_8ch = torch.from_numpy(cond_np).float()
+    cond_10ch = torch.from_numpy(
+        build_cond_10ch_with_time(
+            cond_8ch=cond_np,
+            cond_times=cond_times_np,
+            cond_mask=mask_np,
+            eps=cfg.eps,
+        )
+    ).float()
     cond_mask = torch.from_numpy(mask_np).bool()
-    cond_times = torch.from_numpy(cond_times_np).float()
+    cond_times = torch.from_numpy(cond_times_np).to(torch.float64)
+    query_frame_sample_idx = crop_start_sample + (
+        np.arange(int(num_frames), dtype=np.float64) * float(hop_length)
+    )
+    query_mono_times_np = np.interp(
+        query_frame_sample_idx,
+        anchor_sample_idx,
+        anchor_mono_sec,
+    ).astype(np.float64)
+    query_mono_times = torch.from_numpy(query_mono_times_np).to(torch.float64)
 
     return {
         "cond_8ch": cond_8ch,
+        "cond_10ch": cond_10ch,
         "cond_mask": cond_mask,
         "cond_times": cond_times,
+        "query_mono_times": query_mono_times,
         "real_token_count": torch.tensor(real_token_count, dtype=torch.long),
         "crop_start_time": torch.tensor(crop_start_time, dtype=torch.float32),
         "crop_end_time": torch.tensor(crop_end_time, dtype=torch.float32),

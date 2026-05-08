@@ -44,6 +44,9 @@ class NCSNpp_v2(nn.Module):
         parser.add_argument("--num_res_blocks", type=int, default=2)
         parser.add_argument("--attn_resolutions", type=int, nargs='+', default=[16])
         parser.add_argument("--aux_context_dim", type=int, default=None)
+        parser.add_argument("--aux_time_scale", type=float, default=1000.0)
+        parser.add_argument("--aux_time_embed_dim", type=int, default=128)
+        parser.add_argument("--aux_time_max_period", type=float, default=10000.0)
         return parser
 
     def __init__(self,
@@ -66,6 +69,9 @@ class NCSNpp_v2(nn.Module):
         embedding_type = 'fourier',
         dropout = .0,
         aux_context_dim = None,
+        aux_time_scale = 1000.0,
+        aux_time_embed_dim = 128,
+        aux_time_max_period = 10000.0,
         **unused_kwargs
     ):
         super().__init__()
@@ -118,6 +124,9 @@ class NCSNpp_v2(nn.Module):
             init_scale=init_scale,
             skip_rescale=skip_rescale,
             context_dim=aux_context_dim,
+            aux_time_scale=aux_time_scale,
+            aux_time_embed_dim=aux_time_embed_dim,
+            aux_time_max_period=aux_time_max_period,
         )
 
         Upsample = functools.partial(layerspp.Upsample,
@@ -244,7 +253,16 @@ class NCSNpp_v2(nn.Module):
         self.all_modules = nn.ModuleList(modules)
         
 
-    def forward(self, x, y, t, aux_context=None):
+    def forward(
+        self,
+        x,
+        y,
+        t,
+        aux_context=None,
+        aux_cond_times=None,
+        aux_query_times=None,
+        aux_cond_mask=None,
+    ):
         # timestep/noise_level embedding; only for continuous training
         modules = self.all_modules
         m_idx = 0
@@ -289,7 +307,13 @@ class NCSNpp_v2(nn.Module):
                 m_idx += 1
                 # Attention layer (optional)
                 if h.shape[-2] in self.attn_resolutions: # edit: check H dim (-2) not W dim (-1)
-                    h = modules[m_idx](h, aux_context)
+                    h = modules[m_idx](
+                        h,
+                        context=aux_context,
+                        context_times=aux_cond_times,
+                        query_times=aux_query_times,
+                        context_mask=aux_cond_mask,
+                    )
                     m_idx += 1
                 hs.append(h)
 
@@ -320,7 +344,13 @@ class NCSNpp_v2(nn.Module):
         h = hs[-1] # actualy equal to: h = h
         h = modules[m_idx](h, temb)  # ResNet block
         m_idx += 1
-        h = modules[m_idx](h, aux_context)  # Attention block
+        h = modules[m_idx](
+            h,
+            context=aux_context,
+            context_times=aux_cond_times,
+            query_times=aux_query_times,
+            context_mask=aux_cond_mask,
+        )  # Attention block
         m_idx += 1
         h = modules[m_idx](h, temb)  # ResNet block
         m_idx += 1
@@ -335,7 +365,13 @@ class NCSNpp_v2(nn.Module):
 
             # edit: from -1 to -2
             if h.shape[-2] in self.attn_resolutions:
-                h = modules[m_idx](h, aux_context)
+                h = modules[m_idx](
+                    h,
+                    context=aux_context,
+                    context_times=aux_cond_times,
+                    query_times=aux_query_times,
+                    context_mask=aux_cond_mask,
+                )
                 m_idx += 1
 
             if self.progressive != 'none':

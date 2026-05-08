@@ -1,5 +1,6 @@
 import argparse
 import ast
+import csv
 import gc
 import json
 import math
@@ -137,6 +138,9 @@ def build_model(args):
         aux_cond_dim=args.aux_cond_dim,
         aux_hidden_dim=args.aux_hidden_dim,
         aux_scale_init=args.aux_scale_init,
+        aux_time_scale=args.aux_time_scale,
+        aux_time_embed_dim=args.aux_time_embed_dim,
+        aux_time_max_period=args.aux_time_max_period,
         nf=args.nf,
         ch_mult=ch_mult,
         num_res_blocks=args.num_res_blocks,
@@ -236,11 +240,16 @@ def build_aux_cond_for_chunk(
         freq_bins=noisy_spec.shape[-2],
         cfg=cond_cfg,
     )
-    return cond_out["cond_8ch"].unsqueeze(0).to(device, non_blocking=True)
+    return {
+        "aux_cond": cond_out["cond_8ch"].unsqueeze(0).to(device, non_blocking=True),
+        "aux_cond_times": cond_out["cond_times"].unsqueeze(0).to(device, non_blocking=True),
+        "aux_cond_mask": cond_out["cond_mask"].unsqueeze(0).to(device, non_blocking=True),
+        "aux_query_times": cond_out["query_mono_times"].unsqueeze(0).to(device, non_blocking=True),
+    }
 
 
 @torch.no_grad()
-def build_sampler(model, y_spec, aux_cond, args):
+def build_sampler(model, y_spec, aux_cond, aux_cond_times, aux_cond_mask, aux_query_times, args):
     N = args.sampling_N if args.sampling_N > 0 else model.sde.N
     sampler_type = args.sampler_type if args.sampler_type != "auto" else model.sde.sampler_type
 
@@ -257,12 +266,18 @@ def build_sampler(model, y_spec, aux_cond, args):
                 snr=args.snr,
                 intermediate=False,
                 aux_cond=aux_cond,
+                aux_cond_times=aux_cond_times,
+                aux_cond_mask=aux_cond_mask,
+                aux_query_times=aux_query_times,
             )
         if sampler_type == "ode":
             return model.get_ode_sampler(
                 y=y_spec,
                 N=N,
                 aux_cond=aux_cond,
+                aux_cond_times=aux_cond_times,
+                aux_cond_mask=aux_cond_mask,
+                aux_query_times=aux_query_times,
             )
         raise ValueError(f"Invalid sampler_type={sampler_type} for OUVESDE")
 
@@ -273,6 +288,9 @@ def build_sampler(model, y_spec, aux_cond, args):
             sampler_type=sampler_type,
             N=N,
             aux_cond=aux_cond,
+            aux_cond_times=aux_cond_times,
+            aux_cond_mask=aux_cond_mask,
+            aux_query_times=aux_query_times,
         )
 
     raise ValueError(f"Unsupported SDE type: {sde_name}")
@@ -330,14 +348,21 @@ def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
         y_spec = pad_spec(y_spec).to(device)
 
         aux_cond = None
+        aux_cond_times = None
+        aux_cond_mask = None
+        aux_query_times = None
         if args.use_aux_cond:
-            aux_cond = build_aux_cond_for_chunk(
+            aux_payload = build_aux_cond_for_chunk(
                 run_dir=run_dir,
                 chunk_start_sample=start,
                 noisy_spec=y_spec.squeeze(0),
                 args=args,
                 device=device,
             )
+            aux_cond = aux_payload["aux_cond"]
+            aux_cond_times = aux_payload["aux_cond_times"]
+            aux_cond_mask = aux_payload["aux_cond_mask"]
+            aux_query_times = aux_payload["aux_query_times"]
 
         print(
             f"[sample chunk] "
@@ -347,7 +372,15 @@ def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
             f"start={start}"
         )
 
-        sampler = build_sampler(model=model, y_spec=y_spec, aux_cond=aux_cond, args=args)
+        sampler = build_sampler(
+            model=model,
+            y_spec=y_spec,
+            aux_cond=aux_cond,
+            aux_cond_times=aux_cond_times,
+            aux_cond_mask=aux_cond_mask,
+            aux_query_times=aux_query_times,
+            args=args,
+        )
         sample, _ = sampler()
 
         enhanced_spec = sample.squeeze(0)[..., :orig_frames].detach().cpu()
@@ -369,6 +402,12 @@ def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
         del enhanced_chunk_norm
         if aux_cond is not None:
             del aux_cond
+        if aux_cond_times is not None:
+            del aux_cond_times
+        if aux_cond_mask is not None:
+            del aux_cond_mask
+        if aux_query_times is not None:
+            del aux_query_times
         gc.collect()
         if device.type == "cuda":
             torch.cuda.empty_cache()
@@ -469,10 +508,102 @@ def save_sample_wavs(model, batch, args, device, step):
         torch.cuda.empty_cache()
 
 
+@torch.no_grad()
+def evaluate_validation_loss(model, loader, args, device):
+    was_training = model.training
+    model.eval(no_ema=(not args.use_ema))
+
+    total = 0.0
+    count = 0
+
+    for batch in loader:
+        clean = twoch_to_complex_batch(
+            batch["clean_stft"].to(device, non_blocking=True)
+        )
+        noisy = twoch_to_complex_batch(
+            batch["noisy_stft"].to(device, non_blocking=True)
+        )
+
+        aux_cond = None
+        aux_cond_times = None
+        aux_cond_mask = None
+        aux_query_times = None
+        if args.use_aux_cond:
+            if "cond" not in batch:
+                raise RuntimeError("use_aux_cond=True but batch does not contain 'cond'")
+            if "cond_times" not in batch:
+                raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_times'")
+            if "cond_mask" not in batch:
+                raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_mask'")
+            if "query_mono_times" not in batch:
+                raise RuntimeError("use_aux_cond=True but batch does not contain 'query_mono_times'")
+            aux_cond = batch["cond"].to(device, non_blocking=True)
+            aux_cond_times = batch["cond_times"].to(device, non_blocking=True)
+            aux_cond_mask = batch["cond_mask"].to(device, non_blocking=True)
+            aux_query_times = batch["query_mono_times"].to(device, non_blocking=True)
+            if aux_cond.dim() != 3:
+                raise RuntimeError(
+                    f"Expected aux_cond shape [B, C, K], got {tuple(aux_cond.shape)}"
+                )
+            if aux_cond.size(1) != args.aux_cond_dim:
+                raise RuntimeError(
+                    f"Expected aux_cond channel={args.aux_cond_dim}, got {aux_cond.size(1)}"
+                )
+            if aux_cond_times.dim() != 2:
+                raise RuntimeError(
+                    f"Expected aux_cond_times shape [B, K], got {tuple(aux_cond_times.shape)}"
+                )
+            if aux_cond_mask.dim() != 2:
+                raise RuntimeError(
+                    f"Expected aux_cond_mask shape [B, K], got {tuple(aux_cond_mask.shape)}"
+                )
+            if aux_cond_times.size(1) != aux_cond.size(2):
+                raise RuntimeError(
+                    f"aux_cond_times length mismatch: {aux_cond_times.size(1)} vs {aux_cond.size(2)}"
+                )
+            if aux_cond_mask.size(1) != aux_cond.size(2):
+                raise RuntimeError(
+                    f"aux_cond_mask length mismatch: {aux_cond_mask.size(1)} vs {aux_cond.size(2)}"
+                )
+            if aux_query_times.dim() != 2:
+                raise RuntimeError(
+                    f"Expected aux_query_times shape [B, K_audio], got {tuple(aux_query_times.shape)}"
+                )
+            if aux_query_times.size(0) != aux_cond.size(0):
+                raise RuntimeError(
+                    f"aux_query_times batch mismatch: {aux_query_times.size(0)} vs {aux_cond.size(0)}"
+                )
+
+        with autocast_context(device, enabled=(args.amp and device.type == "cuda")):
+            loss = model._step(
+                {
+                    "x": clean,
+                    "y": noisy,
+                    "aux_cond": aux_cond,
+                    "aux_cond_times": aux_cond_times,
+                    "aux_cond_mask": aux_cond_mask,
+                    "aux_query_times": aux_query_times,
+                },
+                batch_idx=0,
+            )
+
+        if torch.isnan(loss) or torch.isinf(loss):
+            raise RuntimeError("validation loss is NaN or Inf")
+
+        total += float(loss.item())
+        count += 1
+
+    if was_training:
+        model.train()
+
+    return total / max(count, 1)
+
+
 def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--manifest", required=True)
+    parser.add_argument("--val-manifest", default="")
     parser.add_argument("--save-dir", default="./checkpoints/sgmse_se")
 
     parser.add_argument("--device", default="cuda")
@@ -521,12 +652,17 @@ def main():
     parser.add_argument("--aux-cond-dim", type=int, default=8)
     parser.add_argument("--aux-hidden-dim", type=int, default=128)
     parser.add_argument("--aux-scale-init", type=float, default=0.1)
+    parser.add_argument("--aux-time-scale", type=float, default=1000.0)
+    parser.add_argument("--aux-time-embed-dim", type=int, default=128)
+    parser.add_argument("--aux-time-max-period", type=float, default=10000.0)
     parser.add_argument("--raw-force-scale", type=float, default=220.0)
     parser.add_argument("--d-force-scale", type=float, default=9220.325595510363)
     parser.add_argument("--condition-smooth-win", type=int, default=1)
 
-    parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--val-batch-size", type=int, default=0)
     parser.add_argument("--num-workers", type=int, default=2)
+    parser.add_argument("--val-num-workers", type=int, default=-1)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--max-steps", type=int, default=10000)
@@ -545,7 +681,42 @@ def main():
 
     parser.add_argument("--log-every", type=int, default=10)
     parser.add_argument("--save-every", type=int, default=1000)
+    parser.add_argument(
+        "--save-every-epochs",
+        type=float,
+        default=0.0,
+        help="0보다 크면 epoch 기준 체크포인트 저장 주기. 내부에서 step으로 자동 환산.",
+    )
+    parser.add_argument(
+        "--disable-checkpoint-save",
+        action="store_true",
+        default=False,
+        help="체크포인트 저장(latest.pt, best.pt)를 완전히 비활성화.",
+    )
+    parser.add_argument(
+        "--enable-checkpoint-save",
+        dest="disable_checkpoint_save",
+        action="store_false",
+        help="체크포인트 저장을 활성화.",
+    )
+    parser.add_argument(
+        "--save-step-checkpoints",
+        action="store_true",
+        default=False,
+        help="기본 latest/best 저장 외에 save interval마다 step_*.pt도 함께 저장.",
+    )
+    parser.add_argument(
+        "--epoch-loss-csv",
+        default="epoch_losses.csv",
+        help="epoch 평균 loss를 저장할 CSV 경로. 상대경로면 save_dir 기준.",
+    )
     parser.add_argument("--sample-every", type=int, default=0)
+    parser.add_argument(
+        "--sample-every-epochs",
+        type=float,
+        default=0.0,
+        help="0보다 크면 epoch 기준 샘플 저장 주기. 내부에서 step으로 자동 환산.",
+    )
     parser.add_argument("--num-sample-wavs", type=int, default=2)
     parser.add_argument("--sample-max-sec", type=float, default=0.0)
     parser.add_argument("--sample-chunk-hop", type=int, default=0)
@@ -574,6 +745,11 @@ def main():
         raise ValueError(
             "train_sgmse.py currently supports loss_type in {'score_matching', 'denoiser'} only. "
             "data_prediction requires a dedicated data_module implementation."
+        )
+    if args.use_aux_cond and args.aux_cond_dim != 8:
+        raise ValueError(
+            f"Monotonic-only cross-attention path expects 8ch condition. "
+            f"Set --aux-cond-dim 8 (got {args.aux_cond_dim})."
         )
 
     if args.win_length != args.n_fft:
@@ -612,7 +788,7 @@ def main():
         shuffle = True
         random_crop = True
 
-    dataset = SpeechEnhancementDataset(
+    train_dataset = SpeechEnhancementDataset(
         manifest_path=args.manifest,
         target_sr=args.target_sr,
         target_length=args.target_length,
@@ -627,13 +803,14 @@ def main():
         valid_only=True,
         limit=dataset_limit,
         use_condition=args.use_aux_cond,
+        condition_repr="8ch",
         raw_force_scale=args.raw_force_scale,
         d_force_scale=args.d_force_scale,
         condition_smooth_win=args.condition_smooth_win,
     )
 
-    loader = DataLoader(
-        dataset,
+    train_loader = DataLoader(
+        train_dataset,
         batch_size=args.batch_size,
         shuffle=shuffle,
         num_workers=args.num_workers,
@@ -641,14 +818,68 @@ def main():
         drop_last=True,
     )
 
-    if len(loader) == 0:
+    if len(train_loader) == 0:
         raise RuntimeError("DataLoader is empty. Check manifest or batch size.")
 
-    updates_per_epoch = max(1, math.ceil(len(loader) / max(args.grad_accum, 1)))
+    val_loader = None
+    if str(args.val_manifest).strip():
+        val_batch_size = args.val_batch_size if args.val_batch_size > 0 else args.batch_size
+        val_num_workers = args.val_num_workers if args.val_num_workers >= 0 else args.num_workers
+
+        val_dataset = SpeechEnhancementDataset(
+            manifest_path=args.val_manifest,
+            target_sr=args.target_sr,
+            target_length=args.target_length,
+            n_fft=args.n_fft,
+            hop_length=args.hop_length,
+            win_length=args.win_length,
+            num_frames=args.num_frames,
+            spec_factor=args.spec_factor,
+            spec_abs_exponent=args.spec_abs_exponent,
+            normalize=args.normalize,
+            random_crop=False,
+            valid_only=True,
+            limit=None,
+            use_condition=args.use_aux_cond,
+            condition_repr="8ch",
+            raw_force_scale=args.raw_force_scale,
+            d_force_scale=args.d_force_scale,
+            condition_smooth_win=args.condition_smooth_win,
+        )
+
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=val_batch_size,
+            shuffle=False,
+            num_workers=val_num_workers,
+            pin_memory=(device.type == "cuda"),
+            drop_last=False,
+        )
+
+        if len(val_loader) == 0:
+            raise RuntimeError("Validation DataLoader is empty. Check val_manifest.")
+
+    updates_per_epoch = max(1, math.ceil(len(train_loader) / max(args.grad_accum, 1)))
     if args.max_epochs > 0:
         total_steps = max(1, int(math.ceil(updates_per_epoch * args.max_epochs)))
     else:
         total_steps = int(args.max_steps)
+
+    if args.sample_every_epochs > 0:
+        sample_every_steps = max(1, int(math.ceil(updates_per_epoch * args.sample_every_epochs)))
+    else:
+        sample_every_steps = int(args.sample_every)
+
+    if args.save_every_epochs > 0:
+        save_every_steps = max(1, int(math.ceil(updates_per_epoch * args.save_every_epochs)))
+    else:
+        save_every_steps = int(args.save_every)
+
+    if sample_every_steps > 0 and val_loader is None:
+        raise ValueError(
+            "sample generation must use validation set. "
+            "Please provide --val-manifest when sample_every is enabled."
+        )
 
     model = build_model(args).to(device)
     optimizer = torch.optim.AdamW(
@@ -673,18 +904,55 @@ def main():
         print(f"[resume] path={args.resume}")
         print(f"[resume] step={start_step}, loss={loaded_loss:.8f}")
 
-    loader_iter = cycle(loader)
+    epoch_loss_csv_path = None
+    if str(args.epoch_loss_csv).strip():
+        epoch_loss_csv_path = Path(args.epoch_loss_csv)
+        if not epoch_loss_csv_path.is_absolute():
+            epoch_loss_csv_path = (save_dir / epoch_loss_csv_path).resolve()
+        epoch_loss_csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+        write_header = (start_step == 0) or (not epoch_loss_csv_path.exists())
+        mode = "w" if write_header else "a"
+        with epoch_loss_csv_path.open(mode, newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if write_header:
+                writer.writerow([
+                    "epoch",
+                    "global_step",
+                    "steps_in_epoch_logged",
+                    "steps_in_epoch_expected",
+                    "is_partial_epoch",
+                    "mean_loss",
+                    "val_loss",
+                    "timestamp",
+                ])
+
+    train_loader_iter = cycle(train_loader)
+    val_loader_iter = cycle(val_loader) if val_loader is not None else None
 
     print("--------------------------------------------------")
     print("[train config]")
     print(f"device             : {device}")
-    print(f"samples            : {len(dataset)}")
-    print(f"batches_per_epoch  : {len(loader)}")
+    print(f"train_samples      : {len(train_dataset)}")
+    print(f"train_batches/ep   : {len(train_loader)}")
+    print(f"val_manifest       : {args.val_manifest if args.val_manifest else '(none)'}")
+    print(f"val_batches        : {0 if val_loader is None else len(val_loader)}")
     print(f"updates_per_epoch  : {updates_per_epoch}")
     print(f"batch_size         : {args.batch_size}")
+    print(f"val_batch_size     : {args.val_batch_size if args.val_batch_size > 0 else args.batch_size}")
     print(f"grad_accum         : {args.grad_accum}")
     print(f"max_steps          : {total_steps}")
     print(f"max_epochs         : {args.max_epochs}")
+    print(f"checkpoint_save    : {not args.disable_checkpoint_save}")
+    print(
+        "checkpoint_mode    : latest.pt + best.pt"
+        + (" + step_*.pt" if args.save_step_checkpoints else "")
+    )
+    print(f"save_every_steps   : {save_every_steps}")
+    print(f"save_every_epochs  : {args.save_every_epochs}")
+    print(f"sample_every_steps : {sample_every_steps}")
+    print(f"sample_every_epochs: {args.sample_every_epochs}")
+    print(f"epoch_loss_csv     : {epoch_loss_csv_path}")
     print(f"lr                 : {args.lr}")
     print(f"amp                : {args.amp}")
     print(f"save_dir           : {save_dir}")
@@ -704,6 +972,9 @@ def main():
     print(f"aux_cond_dim       : {args.aux_cond_dim}")
     print(f"aux_hidden_dim     : {args.aux_hidden_dim}")
     print(f"aux_scale_init     : {args.aux_scale_init}")
+    print(f"aux_time_scale     : {args.aux_time_scale}")
+    print(f"aux_time_embed_dim : {args.aux_time_embed_dim}")
+    print(f"aux_time_max_period: {args.aux_time_max_period}")
     print("--------------------------------------------------")
     print("[model config]")
     print(f"backbone           : {args.backbone}")
@@ -729,13 +1000,34 @@ def main():
     running_loss = 0.0
     running_count = 0
     last_time = time.time()
+    epoch_loss_sum = 0.0
+    epoch_loss_steps = 0
+    best_metric_name = "val_loss" if val_loader is not None else "train_loss"
+    best_metric = float("inf")
+    best_metric_step = -1
+
+    best_path = save_dir / "best.pt"
+    if best_path.exists():
+        try:
+            best_ckpt = torch.load(best_path, map_location="cpu")
+            best_metric = float(best_ckpt.get("loss", float("inf")))
+            best_metric_step = int(best_ckpt.get("step", -1))
+            print(
+                f"[best init] loaded existing best: "
+                f"{best_metric_name}={best_metric:.8f} at step={best_metric_step}"
+            )
+        except Exception as e:
+            print(f"[best init] failed to read existing best.pt ({e}). Start fresh.")
+            best_metric = float("inf")
+            best_metric_step = -1
 
     for step in range(start_step + 1, total_steps + 1):
         total_loss = 0.0
         aux_cond = None
+        val_loss_at_epoch_end = None
 
         for _ in range(args.grad_accum):
-            batch = next(loader_iter)
+            batch = next(train_loader_iter)
 
             clean = twoch_to_complex_batch(
                 batch["clean_stft"].to(device, non_blocking=True)
@@ -745,22 +1037,68 @@ def main():
             )
 
             aux_cond = None
+            aux_cond_times = None
+            aux_cond_mask = None
+            aux_query_times = None
             if args.use_aux_cond:
                 if "cond" not in batch:
                     raise RuntimeError("use_aux_cond=True but batch does not contain 'cond'")
+                if "cond_times" not in batch:
+                    raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_times'")
+                if "cond_mask" not in batch:
+                    raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_mask'")
+                if "query_mono_times" not in batch:
+                    raise RuntimeError("use_aux_cond=True but batch does not contain 'query_mono_times'")
 
                 aux_cond = batch["cond"].to(device, non_blocking=True)
+                aux_cond_times = batch["cond_times"].to(device, non_blocking=True)
+                aux_cond_mask = batch["cond_mask"].to(device, non_blocking=True)
+                aux_query_times = batch["query_mono_times"].to(device, non_blocking=True)
                 if aux_cond.dim() != 3:
                     raise RuntimeError(
-                        f"Expected aux_cond shape [B, 8, K], got {tuple(aux_cond.shape)}"
+                        f"Expected aux_cond shape [B, C, K], got {tuple(aux_cond.shape)}"
                     )
                 if aux_cond.size(1) != args.aux_cond_dim:
                     raise RuntimeError(
                         f"Expected aux_cond channel={args.aux_cond_dim}, got {aux_cond.size(1)}"
                     )
+                if aux_cond_times.dim() != 2:
+                    raise RuntimeError(
+                        f"Expected aux_cond_times shape [B, K], got {tuple(aux_cond_times.shape)}"
+                    )
+                if aux_cond_mask.dim() != 2:
+                    raise RuntimeError(
+                        f"Expected aux_cond_mask shape [B, K], got {tuple(aux_cond_mask.shape)}"
+                    )
+                if aux_cond_times.size(1) != aux_cond.size(2):
+                    raise RuntimeError(
+                        f"aux_cond_times length mismatch: {aux_cond_times.size(1)} vs {aux_cond.size(2)}"
+                    )
+                if aux_cond_mask.size(1) != aux_cond.size(2):
+                    raise RuntimeError(
+                        f"aux_cond_mask length mismatch: {aux_cond_mask.size(1)} vs {aux_cond.size(2)}"
+                    )
+                if aux_query_times.dim() != 2:
+                    raise RuntimeError(
+                        f"Expected aux_query_times shape [B, K_audio], got {tuple(aux_query_times.shape)}"
+                    )
+                if aux_query_times.size(0) != aux_cond.size(0):
+                    raise RuntimeError(
+                        f"aux_query_times batch mismatch: {aux_query_times.size(0)} vs {aux_cond.size(0)}"
+                    )
 
             with autocast_context(device, enabled=(args.amp and device.type == "cuda")):
-                loss = model._step({"x": clean, "y": noisy, "aux_cond": aux_cond}, batch_idx=0)
+                loss = model._step(
+                    {
+                        "x": clean,
+                        "y": noisy,
+                        "aux_cond": aux_cond,
+                        "aux_cond_times": aux_cond_times,
+                        "aux_cond_mask": aux_cond_mask,
+                        "aux_query_times": aux_query_times,
+                    },
+                    batch_idx=0,
+                )
                 loss_for_backward = loss / args.grad_accum
 
             if torch.isnan(loss) or torch.isinf(loss):
@@ -783,6 +1121,8 @@ def main():
         avg_loss = total_loss / args.grad_accum
         running_loss += avg_loss
         running_count += 1
+        epoch_loss_sum += avg_loss
+        epoch_loss_steps += 1
 
         if step % args.log_every == 0 or step == 1:
             now = time.time()
@@ -803,9 +1143,87 @@ def main():
                 f"time={elapsed:.2f}s"
             )
 
-        if step % args.save_every == 0 or step == total_steps:
+        is_epoch_end = (step % updates_per_epoch == 0) or (step == total_steps)
+        if is_epoch_end:
+            epoch_idx = int(math.ceil(step / updates_per_epoch))
+            epoch_start_step = (epoch_idx - 1) * updates_per_epoch + 1
+            epoch_end_step = min(total_steps, epoch_idx * updates_per_epoch)
+            expected_steps = epoch_end_step - epoch_start_step + 1
+
+            epoch_mean_loss = epoch_loss_sum / max(epoch_loss_steps, 1)
+            is_partial_epoch = int(epoch_loss_steps < expected_steps)
+            val_loss = None
+            if val_loader is not None:
+                val_loss = evaluate_validation_loss(
+                    model=model,
+                    loader=val_loader,
+                    args=args,
+                    device=device,
+                )
+                val_loss_at_epoch_end = float(val_loss)
+
+            epoch_log = (
+                f"[epoch {epoch_idx:04d}] "
+                f"mean_loss={epoch_mean_loss:.8f} "
+                f"steps={epoch_loss_steps}/{expected_steps} "
+                f"partial={is_partial_epoch}"
+            )
+            if val_loss is not None:
+                epoch_log += f" val_loss={val_loss:.8f}"
+            print(epoch_log)
+
+            if epoch_loss_csv_path is not None:
+                with epoch_loss_csv_path.open("a", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow([
+                        epoch_idx,
+                        step,
+                        epoch_loss_steps,
+                        expected_steps,
+                        is_partial_epoch,
+                        f"{epoch_mean_loss:.10f}",
+                        ("" if val_loss is None else f"{val_loss:.10f}"),
+                        int(time.time()),
+                    ])
+
+            epoch_loss_sum = 0.0
+            epoch_loss_steps = 0
+
+        should_save_ckpt = False
+        if not args.disable_checkpoint_save:
+            should_save_ckpt = ((save_every_steps > 0 and step % save_every_steps == 0) or step == total_steps)
+
+        should_update_best = False
+        metric_for_best = None
+        if not args.disable_checkpoint_save:
+            if val_loader is not None:
+                # Validation loss is computed at epoch end only.
+                if val_loss_at_epoch_end is not None:
+                    metric_for_best = val_loss_at_epoch_end
+                    should_update_best = True
+            elif should_save_ckpt:
+                metric_for_best = float(avg_loss)
+                should_update_best = True
+
+        if should_update_best and metric_for_best is not None and metric_for_best < best_metric:
+            best_metric = float(metric_for_best)
+            best_metric_step = int(step)
+            save_checkpoint(
+                path=best_path,
+                model=model,
+                optimizer=optimizer,
+                scaler=scaler,
+                args=args,
+                step=step,
+                loss_value=best_metric,
+            )
+            print(
+                f"[save best] {best_path} "
+                f"({best_metric_name}={best_metric:.8f}, step={best_metric_step})"
+            )
+
+        if should_save_ckpt:
             latest_path = save_dir / "latest.pt"
-            step_path = save_dir / f"step_{step:07d}.pt"
 
             save_checkpoint(
                 path=latest_path,
@@ -816,21 +1234,24 @@ def main():
                 step=step,
                 loss_value=avg_loss,
             )
-            save_checkpoint(
-                path=step_path,
-                model=model,
-                optimizer=optimizer,
-                scaler=scaler,
-                args=args,
-                step=step,
-                loss_value=avg_loss,
-            )
 
             print(f"[save] {latest_path}")
-            print(f"[save] {step_path}")
 
-        if args.sample_every > 0 and (step % args.sample_every == 0 or step == total_steps):
-            sample_batch = next(loader_iter)
+            if args.save_step_checkpoints:
+                step_path = save_dir / f"step_{step:07d}.pt"
+                save_checkpoint(
+                    path=step_path,
+                    model=model,
+                    optimizer=optimizer,
+                    scaler=scaler,
+                    args=args,
+                    step=step,
+                    loss_value=avg_loss,
+                )
+                print(f"[save] {step_path}")
+
+        if sample_every_steps > 0 and (step % sample_every_steps == 0 or step == total_steps):
+            sample_batch = next(val_loader_iter)
             save_sample_wavs(
                 model=model,
                 batch=sample_batch,
@@ -842,7 +1263,7 @@ def main():
             gc.collect()
             if device.type == "cuda":
                 torch.cuda.empty_cache()
-            print(f"[sample] saved full sample wavs at step {step}")
+            print(f"[sample] saved full sample wavs at step {step} (source=validation)")
 
     print("--------------------------------------------------")
     print("[DONE] training completed")

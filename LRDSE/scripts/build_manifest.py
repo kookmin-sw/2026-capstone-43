@@ -1,5 +1,6 @@
 import argparse
 import csv
+import random
 from pathlib import Path
 
 import soundfile as sf
@@ -114,6 +115,44 @@ def iter_noisy_source_dirs(noisy_root: Path):
         yield d, speaker_id, book_id, source_id, audio_files
 
 
+def write_manifest(path: Path, fieldnames, rows):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def split_valid_rows(valid_rows, split_by: str, val_ratio: float, seed: int):
+    if val_ratio <= 0.0 or len(valid_rows) <= 1:
+        return list(valid_rows), []
+
+    rng = random.Random(seed)
+
+    if split_by == "speaker":
+        speakers = sorted({row["speaker_id"] for row in valid_rows})
+        if len(speakers) >= 2:
+            rng.shuffle(speakers)
+            n_val_spk = int(round(len(speakers) * val_ratio))
+            n_val_spk = max(1, n_val_spk)
+            n_val_spk = min(len(speakers) - 1, n_val_spk)
+            val_speakers = set(speakers[:n_val_spk])
+
+            train_rows = [row for row in valid_rows if row["speaker_id"] not in val_speakers]
+            val_rows = [row for row in valid_rows if row["speaker_id"] in val_speakers]
+            return train_rows, val_rows
+
+    # Fallback: sample-level split
+    rows = list(valid_rows)
+    rng.shuffle(rows)
+    n_val = int(round(len(rows) * val_ratio))
+    n_val = max(1, n_val)
+    n_val = min(len(rows) - 1, n_val)
+    val_rows = rows[:n_val]
+    train_rows = rows[n_val:]
+    return train_rows, val_rows
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--noisy-root", required=True)
@@ -123,6 +162,11 @@ def main():
     parser.add_argument("--min-duration", type=float, default=0.3)
     parser.add_argument("--max-duration-diff", type=float, default=0.1)
     parser.add_argument("--strict-duration", action="store_true")
+    parser.add_argument("--val-ratio", type=float, default=0.1)
+    parser.add_argument("--split-seed", type=int, default=42)
+    parser.add_argument("--split-by", default="speaker", choices=["speaker", "sample"])
+    parser.add_argument("--train-out", default="")
+    parser.add_argument("--val-out", default="")
     args = parser.parse_args()
 
     noisy_root = Path(args.noisy_root).expanduser().resolve()
@@ -243,16 +287,33 @@ def main():
         "clean_find_reason",
     ]
 
-    with out_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
+    valid_rows = [row for row in rows if int(row["valid"]) == 1]
+    train_rows, val_rows = split_valid_rows(
+        valid_rows=valid_rows,
+        split_by=args.split_by,
+        val_ratio=args.val_ratio,
+        seed=args.split_seed,
+    )
+
+    train_out_path = Path(args.train_out).expanduser().resolve() if args.train_out else out_path.with_name(f"{out_path.stem}_train{out_path.suffix}")
+    val_out_path = Path(args.val_out).expanduser().resolve() if args.val_out else out_path.with_name(f"{out_path.stem}_val{out_path.suffix}")
+
+    write_manifest(out_path, fieldnames, rows)
+    write_manifest(train_out_path, fieldnames, train_rows)
+    write_manifest(val_out_path, fieldnames, val_rows)
 
     print("--------------------------------------------------")
     print(f"[manifest] total source dirs : {total}")
     print(f"[manifest] valid samples     : {valid_count}")
     print(f"[manifest] invalid samples   : {total - valid_count}")
-    print(f"[manifest] saved            : {out_path}")
+    print(f"[manifest] saved(all)       : {out_path}")
+    print(f"[manifest] split_by         : {args.split_by}")
+    print(f"[manifest] val_ratio        : {args.val_ratio}")
+    print(f"[manifest] split_seed       : {args.split_seed}")
+    print(f"[manifest] train samples    : {len(train_rows)}")
+    print(f"[manifest] val samples      : {len(val_rows)}")
+    print(f"[manifest] saved(train)     : {train_out_path}")
+    print(f"[manifest] saved(val)       : {val_out_path}")
 
 
 if __name__ == "__main__":

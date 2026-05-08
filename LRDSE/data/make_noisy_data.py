@@ -363,6 +363,10 @@ def choose_random_noise_crop_with_overlap(
     raise ValueError("No valid offset under overlap constraint")
 
 
+def is_overlap_exhaustion_error(exc: Exception):
+    return "No valid offset under overlap constraint" in str(exc)
+
+
 def rms_power(wav: np.ndarray):
     return float(np.mean(wav.astype(np.float64) ** 2))
 
@@ -562,7 +566,7 @@ def main():
     parser.add_argument(
         "--source-root",
         type=str,
-        default="/home/jaewoo/MAIR/ryu/RIR/sonic_sim/SonicSim/SonicSim-SonicSet/SonicSet/scene_datasets/mp3d_utterance/train_10h",
+        default="/home/jaewoo/MAIR/ryu/RIR/sonic_sim/SonicSim/SonicSim-SonicSet/SonicSet/scene_datasets/mp3d_utterance/train_10h_balanced_time",
     )
     parser.add_argument(
         "--noise-root",
@@ -594,6 +598,13 @@ def main():
     )
 
     parser.add_argument(
+        "--noise-reuse-slots",
+        type=int,
+        default=2,
+        help="같은 noise run을 독립 overlap 슬롯으로 몇 번 재사용할지 설정",
+    )
+
+    parser.add_argument(
         "--noise-channel",
         type=int,
         default=0,
@@ -610,6 +621,8 @@ def main():
 
     if args.snr_min > args.snr_max:
         raise ValueError("--snr-min must be <= --snr-max")
+    if args.noise_reuse_slots < 1:
+        raise ValueError("--noise-reuse-slots must be >= 1")
 
     progress_every = max(1, args.progress_every)
 
@@ -631,7 +644,7 @@ def main():
     rng.shuffle(source_items)
 
     used_intervals_by_noise = {
-        str(noise_run.run_dir): []
+        str(noise_run.run_dir): [[] for _ in range(args.noise_reuse_slots)]
         for noise_run in noise_runs
     }
 
@@ -642,6 +655,7 @@ def main():
     print(f"noise runs: {len(noise_runs)}")
     print(f"SNR integer range: [{args.snr_min}, {args.snr_max}] dB")
     print(f"max overlap ratio: {args.max_overlap_ratio}")
+    print(f"noise reuse slots: {args.noise_reuse_slots}")
     print(f"progress every: {progress_every}")
     print(f"excluded noise dir: {noise_root / 'contaminated'}")
     print(f"out root: {out_root}")
@@ -653,6 +667,7 @@ def main():
         "source_id",
         "noise_id",
         "noise_reuse_index",
+        "noise_reuse_slot",
         "noisy_audio_path",
         "lowstate_segment_path",
         "highstate_segment_path",
@@ -731,127 +746,153 @@ def main():
 
             made_this_source = False
             last_error = None
+            attempted_crop = False
+            overlap_exhaustion_only = True
 
             for noise_run in candidate_noise_runs:
                 noise_id = noise_run.run_dir.name
                 noise_key = str(noise_run.run_dir)
 
-                used_intervals_original = used_intervals_by_noise[noise_key]
-                noise_reuse_index = len(used_intervals_original) + 1
-                snr_db = rng.randint(args.snr_min, args.snr_max)
+                used_interval_slots = used_intervals_by_noise[noise_key]
+                slot_indices = list(range(args.noise_reuse_slots))
+                rng.shuffle(slot_indices)
 
-                sample_out_dir = out_root / speaker_id / book_id / source_id
+                for slot_idx in slot_indices:
+                    used_intervals_original = used_interval_slots[slot_idx]
+                    noise_reuse_index = sum(
+                        len(slot_intervals) for slot_intervals in used_interval_slots
+                    ) + 1
+                    noise_reuse_slot = slot_idx + 1
+                    snr_db = rng.randint(args.snr_min, args.snr_max)
 
-                noisy_audio_path = sample_out_dir / f"{source_id}.wav"
-                lowstate_segment_path = sample_out_dir / "lowstate_segment.jsonl"
-                highstate_segment_path = sample_out_dir / "highstate_segment.jsonl"
-                anchor_segment_path = sample_out_dir / "anchor_segment.json"
-                segment_meta_path = sample_out_dir / "segment_meta.json"
+                    sample_out_dir = out_root / speaker_id / book_id / source_id
 
-                try:
-                    noisy, meta = make_one_noisy(
-                        source_item=source_item,
-                        noise_run=noise_run,
-                        snr_db=snr_db,
-                        rng=rng,
-                        used_intervals_original=used_intervals_original,
-                        max_overlap_ratio=args.max_overlap_ratio,
-                        noise_channel=args.noise_channel,
-                        noise_mixdown=args.noise_mixdown,
-                    )
+                    noisy_audio_path = sample_out_dir / f"{source_id}.wav"
+                    lowstate_segment_path = sample_out_dir / "lowstate_segment.jsonl"
+                    highstate_segment_path = sample_out_dir / "highstate_segment.jsonl"
+                    anchor_segment_path = sample_out_dir / "anchor_segment.json"
+                    segment_meta_path = sample_out_dir / "segment_meta.json"
 
-                    sample_out_dir.mkdir(parents=True, exist_ok=True)
+                    attempted_crop = True
 
-                    sf.write(
-                        str(noisy_audio_path),
-                        noisy,
-                        meta["source_sr"],
-                        subtype="PCM_16",
-                    )
-
-                    start_ns = meta["noise_start_clock_monotonic_ns"]
-                    end_ns = meta["noise_end_clock_monotonic_ns"]
-
-                    low_count = write_state_segment(
-                        src_path=noise_run.lowstate_path,
-                        dst_path=lowstate_segment_path,
-                        start_ns=start_ns,
-                        end_ns=end_ns,
-                    )
-
-                    high_count = write_state_segment(
-                        src_path=noise_run.highstate_path,
-                        dst_path=highstate_segment_path,
-                        start_ns=start_ns,
-                        end_ns=end_ns,
-                    )
-
-                    anchor_count = write_anchor_segment(
-                        src_path=noise_run.anchor_path,
-                        dst_path=anchor_segment_path,
-                        start_ns=start_ns,
-                        end_ns=end_ns,
-                        start_sample_original=meta["noise_start_sample_original"],
-                        end_sample_original=meta["noise_end_sample_original"],
-                    )
-
-                    used_intervals_original.append(
-                        (
-                            meta["noise_start_sample_original"],
-                            meta["noise_end_sample_original"],
-                        )
-                    )
-
-                    meta["speaker_id"] = speaker_id
-                    meta["book_id"] = book_id
-                    meta["source_id"] = source_id
-                    meta["noise_id"] = noise_id
-                    meta["noise_reuse_index"] = noise_reuse_index
-                    meta["lowstate_segment_count"] = low_count
-                    meta["highstate_segment_count"] = high_count
-                    meta["anchor_segment_count"] = anchor_count
-                    meta["noisy_audio_path"] = str(noisy_audio_path)
-                    meta["lowstate_segment_path"] = str(lowstate_segment_path)
-                    meta["highstate_segment_path"] = str(highstate_segment_path)
-                    meta["anchor_segment_path"] = str(anchor_segment_path)
-                    meta["segment_meta_path"] = str(segment_meta_path)
-
-                    with segment_meta_path.open("w", encoding="utf-8") as mf:
-                        json.dump(meta, mf, indent=2, ensure_ascii=False)
-
-                    writer.writerow(
-                        {
-                            "index": made_count,
-                            **meta,
-                        }
-                    )
-
-                    made_count += 1
-                    made_this_source = True
-
-                    if made_count <= 5 or made_count % progress_every == 0:
-                        print(
-                            f"[MADE] "
-                            f"index={made_count - 1} | "
-                            f"source={source_id} | "
-                            f"noise={noise_id} | "
-                            f"snr={snr_db}dB | "
-                            f"low={low_count} | "
-                            f"high={high_count} | "
-                            f"anchor={anchor_count} | "
-                            f"path={noisy_audio_path}"
+                    try:
+                        noisy, meta = make_one_noisy(
+                            source_item=source_item,
+                            noise_run=noise_run,
+                            snr_db=snr_db,
+                            rng=rng,
+                            used_intervals_original=used_intervals_original,
+                            max_overlap_ratio=args.max_overlap_ratio,
+                            noise_channel=args.noise_channel,
+                            noise_mixdown=args.noise_mixdown,
                         )
 
+                        sample_out_dir.mkdir(parents=True, exist_ok=True)
+
+                        sf.write(
+                            str(noisy_audio_path),
+                            noisy,
+                            meta["source_sr"],
+                            subtype="PCM_16",
+                        )
+
+                        start_ns = meta["noise_start_clock_monotonic_ns"]
+                        end_ns = meta["noise_end_clock_monotonic_ns"]
+
+                        low_count = write_state_segment(
+                            src_path=noise_run.lowstate_path,
+                            dst_path=lowstate_segment_path,
+                            start_ns=start_ns,
+                            end_ns=end_ns,
+                        )
+
+                        high_count = write_state_segment(
+                            src_path=noise_run.highstate_path,
+                            dst_path=highstate_segment_path,
+                            start_ns=start_ns,
+                            end_ns=end_ns,
+                        )
+
+                        anchor_count = write_anchor_segment(
+                            src_path=noise_run.anchor_path,
+                            dst_path=anchor_segment_path,
+                            start_ns=start_ns,
+                            end_ns=end_ns,
+                            start_sample_original=meta["noise_start_sample_original"],
+                            end_sample_original=meta["noise_end_sample_original"],
+                        )
+
+                        used_intervals_original.append(
+                            (
+                                meta["noise_start_sample_original"],
+                                meta["noise_end_sample_original"],
+                            )
+                        )
+
+                        meta["speaker_id"] = speaker_id
+                        meta["book_id"] = book_id
+                        meta["source_id"] = source_id
+                        meta["noise_id"] = noise_id
+                        meta["noise_reuse_index"] = noise_reuse_index
+                        meta["noise_reuse_slot"] = noise_reuse_slot
+                        meta["lowstate_segment_count"] = low_count
+                        meta["highstate_segment_count"] = high_count
+                        meta["anchor_segment_count"] = anchor_count
+                        meta["noisy_audio_path"] = str(noisy_audio_path)
+                        meta["lowstate_segment_path"] = str(lowstate_segment_path)
+                        meta["highstate_segment_path"] = str(highstate_segment_path)
+                        meta["anchor_segment_path"] = str(anchor_segment_path)
+                        meta["segment_meta_path"] = str(segment_meta_path)
+
+                        with segment_meta_path.open("w", encoding="utf-8") as mf:
+                            json.dump(meta, mf, indent=2, ensure_ascii=False)
+
+                        writer.writerow(
+                            {
+                                "index": made_count,
+                                **meta,
+                            }
+                        )
+
+                        made_count += 1
+                        made_this_source = True
+
+                        if made_count <= 5 or made_count % progress_every == 0:
+                            print(
+                                f"[MADE] "
+                                f"index={made_count - 1} | "
+                                f"source={source_id} | "
+                                f"noise={noise_id} | "
+                                f"reuse={noise_reuse_slot}/{args.noise_reuse_slots} | "
+                                f"snr={snr_db}dB | "
+                                f"low={low_count} | "
+                                f"high={high_count} | "
+                                f"anchor={anchor_count} | "
+                                f"path={noisy_audio_path}"
+                            )
+
+                        break
+
+                    except Exception as e:
+                        last_error = e
+                        if not is_overlap_exhaustion_error(e):
+                            overlap_exhaustion_only = False
+                        continue
+
+                if made_this_source:
                     break
-
-                except Exception as e:
-                    last_error = e
-                    continue
 
             if not made_this_source:
                 skipped_no_valid_noise += 1
                 if skipped_no_valid_noise <= 10:
                     print(f"[SKIP] source={source_item.source_dir} reason={last_error}")
+
+                if attempted_crop and overlap_exhaustion_only:
+                    print(
+                        "[STOP] all noise crops are exhausted under current "
+                        "overlap/reuse settings; terminating synthesis."
+                    )
+                    break
 
             if (
                 source_idx == 1
@@ -888,7 +929,11 @@ def main():
     print("noise reuse summary:")
     for noise_run in noise_runs:
         key = str(noise_run.run_dir)
-        print(f"  {noise_run.run_dir.name}: {len(used_intervals_by_noise[key])}")
+        slot_counts = [len(slot) for slot in used_intervals_by_noise[key]]
+        print(
+            f"  {noise_run.run_dir.name}: total={sum(slot_counts)} "
+            f"(slots={slot_counts})"
+        )
 
 
 if __name__ == "__main__":

@@ -738,6 +738,7 @@ def main():
         limit=dataset_limit,
 
         use_condition=args.use_aux_cond,
+        condition_repr="8ch",
         raw_force_scale=args.raw_force_scale,
         d_force_scale=args.d_force_scale,
         condition_smooth_win=args.condition_smooth_win,
