@@ -1,6 +1,0 @@
-torch==2.4.1
-gsplat==1.5.3
-numpy
-opencv-python
-pyyaml
-typing_extensions<4.14
