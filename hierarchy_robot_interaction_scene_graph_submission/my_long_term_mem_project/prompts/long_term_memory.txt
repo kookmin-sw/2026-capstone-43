@@ -1,0 +1,26 @@
+center (-6.66, 0.17, -10.95) has {picture, candle, picture, lamp, seat, mirror, window, window, window, window, art_frame, dressing_table}
+center (-6.45, 0.17, -6.50) has {picture, seat, computer, Book, couch, window, window, drawer_desk}
+center (-4.90, 0.17, -2.80) has {tv, table, couch, carpet, window, window, cabinet}
+center (-5.80, 0.17, 2.70) has {seat, window, window}
+center (-5.35, 0.17, 6.45) has {lamp_stand, screen, window, art_frame}
+center (-4.98, 0.17, -10.95) has {carpet, carpet, lamp, seat, picture, bed, window, art_frame}
+center (-4.98, 0.17, -6.65) has {table}
+center (-5.60, 0.17, 2.80) has {seat, seat, Tissue_Box}
+center (-4.98, 0.17, 6.25) has {seat}
+center (-2.85, 0.17, -10.80) has {picture, plant, cabinet, mirror, lamp, art_frame}
+center (-3.30, 0.17, -6.65) has {seat}
+center (-3.08, 0.17, -2.01) has {table}
+center (-3.30, 0.17, 1.95) has {seat, seat, seat, table}
+center (-3.30, 0.17, 6.25) has {carpet, dresser, Alarm_Clock, bed}
+center (-1.62, 0.17, -10.95) has {flowerpot, bed, carpet}
+center (-2.15, 0.17, -6.65) has {seat, seat, seat, table, carpet}
+center (-1.62, 0.17, -2.35) has {bottle, Box, bench, carpet}
+center (-2.60, 0.17, 1.95) has {counter, stool, stool, stool, Mug, stool, stool}
+center (-1.62, 0.17, 6.10) has {mirror, plant, lamp_stand, bathrobe, art_frame}
+center (0.06, 0.17, -10.95) has {plant, mirror, seat, carpet, carpet, plant, flower_stand, dresser, plant, mirror, window, window, window, cabinet}
+center (0.06, 0.17, -6.65) has {cabinet, towel, toilet, shelf, towel, towel, towel, towel, washbasin, door, mirror, coat_hanger, towel, dresser}
+center (0.06, 0.17, -2.35) has {toilet, rack, vase, laundry_basket, cabinet, mirror, bag}
+center (0.06, 0.17, 1.95) has {washer_dryer, Apple, Pan, kitchen_counter, Microwave}
+center (-0.00, 0.17, 6.33) has {bathtub, mirror, shelf, shower, toilet, mirror, sink_cabinet, sink_cabinet}
+
+If you are using the `Explore` function, you should consider which of the aforementioned points the object is likely to be located at when passing parameters, and sort all eight points in the order of the likelihood of finding the object.

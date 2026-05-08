@@ -1,0 +1,61 @@
+{
+  "source_scene": "108736872_177263607.scene_instance",
+  "objects_for_rigid_objs": [
+    {
+      "template_name": "Apple_1",
+      "translation": [-1.22, 0.96, 1.62],
+      "rotation": [1.0, 0.0, 0.0, 0.0],
+      "non_uniform_scale": [1.0, 1.0, 1.0],
+      "motion_type": "STATIC"
+    },
+    {
+      "template_name": "Mug_1",
+      "translation": [-1.32, 0.96, 2.35],
+      "rotation": [1.0, 0.0, 0.0, 0.0],
+      "non_uniform_scale": [1.0, 1.0, 1.0],
+      "motion_type": "STATIC"
+    },
+    {
+      "template_name": "Alarm_Clock_1",
+      "translation": [-3.58, 0.98, 5.0],
+      "rotation": [1.0, 0.0, 0.0, 0.0],
+      "non_uniform_scale": [1.0, 1.0, 1.0],
+      "motion_type": "STATIC"
+    },
+    {
+      "template_name": "Box_1",
+      "translation": [-1.850126, 0.168233, -2.198852],
+      "rotation": [1.0, 0.0, 0.0, 0.0],
+      "non_uniform_scale": [1.0, 1.0, 1.0],
+      "motion_type": "STATIC"
+    },
+    {
+      "template_name": "Book_1",
+      "translation": [-7.3, 0.85, -6.2],
+      "rotation": [1.0, 0.0, 0.0, 0.0],
+      "non_uniform_scale": [1.0, 1.0, 1.0],
+      "motion_type": "STATIC"
+    },
+    {
+      "template_name": "Microwave_1",
+      "translation": [0.7, 1.05, 2.43],
+      "rotation": [0.7071068, 0.0, -0.7071068, 0.0],
+      "non_uniform_scale": [1.0, 1.0, 1.0],
+      "motion_type": "STATIC"
+    },
+    {
+      "template_name": "Pan_2",
+      "translation": [0.7, 0.96, 3.5],
+      "rotation": [1.0, 0.0, 0.0, 0.0],
+      "non_uniform_scale": [1.0, 1.0, 1.0],
+      "motion_type": "STATIC"
+    },
+    {
+      "template_name": "Tissue_Box_1",
+      "translation": [-4.57, 0.90, 2.6],
+      "rotation": [1.0, 0.0, 0.0, 0.0],
+      "non_uniform_scale": [1.0, 1.0, 1.0],
+      "motion_type": "STATIC"
+    }
+  ]
+}
