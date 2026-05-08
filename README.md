@@ -140,21 +140,14 @@ python hierarchy_robot_interaction_scene_graph_submission/my_long_term_mem_proje
 ## 7. 데모 미디어 (이미지/영상)
 
 ### 7.1 방 분리 결과 이미지
-```md
-<img width="708" height="654" alt="9" src="https://github.com/user-attachments/assets/7df81276-5b42-450e-80fd-db56d06c4672" />
-<img width="708" height="654" alt="8" src="https://github.com/user-attachments/assets/fd9f7897-26d1-40f4-9ea7-f96aff4e29f4" />
-<img width="708" height="654" alt="6" src="https://github.com/user-attachments/assets/4c4a1582-b464-4bd6-9245-c3db899da223" />
-<img width="708" height="654" alt="5" src="https://github.com/user-attachments/assets/aee2a039-f5be-4c46-8c86-43087035b166" />
-<img width="708" height="654" alt="4" src="https://github.com/user-attachments/assets/a05f5b52-b137-4c49-9282-a24b14fc4c00" />
-<img width="708" height="654" alt="3" src="https://github.com/user-attachments/assets/7d870580-b98e-4b76-a55c-707be50fa546" />
-<img width="708" height="654" alt="2" src="https://github.com/user-attachments/assets/0a615ba2-0ebe-43a9-80dc-ffe3f911b23b" />
-<img width="708" height="654" alt="1" src="https://github.com/user-attachments/assets/72bc62a4-aeca-4b1d-badf-0bf826dbaf57" />
-```
+| 1 | 2 | 3 | 4 |
+|:---:|:---:|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/7df81276-5b42-450e-80fd-db56d06c4672" width="100%"> | <img src="https://github.com/user-attachments/assets/fd9f7897-26d1-40f4-9ea7-f96aff4e29f4" width="100%"> | <img src="https://github.com/user-attachments/assets/4c4a1582-b464-4bd6-9245-c3db899da223" width="100%"> | <img src="https://github.com/user-attachments/assets/aee2a039-f5be-4c46-8c86-43087035b166" width="100%"> |
+| <img src="https://github.com/user-attachments/assets/a05f5b52-b137-4c49-9282-a24b14fc4c00" width="100%"> | <img src="https://github.com/user-attachments/assets/7d870580-b98e-4b76-a55c-707be50fa546" width="100%"> | <img src="https://github.com/user-attachments/assets/0a615ba2-0ebe-43a9-80dc-ffe3f911b23b" width="100%"> | <img src="https://github.com/user-attachments/assets/72bc62a4-aeca-4b1d-badf-0bf826dbaf57" width="100%"> |
 
 ### 7.2 Task 수행 동영상
-```md
-[![Watch Demo](docs/media/rooms/room_01.png)](https://youtu.be/<VIDEO_ID>)
-```
+https://youtu.be/n9BuyLzmbgs
+
 
 ## 8. 메모리/로그 산출물
 
