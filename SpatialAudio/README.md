@@ -21,14 +21,3 @@ GitHub-ready collection of the selected spatial-audio experiment folders. Origin
 | `13_validation` | experiment results | Validation metrics only |
 | `14_curriculum_baseline` | experiment results + analysis code | Curriculum vs end-to-end baseline analysis |
 
-## Ordering Rule
-
-- `01`-`10` contain dataset, pipeline, model, or representation code.
-- `11`-`14` contain experiment-result bundles; their raw result files were removed and summarized in README files.
-
-## Cleanup Policy
-
-- Removed generated result directories or emptied them when the folder itself was result-only.
-- Removed result files such as `.json`, `.jsonl`, `.csv`, `.png`, `.zip`, `.log`, `.npy`, `.npz`, `.pt`, `.pth`, and checkpoint artifacts unless they were source/config files needed by code.
-- Removed Python bytecode caches and cache directories.
-- Preserved code files and summarized removed results in each folder README.
