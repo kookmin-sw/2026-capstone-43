@@ -1,79 +1,34 @@
-## 06_spatialast_FOA_frontreg
+# 06_spatialast_FOA_frontreg
 
-Front-cone azimuth regression ablation package cloned from `05_spatialast_FOA_conv64x2`.
+Stage-13 구조를 유지하면서, 방위각 supervision을 front-cone 회귀로 확장한 Stage-14 실험 디렉토리입니다.
 
-This project keeps the Stage-13 FOA-native conv stem experiments intact while changing only the
-azimuth supervision path so we can test whether the current front-cone dataset is better matched
-by continuous regression than by 360-way classification.
+## 핵심 변경점
 
-What stays the same:
-- FOA-native feature extractor
-- conv stem variant support from Stage-13
-- adapter, patch embedding, transformer, elevation head, vector head
-- slow adaptation recipe and best-checkpoint workflow
+- 방위각 head 모드 추가:
+  - `full360_classification`: 기존 360-way 분류
+  - `front_regression`: `[-45, 45]` 범위 연속 회귀
+- front-cone 라벨셋(예: `320,330,...,40`)을 signed angle로 매핑해 학습 가능
 
-What changes in Stage-14:
-- azimuth head now supports two modes
-- `full360_classification`: previous 360-way CE path
-- `front_regression`: `45 * tanh(linear(doa_token))` for signed front-cone prediction in `[-45, 45]`
+## 주요 파일
 
-Supported FOA-native stem variants:
-- `baseline`: `7 -> 16 -> 1`
-- `conv32_out4`: `7 -> 32 -> 4`
-- `conv32_out8`: `7 -> 32 -> 8`
-- `conv64_out8`: `7 -> 64 -> 8`
-- `conv64_out16`: `7 -> 64 -> 16`
-- `conv32_32_out8`: `7 -> 32 -> 32 -> 8`
-- `conv64_64_out8`: `7 -> 64 -> 64 -> 8`
-- `conv64_64_out16`: `7 -> 64 -> 64 -> 16`
+- `heads.py`: 분류/회귀 방위각 head
+- `losses.py`: mode별 target/loss 라우팅
+- `train.py`: Stage-14 지표 로깅
+- `tools/build_stage14_subset.py`: subset 빌드
+- `tools/compare_stage14_runs.py`: 성능 비교
 
-Front-cone azimuth support in the current dataset:
-- raw labels: `320, 330, 340, 350, 0, 10, 20, 30, 40`
-- signed front mapping: `-40, -30, -20, -10, 0, 10, 20, 30, 40`
-
-Key files:
-- `heads.py`: classification and front-regression azimuth heads
-- `losses.py`: azimuth target mapping + classification/regression loss routing
-- `train.py`: metrics, CLI, and Stage-14 logging
-- `tools/build_stage14_subset.py`: balanced Stage-14 subset builder
-- `tools/compare_stage14_runs.py`: Stage-14 comparison report generator
-
-Quick checks:
+## 실행 예시
 
 ```bash
-conda run -n spatial-ast python tools/forward_test.py
-conda run -n spatial-ast python tools/train_smoke_test.py
-conda run -n spatial-ast python tools/check_no_timm_import.py
-```
+cd 06_spatialast_FOA_frontreg
+pip install -r requirements.txt
 
-Stage-14 entrypoints:
-
-```bash
-cd /home/yu/Project_git/SpatialAudio/06_spatialast_FOA_frontreg
 python tools/build_stage14_subset.py
-
 bash scripts/train_stage14_subset_foa_baseline_cls_slow.sh
 bash scripts/train_stage14_subset_foa_baseline_reg_slow.sh
 python tools/compare_stage14_runs.py
-
-bash scripts/train_stage14_subset_foa_bestconv_reg_slow.sh
-python tools/compare_stage14_runs.py
-
-bash scripts/train_stage14_full_foa_baseline_cls_slow.sh
-bash scripts/train_stage14_full_foa_baseline_reg_slow.sh
-bash scripts/train_stage14_full_foa_bestconv_reg_slow.sh
-python tools/compare_stage14_runs.py
 ```
 
-## GitHub Cleanup Notes
+## 참고
 
-This GitHub-ready copy was renumbered from `14_spatialast_FOA_frontreg` to `06_spatialast_FOA_frontreg`.
-Generated experiment artifacts, logs, Python caches, and model weights were removed from this copy. The useful result metadata is summarized below so the repository stays lightweight.
-
-### Removed Artifacts
-- `__pycache__/`: 12 files, 137.5 KB
-- `tools/__pycache__/`: 18 files, 107.6 KB
-- `utils/__pycache__/`: 6 files, 48.0 KB
-
-### Result Summary
-- No experiment result JSON or model weight files were present in the selected original folder; only generated Python caches were excluded.
+stem/transformer 관련 코드는 05와 동일하고, 방위각 supervision 방식 비교가 이 디렉토리의 중심입니다.

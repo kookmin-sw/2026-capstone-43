@@ -1,8 +1,0 @@
-numpy
-scipy
-soundfile
-matplotlib
-pyyaml
-# Optional PyTorch-friendly export:
-# torch
-

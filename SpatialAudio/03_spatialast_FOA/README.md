@@ -1,48 +1,38 @@
-## 03_spatialast_FOA
+# 03_spatialast_FOA
 
-Minimal FOA-only SpatialAST package with a modular backbone/head split.
+FOA 입력을 위한 SpatialAST 기본 학습 패키지입니다.  
+backbone/head/loss/train 코드가 분리되어 있어 이후 ablation(04~07)의 기준점 역할을 합니다.
 
-Default FOA input stem is now DCASE2024 SELD-baseline-inspired:
-- `WXYZ` 4-channel log-mel
-- normalized FOA intensity vectors `IV_x, IV_y, IV_z`
-- default stacked input channels: `7`
-- optional `diffuseness` / `beam_proxy` remain available behind flags
+## 핵심 아이디어
 
-Included files:
-- `backbone.py`: FOA-native stem + SpatialAST transformer backbone
-- `heads.py`: class / distance / azimuth / elevation / vector heads
-- `model.py`: composition layer joining backbone and heads
-- `spatial_ast.py`: backward-compatible wrapper with tuple-style output
-- `dataset.py`: minimal direct FOA dataset loader and synthetic dataset
-- `losses.py`: multitask loss helpers
-- `train.py`: small single-process training entrypoint
-- `requirements.txt`: minimal pip dependencies without `timm`
-- `environment.yml`: minimal conda environment without `timm`
-- `utils/stft.py`
-- `utils/vision_transformer.py`
-- `utils/torch_layers.py`: local replacements for `to_2tuple`, `DropPath`, `trunc_normal_`
-- `utils/foa_features.py`
-- `tools/forward_test.py`
-- `tools/train_smoke_test.py`
-- `tools/check_no_timm_import.py`
+- 기본 입력: `WXYZ log-mel(4ch) + IV_x/IV_y/IV_z(3ch)` = 총 7채널
+- 원본 채널 순서가 `WYZX`일 때 내부에서 `WXYZ`로 정렬해 사용
+- multitask head(방위각/고도/벡터 등)를 모듈식으로 결합
 
-FOA channel convention:
-- raw disk order: `WYZX`
-- internal canonical order: `WXYZ`
-- reorder rule: `x = x[:, [0, 3, 1, 2], :]` for batched tensors
+## 주요 파일
 
-Quick checks:
+- `backbone.py`: FOA stem + SpatialAST transformer
+- `heads.py`: 예측 head 모음
+- `losses.py`: multitask loss
+- `dataset.py`: FOA dataset loader
+- `train.py`: 학습 엔트리포인트
+- `tools/forward_test.py`, `tools/train_smoke_test.py`: 점검 스크립트
+
+## 빠른 점검
 
 ```bash
-conda run -n spatial-ast python tools/forward_test.py
-conda run -n spatial-ast python tools/train_smoke_test.py
-conda run -n spatial-ast python tools/check_no_timm_import.py
+cd 03_spatialast_FOA
+pip install -r requirements.txt
+
+python tools/forward_test.py
+python tools/train_smoke_test.py
+python tools/check_no_timm_import.py
 ```
 
-Real-data training example:
+## 학습 예시
 
 ```bash
-conda run -n spatial-ast python train.py \
+python train.py \
   --train_json /path/to/train.json \
   --val_json /path/to/val.json \
   --audio_path_root /path/to/audio_root \
@@ -50,24 +40,12 @@ conda run -n spatial-ast python train.py \
   --batch_size 4 \
   --epochs 10 \
   --audio_normalize \
-  --class_loss_weight 0.0 \
-  --distance_loss_weight 0.0 \
   --azimuth_loss_weight 2.0 \
   --elevation_loss_weight 2.0 \
   --vector_loss_weight 0.5
 ```
 
-## GitHub Cleanup Notes
+## 참고
 
-This GitHub-ready copy was renumbered from `11_spatialast_FOA` to `03_spatialast_FOA`.
-Generated experiment artifacts, logs, Python caches, and model weights were removed from this copy. The useful result metadata is summarized below so the repository stays lightweight.
-
-### Removed Artifacts
-- `__pycache__/`: 12 files, 127.1 KB
-- `tools/__pycache__/`: 12 files, 68.2 KB
-- `utils/__pycache__/`: 6 files, 48.0 KB
-- Weight/checkpoint files removed:
-  - `finetuned_transformer_only.pth`: 326.8 MB
-
-### Model Artifact Summary
-- `finetuned_transformer_only.pth` was present in the original folder and removed from this GitHub copy. Recreate or download weights separately before running finetuning scripts that require it.
+- `scripts/`에는 stage별 실험 실행 스크립트가 정리되어 있습니다.
+- `tools/compare_stage*_runs.py`로 실험 간 비교 리포트를 만들 수 있습니다.

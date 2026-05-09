@@ -1,14 +1,20 @@
 # 13_validation
 
-Validation-only metrics folder copied from `06_validation`. This is a result-only folder, so the original JSON files were deleted and only this README summary remains.
+검증 전용 결과를 요약해 둔 디렉토리입니다.  
+원본의 에폭별 `metrics.json` 파일은 경량화를 위해 제거되어, 현재는 결과 해석을 위한 문서만 유지합니다.
 
-## Result Summary
-- Epochs summarized: 17.
-- Best token accuracy: 100.00% at epoch 12.
-- Best validation loss: 0.0076 at epoch 17.
-- Final recorded epoch: 17 with token accuracy 100.00% and loss 0.0076.
-- Evaluation size per epoch: 480 supervised tokens / 240 batches.
+## 포함 내용
 
-## Cleanup Notes
-- Original source contained 17 files across 0 subdirectories (2.4 KB). Generated result files were removed or reduced to empty folder structure in this GitHub copy.
-- All `epoch_*_metrics.json` files were removed because the folder contained only results.
+- `README.md`: 최종 검증 성능 요약
+
+## 요약 지표
+
+- 집계 에폭 수: 17
+- 최고 토큰 정확도: `100.00%` (epoch 12)
+- 최저 검증 손실: `0.0076` (epoch 17)
+- 마지막 기록(epoch 17): 토큰 정확도 `100.00%`, 손실 `0.0076`
+- 에폭당 평가 토큰/배치: `480 tokens / 240 batches`
+
+## 참고
+
+원본 상세 로그가 필요하면 원본 실험 산출물(삭제 전 metrics 파일)에서 복원해야 합니다.

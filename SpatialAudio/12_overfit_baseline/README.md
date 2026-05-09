@@ -1,27 +1,22 @@
 # 12_overfit_baseline
 
-Overfit baseline result bundle copied from `05_overfit_baseline`. Raw result files were removed; empty experiment folder structure and the visualization script are retained.
+audio vs AV overfit baseline 비교 결과를 정리한 디렉토리입니다.  
+원본 decode/metrics 산출물은 정리되어 있고, 시각화 재생성 스크립트를 중심으로 유지됩니다.
 
-## Code Analysis
-- Kept `analysis_outputs/generate_pairwise_visuals.py`, which rebuilds pairwise dashboards from CSV summaries.
-- `analysis_outputs/generate_pairwise_visuals.py`: functions `_load_csv`, `_as_percent`, `_style_axes`, `make_pair_dashboard`, `make_overview_threshold_plot`, `make_overview_decode_plot`
+## 구성
 
-## Result Summary
-| Run | Modality | Best Decode Acc | Best Decode Epoch | Best Val Loss Epoch | Best Val Loss |
-| --- | --- | ---: | ---: | ---: | ---: |
-| `overfit_01_audio_3way_fov_glos_gnlos_300` | audio | 99.67% | 18 | 18 | 0.0022 |
-| `overfit_02_av_3way_fov_glos_gnlos_300` | av | 100.00% | 18 | 18 | 0.0037 |
-| `overfit_03_audio_8way_glos_800` | audio | 100.00% | 20 | 20 | 0.0139 |
-| `overfit_04_av_8way_glos_800` | av | 26.75% | 19 | 19 | 1.4689 |
-| `overfit_05_audio_8way_gnlos_800` | audio | 98.62% | 15 | 16 | 0.0194 |
-| `overfit_06_av_8way_gnlos_800` | av | 100.00% | 20 | 20 | 0.0021 |
-| `overfit_07_audio_8way_mixed_glos_gnlos_800` | audio | 97.00% | 18 | 18 | 0.0092 |
-| `overfit_08_av_8way_mixed_glos_gnlos_800` | av | 100.00% | 20 | 15 | 0.0134 |
+- `overfit_01_*` ~ `overfit_08_*`: 실험 폴더 자리
+- `analysis_outputs/generate_pairwise_visuals.py`: pairwise 대시보드 생성 스크립트
 
-### Notes
-- Most reruns reached near-perfect overfit decode accuracy; the notable failure case is `overfit_04_av_8way_glos_800` with 26.75% best decode accuracy.
-- Audio-vs-AV gaps from the original analysis: AV improved small 3-way/gNLOS/mixed tasks, but dropped sharply on the 8-way gLOS run.
+## 스크립트 실행
 
-## Cleanup Notes
-- Original source contained 341 files across 66 subdirectories (14.6 MB). Generated result files were removed or reduced to empty folder structure in this GitHub copy.
-- Overfit run directories and nested decode/validation folders were kept as empty structure; raw metrics, decode JSONL, CSV, Markdown reports, and dashboard images were removed.
+```bash
+cd 12_overfit_baseline
+python analysis_outputs/generate_pairwise_visuals.py
+```
+
+## 주의사항
+
+- 스크립트의 `ROOT`가 `12_overfit_baseline_rerun/analysis_outputs`로 하드코딩되어 있습니다.
+- 현재 경로/파일명에 맞게 `ROOT`, `PAIR_CSV`, `VAL_CSV`, `DECODE_CSV`를 수정해야 합니다.
+- 입력 CSV가 없으면 그림을 다시 생성할 수 없습니다.

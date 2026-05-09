@@ -1,8 +1,0 @@
-numpy>=1.24
-Pillow>=10.0
-matplotlib>=3.8
-PyYAML>=6.0
-torch>=2.1
-transformers>=4.45,<4.49
-huggingface-hub<1.0
-safetensors>=0.4
