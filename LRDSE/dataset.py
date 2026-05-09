@@ -8,6 +8,7 @@ from src.audio.preprocess import (
     AudioPreprocessConfig,
     load_wav,
     preprocess_pair_for_train,
+    reconstruct_from_2ch,
 )
 
 from src.condition.preprocess import (
@@ -61,6 +62,45 @@ def load_mono_audio(path, target_sr=16000):
     cfg = AudioPreprocessConfig(sample_rate=target_sr)
     wav, sr = load_wav(str(path), cfg)
     return wav.squeeze(0).contiguous(), sr
+
+
+def stft_2ch_to_wav(
+    stft_2ch: torch.Tensor,
+    length: int,
+    n_fft: int = 510,
+    hop_length: int = 128,
+    win_length: int = 510,
+    target_sr: int = 16000,
+    spec_factor: float = 0.15,
+    spec_abs_exponent: float = 0.5,
+) -> torch.Tensor:
+    """
+    Reconstruct a normalized waveform from the transformed 2ch STFT used by this dataset.
+
+    This compatibility helper is used by scripts/check_dataset.py.
+    """
+    if win_length != n_fft:
+        raise ValueError(
+            f"Current preprocess.py uses win_length == n_fft. "
+            f"Got win_length={win_length}, n_fft={n_fft}"
+        )
+
+    cfg = AudioPreprocessConfig(
+        sample_rate=target_sr,
+        n_fft=n_fft,
+        hop_length=hop_length,
+        spec_factor=spec_factor,
+        spec_abs_exponent=spec_abs_exponent,
+    )
+    normfac = torch.tensor(1.0, dtype=stft_2ch.dtype, device=stft_2ch.device)
+    wav = reconstruct_from_2ch(
+        pred_2ch=stft_2ch,
+        normfac=normfac,
+        orig_len=int(length),
+        pad_frames=0,
+        cfg=cfg,
+    )
+    return wav.squeeze(0).contiguous()
 
 
 def infer_run_dir(row):

@@ -207,6 +207,22 @@ Noise run 폴더에는 `audio.wav`, `anchor.json`, `lowstate.jsonl`, `highstate.
 ## 유용한 스크립트
 
 ```bash
+# dataset 로딩과 STFT inverse check
+python3 scripts/check_dataset.py \
+  --manifest ./data/manifest.csv \
+  --num-samples 4 \
+  --save-debug
+
+# RDDM forward/backward smoke test
+python3 scripts/check_model_forward.py \
+  --manifest ./data/manifest.csv \
+  --batch-size 1 \
+  --device cpu \
+  --dim 8 \
+  --dim-mults '(1, 2, 4)' \
+  --timesteps 10 \
+  --sampling-timesteps 2
+
 # wav의 STFT plot 저장
 python3 scripts/plot_stft.py --wav ./data/noisy/.../sample.wav --out ./outputs/debug/stft_plot.png
 
@@ -217,8 +233,17 @@ python3 data/check_duration.py --root ./data/noisy
 python3 data/check_max_foot_force.py --root ./data/noisy --pattern lowstate_segment.jsonl
 ```
 
-## 참고 메모
+## RDDM 실험
 
-- 이 환경에서는 `python` 명령이 없을 수 있으므로 예시는 `python3` 기준입니다.
-- `train_rddm.py`는 보조 실험 코드입니다. 현재 경로에서 바로 실행하면 `LRDSE` package import 문제가 날 수 있어, 필요하면 parent directory를 `PYTHONPATH`에 추가해서 실행합니다.
-- `scripts/check_dataset.py`는 현재 `dataset.py`에 없는 `stft_2ch_to_wav`를 import합니다. 실행 전 해당 import/복원 함수를 정리해야 합니다.
+`train_rddm.py`도 현재 디렉터리에서 바로 실행할 수 있습니다.
+
+```bash
+python3 train_rddm.py \
+  --manifest ./data/manifest.csv \
+  --save-dir ./checkpoints/rddm_se \
+  --device cuda \
+  --batch-size 2 \
+  --max-steps 1000
+```
+
+모든 실행 예시는 현재 환경에 맞춰 `python3` 기준으로 작성했습니다.

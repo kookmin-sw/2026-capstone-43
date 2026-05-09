@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from dataset import SpeechEnhancementDataset
-from LRDSE.src.models.model_rddm import UnetRes, ResidualDiffusion
+from src.models.model_rddm import UnetRes, ResidualDiffusion
 
 
 def parse_dim_mults(s: str):

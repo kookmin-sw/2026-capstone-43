@@ -34,7 +34,7 @@ from src.condition.preprocess import (
     preprocess_condition_for_train,
 )
 
-from LRDSE.src.models.model_rddm import UnetRes, ResidualDiffusion
+from src.models.model_rddm import UnetRes, ResidualDiffusion
 
 
 def set_seed(seed: int):
