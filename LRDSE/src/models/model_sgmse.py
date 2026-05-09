@@ -215,7 +215,7 @@ class ScoreModel(pl.LightningModule):
             for param in self.pesq_loss.parameters():
                 param.requires_grad = False
 
-        self.ema = ExponentialMovingAverage(self.dnn.parameters(), decay=self.ema_decay)
+        self.ema = ExponentialMovingAverage(self.ema_parameters(), decay=self.ema_decay)
         self._error_loading_ema = False
 
         self.save_hyperparameters(ignore=["data_module_cls", "no_wandb"])
@@ -225,17 +225,35 @@ class ScoreModel(pl.LightningModule):
             else None
         )
 
+    def ema_parameters(self):
+        params = list(self.dnn.parameters())
+        if self.aux_context_encoder is not None:
+            params.extend(self.aux_context_encoder.parameters())
+        return params
+
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
     def optimizer_step(self, *args, **kwargs):
         super().optimizer_step(*args, **kwargs)
-        self.ema.update(self.dnn.parameters())
+        self.ema.update(self.ema_parameters())
+
+    def load_ema_state_dict(self, state_dict):
+        try:
+            self.ema.load_state_dict(state_dict)
+            self._error_loading_ema = False
+        except Exception as e:
+            warnings.warn(
+                "Failed to load EMA state_dict. This can happen when loading an "
+                f"older checkpoint that did not track aux condition parameters. Error: {e}"
+            )
+            self.ema = ExponentialMovingAverage(self.ema_parameters(), decay=self.ema_decay)
+            self._error_loading_ema = False
 
     def on_load_checkpoint(self, checkpoint):
         ema = checkpoint.get("ema", None)
         if ema is not None:
-            self.ema.load_state_dict(ema)
+            self.load_ema_state_dict(ema)
         else:
             self._error_loading_ema = True
             warnings.warn("EMA state_dict not found in checkpoint!")
@@ -247,11 +265,11 @@ class ScoreModel(pl.LightningModule):
         res = super().train(mode)
         if not self._error_loading_ema:
             if mode is False and not no_ema:
-                self.ema.store(self.dnn.parameters())
-                self.ema.copy_to(self.dnn.parameters())
+                self.ema.store(self.ema_parameters())
+                self.ema.copy_to(self.ema_parameters())
             else:
                 if self.ema.collected_params is not None:
-                    self.ema.restore(self.dnn.parameters())
+                    self.ema.restore(self.ema_parameters())
                     # torch_ema keeps cloned params after restore(); free them to avoid
                     # persistent extra GPU memory after eval/sample.
                     self.ema.collected_params = None

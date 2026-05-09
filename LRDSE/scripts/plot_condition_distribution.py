@@ -163,53 +163,117 @@ def filter_distribution_rare_outliers(abs_values, tail_frac, log_mad_z, min_samp
     return keep, info
 
 
-def normalize_abs_diff_asinh_percentile(abs_diff, upper_percentile=99.5, asinh_scale=0.0):
+def normalize_abs_diff_by_divisor(abs_diff, divisor_value=0.0, divisor_percentile=0.0):
     x = np.asarray(abs_diff, dtype=np.float64).reshape(-1)
     out = np.zeros_like(x, dtype=np.float64)
     info = {
         "applied": False,
         "reason": "",
         "count": int(x.size),
-        "upper_percentile": float(upper_percentile),
-        "q_upper": 0.0,
-        "clip_upper": 0.0,
-        "asinh_scale": 0.0,
-        "above_upper_count": 0,
+        "max_value": 0.0,
+        "divisor_source": "",
+        "divisor_used": 0.0,
+        "divisor_percentile": 0.0,
+        "divisor_percentile_value": 0.0,
     }
 
     if x.size == 0:
         info["reason"] = "empty"
         return out, info
-    if not (0.0 < upper_percentile <= 100.0):
-        info["reason"] = "invalid_upper_percentile"
+
+    max_value = float(np.max(x))
+    if not math.isfinite(max_value):
+        info["reason"] = "invalid_max"
         return out, info
 
-    q_upper = float(np.quantile(x, upper_percentile / 100.0))
-    clip_upper = max(q_upper, 1e-12)
-    x_clip = np.clip(x, 0.0, clip_upper)
-
-    if asinh_scale > 0:
-        s = float(asinh_scale)
+    if divisor_value is not None and float(divisor_value) > 0:
+        divisor = float(divisor_value)
+        info["divisor_source"] = "user_value"
+    elif divisor_percentile is not None and float(divisor_percentile) > 0:
+        p = float(divisor_percentile)
+        divisor = float(np.quantile(x, p / 100.0))
+        info["divisor_source"] = "sample_percentile"
+        info["divisor_percentile"] = p
+        info["divisor_percentile_value"] = divisor
     else:
-        positive = x_clip[x_clip > 0]
-        if positive.size > 0:
-            s = float(np.quantile(positive, 0.5))
-        else:
-            s = clip_upper
-        s = max(min(s, clip_upper), clip_upper * 1e-3, 1e-12)
+        divisor = max_value
+        info["divisor_source"] = "sample_max"
 
-    denom = float(np.arcsinh(clip_upper / s))
-    if denom > 1e-12:
-        out = np.arcsinh(x_clip / s) / denom
-    else:
-        out = x_clip / clip_upper
+    if not math.isfinite(divisor) or divisor <= 0:
+        info["reason"] = "non_positive_divisor"
+        return out, info
+
+    out = x / divisor
     out = np.clip(out, 0.0, 1.0)
 
     info["applied"] = True
-    info["q_upper"] = q_upper
-    info["clip_upper"] = clip_upper
-    info["asinh_scale"] = s
-    info["above_upper_count"] = int(np.sum(x > clip_upper))
+    info["max_value"] = max_value
+    info["divisor_used"] = divisor
+    return out, info
+
+
+def normalize_signed_diff_by_divisor(diff, divisor_value=0.0, divisor_percentile=90.0):
+    x = np.asarray(diff, dtype=np.float64).reshape(-1)
+    out = np.zeros_like(x, dtype=np.float64)
+    info = {
+        "applied": False,
+        "reason": "",
+        "count": int(x.size),
+        "mode": "signed_divisor",
+        "divisor_source": "",
+        "divisor_used": 0.0,
+        "divisor_percentile": 0.0,
+        "divisor_percentile_value": 0.0,
+    }
+
+    if x.size == 0:
+        info["reason"] = "empty"
+        return out, info
+
+    if divisor_value is not None and float(divisor_value) > 0:
+        divisor = float(divisor_value)
+        info["divisor_source"] = "user_value"
+    elif divisor_percentile is not None and float(divisor_percentile) > 0:
+        p = float(divisor_percentile)
+        # Keep signed diff for output, but use magnitude percentile as scale
+        # so skewed-sign data does not produce near-zero divisor.
+        divisor = float(np.quantile(np.abs(x), p / 100.0))
+        info["divisor_source"] = "sample_abs_percentile"
+        info["divisor_percentile"] = p
+        info["divisor_percentile_value"] = divisor
+    else:
+        info["reason"] = "need_positive_divisor_or_percentile"
+        return out, info
+
+    if not math.isfinite(divisor) or divisor <= 1e-12:
+        info["reason"] = "non_finite_or_zero_divisor"
+        return out, info
+
+    out = x / divisor
+    out = np.clip(out, -1.0, 1.0)
+    info["applied"] = True
+    info["divisor_used"] = divisor
+    return out, info
+
+
+def preprocess_diff_model_tanh(deriv, d_force_scale):
+    x = np.asarray(deriv, dtype=np.float64).reshape(-1)
+    out = np.zeros_like(x, dtype=np.float64)
+    info = {
+        "applied": False,
+        "reason": "",
+        "count": int(x.size),
+        "mode": "model_tanh",
+        "d_force_scale": float(d_force_scale),
+    }
+
+    if x.size == 0:
+        info["reason"] = "empty"
+        return out, info
+
+    s = max(float(d_force_scale), 1e-12)
+    out = np.tanh(x / s)
+    info["applied"] = True
     return out, info
 
 
@@ -226,8 +290,18 @@ def print_distribution_summary(name, x):
     )
 
 
-def plot_main_distributions(raw, raw_abs_deriv, norm_diff, norm_info, out_path: Path):
-    fig, axes = plt.subplots(1, 3, figsize=(20, 5.2))
+def plot_main_distributions(
+    raw,
+    raw_abs_deriv,
+    preproc_diff,
+    preproc_info,
+    legacy_tanh_diff,
+    legacy_tanh_info,
+    raw_plot_upper_percentile,
+    raw_plot_abs_min,
+    out_path: Path,
+):
+    fig, axes = plt.subplots(1, 4, figsize=(26, 5.2))
 
     # 1) raw foot_force distribution (signed)
     ax = axes[0]
@@ -255,7 +329,14 @@ def plot_main_distributions(raw, raw_abs_deriv, norm_diff, norm_info, out_path: 
     # 2) raw diff distribution (no preprocessing)
     ax = axes[1]
     if raw_abs_deriv.size > 0:
-        x = np.clip(raw_abs_deriv, 1e-8, None)
+        x_full = np.clip(raw_abs_deriv, 1e-8, None)
+        upper_q = float(np.quantile(x_full, raw_plot_upper_percentile / 100.0))
+        x = x_full[(x_full >= raw_plot_abs_min) & (x_full <= upper_q)]
+        if x.size == 0:
+            x = x_full[x_full <= upper_q]
+        if x.size == 0:
+            x = x_full
+
         lo = float(np.quantile(x, 0.001))
         hi = float(np.quantile(x, 0.999))
         lo = max(lo, 1e-8)
@@ -265,7 +346,7 @@ def plot_main_distributions(raw, raw_abs_deriv, norm_diff, norm_info, out_path: 
         ax.hist(x, bins=bins, density=True, alpha=0.78, color="#06D6A0")
         ax.set_xscale("log")
         ax.set_title(
-            "Raw |dF/dt| Distribution (No Preprocessing)\n"
+            f"Raw |dF/dt| Distribution (No Preprocessing, >= {raw_plot_abs_min:.1e}, <=P{raw_plot_upper_percentile:.1f})\n"
             f"mean={np.mean(x):.2f}, p95={np.quantile(x, 0.95):.2f}, p99={np.quantile(x, 0.99):.2f}"
         )
         ax.set_xlabel("raw |dF/d(monotonic_sec)| (log x)")
@@ -275,23 +356,67 @@ def plot_main_distributions(raw, raw_abs_deriv, norm_diff, norm_info, out_path: 
         ax.set_title("Raw |dF/dt| Distribution (No Preprocessing, no data)")
         ax.grid(True, alpha=0.25)
 
-    # 3) normalized diff distribution
+    # 3) preprocessed diff distribution
     ax = axes[2]
-    if norm_diff.size > 0:
-        bins = np.linspace(0.0, 1.0, 180)
-        ax.hist(norm_diff, bins=bins, density=True, alpha=0.8, color="#8338EC")
-        frac_low = float(np.mean(norm_diff < 0.05))
-        frac_high = float(np.mean(norm_diff > 0.95))
-        up = float(norm_info.get("upper_percentile", 99.5))
-        ax.set_title(
-            f"Preprocessed Diff (clip@P{up:.1f} + asinh)\n"
-            f"frac(<0.05)={frac_low:.2%}, frac(>0.95)={frac_high:.2%}"
-        )
-        ax.set_xlabel("preprocessed diff [0, 1]")
+    if preproc_diff.size > 0:
+        mode = str(preproc_info.get("mode", "custom_divisor"))
+        if mode == "model_tanh":
+            bins = np.linspace(-1.0, 1.0, 220)
+            ax.hist(preproc_diff, bins=bins, density=True, alpha=0.8, color="#8338EC")
+            frac_small = float(np.mean(np.abs(preproc_diff) < 0.05))
+            frac_sat = float(np.mean(np.abs(preproc_diff) > 0.95))
+            s = float(preproc_info.get("d_force_scale", 0.0))
+            ax.set_title(
+                f"Model Preprocessed Diff: tanh(dF/dt / {s:.3g})\n"
+                f"frac(|x|<0.05)={frac_small:.2%}, frac(|x|>0.95)={frac_sat:.2%}"
+            )
+            ax.set_xlabel("preprocessed diff [-1, 1]")
+        elif mode == "signed_divisor":
+            q = float(np.quantile(np.abs(preproc_diff), 0.999))
+            q = max(q, 1e-6)
+            bins = np.linspace(-q, q, 240)
+            ax.hist(preproc_diff, bins=bins, density=True, alpha=0.8, color="#8338EC")
+            div_v = float(preproc_info.get("divisor_used", 0.0))
+            p = float(preproc_info.get("divisor_percentile", 0.0))
+            ax.set_title(
+                f"Preprocessed Diff (signed / P{p:.1f}(|x|), divisor={div_v:.3g})\n"
+                f"mean={np.mean(preproc_diff):.3f}, std={np.std(preproc_diff):.3f}"
+            )
+            ax.set_xlabel("preprocessed diff (signed)")
+        else:
+            bins = np.linspace(0.0, 1.0, 180)
+            ax.hist(preproc_diff, bins=bins, density=True, alpha=0.8, color="#8338EC")
+            frac_low = float(np.mean(preproc_diff < 0.05))
+            frac_high = float(np.mean(preproc_diff > 0.95))
+            div_v = float(preproc_info.get("divisor_used", 0.0))
+            ax.set_title(
+                f"Preprocessed Diff (x / divisor, divisor={div_v:.3g})\n"
+                f"frac(<0.05)={frac_low:.2%}, frac(>0.95)={frac_high:.2%}"
+            )
+            ax.set_xlabel("preprocessed diff [0, 1]")
         ax.set_ylabel("density")
         ax.grid(True, alpha=0.25)
     else:
         ax.set_title("Preprocessed Diff Distribution (no data)")
+        ax.grid(True, alpha=0.25)
+
+    # 4) legacy preprocessing: tanh(dF/dt / scale)
+    ax = axes[3]
+    if legacy_tanh_diff.size > 0:
+        bins = np.linspace(-1.0, 1.0, 220)
+        ax.hist(legacy_tanh_diff, bins=bins, density=True, alpha=0.8, color="#FF9F1C")
+        frac_small = float(np.mean(np.abs(legacy_tanh_diff) < 0.05))
+        frac_sat = float(np.mean(np.abs(legacy_tanh_diff) > 0.95))
+        s = float(legacy_tanh_info.get("d_force_scale", 0.0))
+        ax.set_title(
+            "Legacy Preprocessed Diff (raw-like outlier filtered)\n"
+            f"tanh(dF/dt / {s:.3g}), frac(|x|<0.05)={frac_small:.2%}, frac(|x|>0.95)={frac_sat:.2%}"
+        )
+        ax.set_xlabel("legacy preprocessed diff [-1, 1]")
+        ax.set_ylabel("density")
+        ax.grid(True, alpha=0.25)
+    else:
+        ax.set_title("Legacy Preprocessed Diff (no data)")
         ax.grid(True, alpha=0.25)
 
     plt.tight_layout()
@@ -324,16 +449,52 @@ def main():
         help="|d(foot_force)/d(monotonic_sec)| 사전 필터 최대값(이보다 크면 제외)",
     )
     parser.add_argument(
-        "--norm-upper-percentile",
+        "--preproc-abs-min",
         type=float,
-        default=99.5,
-        help="정규화 전 clipping 상한 percentile (권장: 99.5~99.9)",
+        default=1e-7,
+        help="정규화(x/max) 전 |dF/dt| 하한. 이보다 작은 값은 제거",
     )
     parser.add_argument(
-        "--norm-asinh-scale",
+        "--preproc-upper-percentile",
+        type=float,
+        default=99.9,
+        help="정규화(x/max) 전 |dF/dt| 상한 percentile. 이보다 큰 값은 제거",
+    )
+    parser.add_argument(
+        "--norm-divisor",
         type=float,
         default=0.0,
-        help="asinh 스케일 상수 s. 0이면 데이터 기반 자동 추정",
+        help="정규화 분모 값. 0이면 자동으로 max 사용, 양수면 해당 값으로 나눔",
+    )
+    parser.add_argument(
+        "--norm-divisor-percentile",
+        type=float,
+        default=0.0,
+        help="정규화 분모를 샘플 percentile 값으로 사용 (예: 90 -> p90). norm-divisor가 우선",
+    )
+    parser.add_argument(
+        "--preprocess-mode",
+        default="model_tanh",
+        choices=["model_tanh", "custom_divisor", "signed_divisor"],
+        help="3번째(diff 전처리) 플롯 방식 선택",
+    )
+    parser.add_argument(
+        "--d-force-scale",
+        type=float,
+        default=9220.325595510363,
+        help="model_tanh 모드에서 tanh(dF/dt / d_force_scale)의 scale",
+    )
+    parser.add_argument(
+        "--raw-plot-upper-percentile",
+        type=float,
+        default=99.9,
+        help="2번째(raw diff) 플롯에서 시각화용 상한 percentile",
+    )
+    parser.add_argument(
+        "--raw-plot-abs-min",
+        type=float,
+        default=1e-7,
+        help="2번째(raw diff) 플롯에서 시각화용 하한값(|dF/dt|). 이보다 작은 값은 제외",
     )
     parser.add_argument(
         "--rare-tail-frac",
@@ -371,10 +532,20 @@ def main():
         raise ValueError("diff-abs-min should be >= 0")
     if args.diff_abs_max <= args.diff_abs_min:
         raise ValueError("diff-abs-max should be > diff-abs-min")
-    if not (0.0 < args.norm_upper_percentile <= 100.0):
-        raise ValueError("need 0 < norm-upper-percentile <= 100")
-    if args.norm_asinh_scale < 0:
-        raise ValueError("norm-asinh-scale should be >= 0")
+    if args.preproc_abs_min < 0:
+        raise ValueError("preproc-abs-min should be >= 0")
+    if not (0.0 < args.preproc_upper_percentile <= 100.0):
+        raise ValueError("need 0 < preproc-upper-percentile <= 100")
+    if args.norm_divisor < 0:
+        raise ValueError("norm-divisor should be >= 0")
+    if not (0.0 <= args.norm_divisor_percentile <= 100.0):
+        raise ValueError("norm-divisor-percentile should be in [0, 100]")
+    if args.d_force_scale <= 0:
+        raise ValueError("d-force-scale should be > 0")
+    if not (0.0 < args.raw_plot_upper_percentile <= 100.0):
+        raise ValueError("need 0 < raw-plot-upper-percentile <= 100")
+    if args.raw_plot_abs_min < 0:
+        raise ValueError("raw-plot-abs-min should be >= 0")
     if not (0.0 < args.rare_tail_frac < 0.5):
         raise ValueError("rare-tail-frac should be in (0, 0.5)")
     if args.rare_log_mad_z <= 0:
@@ -388,7 +559,8 @@ def main():
 
     raw_sampler = ReservoirSampler(args.max_samples, seed=args.seed + 1)
     raw_abs_deriv_sampler = ReservoirSampler(args.max_samples, seed=args.seed + 2)
-    deriv_sampler = ReservoirSampler(args.max_samples, seed=args.seed + 3)
+    raw_deriv_sampler = ReservoirSampler(args.max_samples, seed=args.seed + 3)
+    deriv_sampler = ReservoirSampler(args.max_samples, seed=args.seed + 4)
 
     total_lines = 0
     valid_foot_force = 0
@@ -462,7 +634,9 @@ def main():
         deriv_flat = deriv.reshape(-1)
         finite_deriv_mask = np.isfinite(deriv_flat)
         if np.any(finite_deriv_mask):
-            raw_abs_deriv_sampler.add_many(np.abs(deriv_flat[finite_deriv_mask]))
+            deriv_finite = deriv_flat[finite_deriv_mask]
+            raw_deriv_sampler.add_many(deriv_finite)
+            raw_abs_deriv_sampler.add_many(np.abs(deriv_finite))
         abs_deriv_flat = np.abs(deriv_flat)
         valid_deriv_mask = (
             np.isfinite(deriv_flat)
@@ -479,6 +653,7 @@ def main():
 
     raw = raw_sampler.as_array()
     raw_abs_deriv = raw_abs_deriv_sampler.as_array()
+    raw_deriv = raw_deriv_sampler.as_array()
     deriv = deriv_sampler.as_array()
     abs_deriv = np.abs(deriv)
     filtered_rare_outliers = 0
@@ -503,10 +678,69 @@ def main():
             deriv = deriv[keep_mask]
             abs_deriv = abs_deriv[keep_mask]
 
-    norm_diff, norm_info = normalize_abs_diff_asinh_percentile(
-        abs_diff=abs_deriv,
-        upper_percentile=args.norm_upper_percentile,
-        asinh_scale=args.norm_asinh_scale,
+    preproc_input = abs_deriv
+    preproc_q_upper = math.inf
+    filtered_preproc_extremes = 0
+    if preproc_input.size > 0:
+        preproc_q_upper = float(np.quantile(preproc_input, args.preproc_upper_percentile / 100.0))
+        preproc_keep = (
+            np.isfinite(preproc_input)
+            & (preproc_input >= float(args.preproc_abs_min))
+            & (preproc_input <= preproc_q_upper)
+        )
+        filtered_preproc_extremes = int(np.sum(~preproc_keep))
+        if np.any(preproc_keep):
+            preproc_input = preproc_input[preproc_keep]
+
+    # raw diff 플롯(2번째)과 같은 기준으로 signed diff 극단값 제거
+    # (model_tanh / signed_divisor 전처리 경로에서 사용)
+    preproc_signed_input = raw_deriv
+    preproc_signed_q_upper = math.inf
+    filtered_preproc_signed_extremes = 0
+    if preproc_signed_input.size > 0:
+        preproc_signed_abs = np.abs(preproc_signed_input)
+        preproc_signed_q_upper = float(
+            np.quantile(preproc_signed_abs, args.raw_plot_upper_percentile / 100.0)
+        )
+        preproc_signed_keep = (
+            np.isfinite(preproc_signed_input)
+            & (preproc_signed_abs >= float(args.raw_plot_abs_min))
+            & (preproc_signed_abs <= preproc_signed_q_upper)
+        )
+        filtered_preproc_signed_extremes = int(np.sum(~preproc_signed_keep))
+        if np.any(preproc_signed_keep):
+            preproc_signed_input = preproc_signed_input[preproc_signed_keep]
+        else:
+            # 최소값 조건 때문에 비는 경우 상한 조건만으로 fallback
+            fallback_keep = np.isfinite(preproc_signed_input) & (
+                preproc_signed_abs <= preproc_signed_q_upper
+            )
+            if np.any(fallback_keep):
+                preproc_signed_input = preproc_signed_input[fallback_keep]
+
+    if args.preprocess_mode == "model_tanh":
+        preproc_diff, preproc_info = preprocess_diff_model_tanh(
+            deriv=preproc_signed_input,
+            d_force_scale=args.d_force_scale,
+        )
+    elif args.preprocess_mode == "signed_divisor":
+        preproc_diff, preproc_info = normalize_signed_diff_by_divisor(
+            diff=preproc_signed_input,
+            divisor_value=args.norm_divisor,
+            divisor_percentile=args.norm_divisor_percentile,
+        )
+    else:
+        preproc_diff, preproc_info = normalize_abs_diff_by_divisor(
+            abs_diff=preproc_input,
+            divisor_value=args.norm_divisor,
+            divisor_percentile=args.norm_divisor_percentile,
+        )
+        preproc_info["mode"] = "custom_divisor"
+
+    # 4번째 패널: 기존 전처리 (scale division + tanh), 2/3번과 같은 사전 이상치 제거 입력 사용
+    legacy_tanh_diff, legacy_tanh_info = preprocess_diff_model_tanh(
+        deriv=preproc_signed_input,
+        d_force_scale=args.d_force_scale,
     )
 
     out_dir = Path(args.out_dir)
@@ -517,8 +751,12 @@ def main():
     plot_main_distributions(
         raw=raw,
         raw_abs_deriv=raw_abs_deriv,
-        norm_diff=norm_diff,
-        norm_info=norm_info,
+        preproc_diff=preproc_diff,
+        preproc_info=preproc_info,
+        legacy_tanh_diff=legacy_tanh_diff,
+        legacy_tanh_info=legacy_tanh_info,
+        raw_plot_upper_percentile=args.raw_plot_upper_percentile,
+        raw_plot_abs_min=args.raw_plot_abs_min,
         out_path=dist_path,
     )
 
@@ -546,21 +784,52 @@ def main():
         print(f"rare_filter_robust_upper={rare_filter_info['robust_upper']}")
         print(f"rare_filter_upper_bound={rare_filter_info['upper_bound']}")
     print(f"filtered_rare_outliers={filtered_rare_outliers}")
-    print(f"norm_upper_percentile={args.norm_upper_percentile}")
-    print(f"norm_asinh_scale_arg={args.norm_asinh_scale}")
-    print(f"norm_applied={norm_info['applied']}")
-    if norm_info["reason"]:
-        print(f"norm_reason={norm_info['reason']}")
-    if norm_info["applied"]:
-        print(f"norm_q_upper={norm_info['q_upper']}")
-        print(f"norm_clip_upper={norm_info['clip_upper']}")
-        print(f"norm_asinh_scale_used={norm_info['asinh_scale']}")
-        print(f"norm_above_upper_count={norm_info['above_upper_count']}")
+    print(f"preprocess_mode={args.preprocess_mode}")
+    print(f"d_force_scale={args.d_force_scale}")
+    print("normalization=x/divisor (custom_divisor mode only)")
+    print(f"norm_divisor_arg={args.norm_divisor}")
+    print(f"norm_divisor_percentile_arg={args.norm_divisor_percentile}")
+    print(f"preproc_abs_min={args.preproc_abs_min}")
+    print(f"preproc_upper_percentile={args.preproc_upper_percentile}")
+    print(f"preproc_q_upper={preproc_q_upper}")
+    print(f"filtered_preproc_extremes={filtered_preproc_extremes}")
+    print(f"preproc_signed_abs_min(raw_like)={args.raw_plot_abs_min}")
+    print(f"preproc_signed_upper_percentile(raw_like)={args.raw_plot_upper_percentile}")
+    print(f"preproc_signed_q_upper(raw_like)={preproc_signed_q_upper}")
+    print(f"filtered_preproc_signed_extremes(raw_like)={filtered_preproc_signed_extremes}")
+    print(f"raw_plot_upper_percentile={args.raw_plot_upper_percentile}")
+    print(f"raw_plot_abs_min={args.raw_plot_abs_min}")
+    print(f"preproc_applied={preproc_info['applied']}")
+    if preproc_info["reason"]:
+        print(f"preproc_reason={preproc_info['reason']}")
+    if preproc_info["applied"]:
+        if preproc_info.get("mode") == "model_tanh":
+            print(f"preproc_mode=model_tanh")
+            print(f"preproc_d_force_scale={preproc_info['d_force_scale']}")
+        elif preproc_info.get("mode") == "signed_divisor":
+            print(f"preproc_mode=signed_divisor")
+            print(f"norm_divisor_source={preproc_info['divisor_source']}")
+            print(f"norm_divisor_used={preproc_info['divisor_used']}")
+            if preproc_info["divisor_source"] in {"sample_percentile", "sample_abs_percentile"}:
+                print(f"norm_divisor_percentile={preproc_info['divisor_percentile']}")
+                print(f"norm_divisor_percentile_value={preproc_info['divisor_percentile_value']}")
+        else:
+            print(f"preproc_mode=custom_divisor")
+            print(f"norm_divisor_source={preproc_info['divisor_source']}")
+            print(f"norm_divisor_used={preproc_info['divisor_used']}")
+            if preproc_info["divisor_source"] == "sample_percentile":
+                print(f"norm_divisor_percentile={preproc_info['divisor_percentile']}")
+                print(f"norm_divisor_percentile_value={preproc_info['divisor_percentile_value']}")
+            print(f"norm_max_value={preproc_info['max_value']}")
     print_distribution_summary("raw(sampled)", raw)
     print_distribution_summary("raw_abs_deriv_no_preproc(sampled)", raw_abs_deriv)
+    print_distribution_summary("raw_deriv_signed_no_preproc(sampled)", raw_deriv)
     print_distribution_summary("deriv(sampled)", deriv)
     print_distribution_summary("abs_deriv(sampled)", abs_deriv)
-    print_distribution_summary("norm_diff(sampled)", norm_diff)
+    print_distribution_summary("preproc_input_abs_deriv(sampled)", preproc_input)
+    print_distribution_summary("preproc_signed_input_filtered(sampled)", preproc_signed_input)
+    print_distribution_summary("preprocessed_diff(sampled)", preproc_diff)
+    print_distribution_summary("legacy_tanh_preprocessed_diff(sampled)", legacy_tanh_diff)
     print(f"saved: {dist_path}")
 
 

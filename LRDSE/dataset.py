@@ -248,7 +248,6 @@ class SpeechEnhancementDataset(Dataset):
                 crop_start_sample=int(out["start"].item()),
                 num_frames=noisy_stft.shape[-1],
                 hop_length=self.cfg.hop_length,
-                freq_bins=noisy_stft.shape[-2],
                 cfg=self.cond_cfg,
             )
 

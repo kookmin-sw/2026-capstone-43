@@ -311,7 +311,6 @@ def build_aux_cond_for_chunk(
         crop_start_sample=int(chunk_start_sample),
         num_frames=noisy_2ch.shape[-1],
         hop_length=args.hop_length,
-        freq_bins=noisy_2ch.shape[-2],
         cfg=cond_cfg,
     )
 

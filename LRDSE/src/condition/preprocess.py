@@ -21,7 +21,8 @@ class ConditionPreprocessConfig:
 
         diff 4ch:
             dFdt = (F[t] - F[t-1]) / (t[t] - t[t-1])
-            D_norm = tanh(dFdt / d_force_scale)
+            p90 = percentile(|dFdt|, 90)
+            D_norm = clip(dFdt / p90, -1, 1)
 
     output:
         cond_8ch:
@@ -34,12 +35,12 @@ class ConditionPreprocessConfig:
     """
     raw_force_scale: float = 220.0
 
-    # 전체 noisy 분석 결과 p99 기준
-    d_force_scale: float = 9220.325595510363
+    # backward compatibility용 legacy field (현재 tanh는 사용하지 않음)
+    d_force_scale: float = 2872.58
+    # dFdt 정규화 분모를 |dFdt| percentile로 계산
+    d_force_percentile: float = 80.0
 
-    # p99 결과가 smooth_win=1 기준이면 1 유지
-    # 3-sample moving average를 쓸 거면,
-    # analyze_foot_force_scale.py --smooth-win 3으로 다시 s값을 잡는 게 좋음.
+    # foot_force smoothing window (1이면 smoothing 없음)
     smooth_win: int = 1
 
     # 약 2.04초 * 500Hz ≈ 1020 이므로 1024 고정 길이 사용
@@ -335,7 +336,17 @@ def compute_force_and_derivative(
     d_fdt = np.zeros_like(df, dtype=np.float64)
     d_fdt[valid] = df[valid] / dt[valid, None]
 
-    deriv_norm = np.tanh(d_fdt / max(cfg.d_force_scale, cfg.eps))
+    p = float(np.clip(cfg.d_force_percentile, 0.0, 100.0))
+    finite_abs = np.abs(d_fdt[np.isfinite(d_fdt)])
+    if finite_abs.size == 0:
+        divisor = cfg.eps
+    else:
+        divisor = float(np.quantile(finite_abs, p / 100.0))
+        if (not math.isfinite(divisor)) or divisor <= cfg.eps:
+            divisor = max(float(np.max(finite_abs)), cfg.eps)
+
+    deriv_norm = d_fdt / divisor
+    deriv_norm = np.clip(deriv_norm, -1.0, 1.0)
 
     deriv_on_low = np.zeros_like(force_norm, dtype=np.float64)
     deriv_on_low[1:] = deriv_norm
@@ -496,7 +507,6 @@ def preprocess_condition_for_train(
     crop_start_sample: int,
     num_frames: int,
     hop_length: int,
-    freq_bins: Optional[int] = None,
     cfg: Optional[ConditionPreprocessConfig] = None,
 ) -> Dict[str, torch.Tensor]:
     """
@@ -516,10 +526,6 @@ def preprocess_condition_for_train(
 
         hop_length:
             audio preprocess hop_length. 현재 128.
-
-        freq_bins:
-            더 이상 사용하지 않음.
-            이전 코드 호환을 위해 인자만 유지.
 
     Returns:
         cond_8ch:
@@ -619,44 +625,3 @@ def preprocess_condition_for_train(
         "crop_start_time": torch.tensor(crop_start_time, dtype=torch.float32),
         "crop_end_time": torch.tensor(crop_end_time, dtype=torch.float32),
     }
-
-
-# 아래 함수들은 예전 channel-concat 방식에서 쓰던 것들.
-# cross-attention 방식에서는 사용하지 않는 것을 권장.
-def expand_condition_to_freq(
-    cond_8ch: torch.Tensor,
-    freq_bins: int,
-) -> torch.Tensor:
-    """
-    Deprecated.
-    cross-attention 방식에서는 cond_8ch_freq를 만들지 않는 것을 권장.
-    """
-    if cond_8ch.dim() != 2:
-        raise ValueError(f"Expected cond_8ch shape [8, K], got {cond_8ch.shape}")
-
-    if cond_8ch.size(0) != 8:
-        raise ValueError(f"Expected 8 condition channels, got {cond_8ch.size(0)}")
-
-    return cond_8ch.unsqueeze(1).repeat(1, freq_bins, 1)
-
-
-def make_conditioned_input(
-    noisy_2ch: torch.Tensor,
-    cond_8ch_freq: torch.Tensor,
-) -> torch.Tensor:
-    """
-    Deprecated.
-    cross-attention 방식에서는 noisy_stft와 condition을 channel concat하지 않음.
-    """
-    if noisy_2ch.dim() != 3 or noisy_2ch.size(0) != 2:
-        raise ValueError(f"Expected noisy_2ch shape [2, F, K], got {noisy_2ch.shape}")
-
-    if cond_8ch_freq.dim() != 3 or cond_8ch_freq.size(0) != 8:
-        raise ValueError(f"Expected cond_8ch_freq shape [8, F, K], got {cond_8ch_freq.shape}")
-
-    if noisy_2ch.shape[1:] != cond_8ch_freq.shape[1:]:
-        raise ValueError(
-            f"Shape mismatch: noisy_2ch={noisy_2ch.shape}, cond={cond_8ch_freq.shape}"
-        )
-
-    return torch.cat([noisy_2ch, cond_8ch_freq], dim=0)

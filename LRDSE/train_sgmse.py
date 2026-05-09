@@ -209,10 +209,14 @@ def load_checkpoint(path, model, optimizer=None, scaler=None, device="cpu"):
         scaler.load_state_dict(ckpt["scaler"])
 
     if "ema" in ckpt:
-        model.ema.load_state_dict(ckpt["ema"])
+        if hasattr(model, "load_ema_state_dict"):
+            model.load_ema_state_dict(ckpt["ema"])
+        else:
+            model.ema.load_state_dict(ckpt["ema"])
     else:
         # Keep behavior sane for older checkpoints without explicit ema payload.
-        model.ema = model.ema.__class__(model.dnn.parameters(), decay=model.ema_decay)
+        ema_params = model.ema_parameters() if hasattr(model, "ema_parameters") else model.dnn.parameters()
+        model.ema = model.ema.__class__(ema_params, decay=model.ema_decay)
 
     return int(ckpt.get("step", 0)), float(ckpt.get("loss", 0.0))
 
@@ -237,7 +241,6 @@ def build_aux_cond_for_chunk(
         crop_start_sample=int(chunk_start_sample),
         num_frames=noisy_spec.shape[-1],
         hop_length=args.hop_length,
-        freq_bins=noisy_spec.shape[-2],
         cfg=cond_cfg,
     )
     return {
@@ -751,6 +754,11 @@ def main():
             f"Monotonic-only cross-attention path expects 8ch condition. "
             f"Set --aux-cond-dim 8 (got {args.aux_cond_dim})."
         )
+    if args.use_aux_cond and args.backbone != "ncsnpp_v2":
+        raise ValueError(
+            "use_aux_cond=True is currently wired only for backbone='ncsnpp_v2'. "
+            f"Got backbone={args.backbone}."
+        )
 
     if args.win_length != args.n_fft:
         raise ValueError(
@@ -1116,7 +1124,8 @@ def main():
         optimizer.zero_grad(set_to_none=True)
 
         if args.use_ema:
-            model.ema.update(model.dnn.parameters())
+            ema_params = model.ema_parameters() if hasattr(model, "ema_parameters") else model.dnn.parameters()
+            model.ema.update(ema_params)
 
         avg_loss = total_loss / args.grad_accum
         running_loss += avg_loss
