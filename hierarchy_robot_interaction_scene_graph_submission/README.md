@@ -157,6 +157,16 @@ python hierarchy_robot_interaction_scene_graph_submission/my_long_term_mem_proje
 ### 8.2 Task 수행 동영상
 https://youtu.be/n9BuyLzmbgs
 
+### 8.3 3D Scene Graph 동적 업데이트 예시
+
+로봇이 Rearrangement Task를 수행함에 따라 동적으로 Scene Graph가 갱신되는 시각화 결과입니다. 빨간색 원으로 표시된 타겟 객체(사과)가 주방(Kitchen)에서 거실(Living Room)의 커피 테이블로 이동한 것을 확인할 수 있습니다.
+
+| Before (주방에 위치한 사과) | After (거실 커피 테이블로 이동한 사과) |
+|:---:|:---:|
+| <img src="<img width="1053" height="892" alt="1" src="https://github.com/user-attachments/assets/727e31df-06f9-4609-99a0-d7ac6171fe73" />
+" width="100%"> | <img src="<img width="1053" height="892" alt="2" src="https://github.com/user-attachments/assets/ae3a147a-47c8-444e-9e0b-a397ee3e7da9" />
+" width="100%"> |
+
 
 ## 9. 메모리/로그 산출물
 
