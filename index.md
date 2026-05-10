@@ -1,4 +1,4 @@
-<div align="center">
+<img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/4487c38c-9ce1-4444-ac41-a26a34d965d9" /><div align="center">
   <img src="https://via.placeholder.com/800x300?text=Your+Project+Banner+Image" width="100%">
   <br><br>
   <h1>로봇을 위한 실세계 강인한 멀티모달 시공간 인지 기반의 전역적 동적 환경 인식 원천기술 개발</h1>
@@ -124,10 +124,12 @@
     <li><b>차별점</b>: 가우시안 맵에 재질(Material) 정보를 임베딩하여 시각적 형태 및 질감까지 이해</li>
     <li><b>주요 참고 논문</b>:
       <ul>
-        <li>ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning</li>
-        <li>REACT: Real-time Efficient Attribute Clustering and Transfer for Updatable 3D Scene Graph</li>
-        <li>SayPlan: Grounding Large Language Models using 3D Scene Graphs for Scalable Robot Task Planning</li>
-        <li>RoboSpatial: Teaching Spatial Understanding to 2D and 3D Vision-Language Models for Robotics</li>
+        <li>3D Gaussian Splatting for Real-Time Radiance Field Rendering</li>
+        <li>CL-Splats: Continual Learning of Gaussian Splatting with Loal Optimization</li>
+        <li>LEGS: Incrementally Building Room-Scale Language-Embedded Gaussian Splats with a Mobile Robot</li>
+        <li>GaussianUpdate: Continual 3D Gaussian Splatting Update for Changing Environments</li>
+        <li>GS3LAM: Gaussian Semantic Splatting SLAM</li>
+        <li>Gaussian Grouping: Segment and Edit Anything in 3D Scenes</li>
       </ul>
     </li>
   </ul>
