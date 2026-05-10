@@ -214,6 +214,8 @@
 ### 🤖 5. Task Execution
 > LLM과 실시간 씬그래프, 그리고 빈공간 스코어링을 활용하여 로봇이 작업을 계획하고 주행하는 결과입니다.
 
+#### 📦 SceneUpdate — Isaac Sim 시뮬레이션 기반 빈공간 씬그래프 & Task Planning
+
 * **freespace 씬그래프 시각화**<br>
 <img src="./assets/sceneupdate/freespace_scenegraph.jpg" width="100%">
 
@@ -222,6 +224,19 @@
   <source src="./assets/sceneupdate/task_execution.webm" type="video/webm">
   Your browser does not support the video tag.
 </video>
+
+<br>
+
+#### 🧪 FreeSpace Pipeline — VLM 파인튜닝을 위한 빈공간 데이터 생성 파이프라인
+
+> SceneUpdate에서 확인한 Depth 기반 방식의 실환경 노이즈 한계를 극복하기 위해, VLM이 빈공간을 직접 추론하도록 파인튜닝하는 파이프라인입니다.  
+> RoboSpatial 논문을 참조하여 GraspNet / HOPE / SUN RGB-D 데이터셋으로부터 freespace QA를 자동 생성하고, Qwen2-VL-7B를 LoRA로 파인튜닝합니다.
+
+* **학습용 데이터셋 자동 생성 결과** — Depth Map 기반 테이블 표면 추출 및 물체 OBB 차감으로 빈 공간 폴리곤을 자동 라벨링한 예시입니다.<br>
+<img src="./assets/freespacepipeline/dataset_pipeline.jpg" width="100%">
+
+* **Base Model vs Fine-Tuned Model 비교** — 파인튜닝 전(좌)에는 빈공간 폴리곤 출력이 불가능하고 환각(Hallucination)이 발생하지만, LoRA 파인튜닝 후(우)에는 정확한 좌표 폴리곤으로 빈공간을 추론합니다.<br>
+<img src="./assets/freespacepipeline/compare_result.jpg" width="100%">
 
 ---
 
