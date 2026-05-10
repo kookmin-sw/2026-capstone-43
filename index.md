@@ -192,9 +192,8 @@
 
 ### 🤲 4. Tactile
 > RGB-Pose 데이터를 바탕으로 실시간 3D 환경을 렌더링한 Continual Gaussian Splatting 매핑 결과입니다.
-* **3D Gaussian Splatting 실시간 매핑 데모**
-  * (여기에 SLAM 시각화 이미지나 렌더링 결과 영상 링크를 추가해 주세요.)
-
+* **TF를 이용한 실시간 카메라 Pose 추정 시각화 결과**
+  <img width="990" height="591" alt="image" src="https://github.com/user-attachments/assets/43d2e54d-18d9-470f-bba8-90725e4f5b54" />
 <br>
 
 ### 🤖 5. Task Execution
