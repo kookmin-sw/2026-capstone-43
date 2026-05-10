@@ -1,86 +1,135 @@
-# 로봇을 위한 실세계 강인한 멀티모달 시공간 인지 기반의 전역적 동적 환경 인식 원천기술 개발
+<div align="center">
+  <img src="https://via.placeholder.com/800x300?text=Your+Project+Banner+Image" width="100%">
+  <br><br>
+  <h1>로봇을 위한 실세계 강인한 멀티모달 시공간 인지 기반의 전역적 동적 환경 인식 원천기술 개발</h1>
+  <i>"시각, 청각, 촉각 및 계층적 기억을 융합한 로봇 지능 원천기술"</i>
+</div>
+<br>
 
-> 본 프로젝트는 시각, 청각, 촉각 및 계층적 기억(Memory)을 융합하여 로봇이 복잡하고 동적인 실세계 환경을 전역적으로 이해하고, 이를 바탕으로 지능적인 행동을 수행하도록 돕는 인지 중심의 원천기술을 다룹니다.
+> 본 프로젝트는 시각, 청각, 촉각 및 계층적 기억(Memory)을 융합하여 로봇이 복잡하고 동적인 실세계 환경을 전역적으로 이해하고, 이를 바탕으로 지능적인 행동을 수행하도록 돕는 인지 중심의 원천기술을 다룹니다.  
+> **💡 본 저장소는 단일 애플리케이션이 아니라, 로봇이 실제 환경에서 사람과 상호작용하고 공간을 이해하기 위한 여러 연구 모음(perception, mapping, planning 등)을 포함하는 통합 연구 저장소입니다.**
 
 ---
 
 ## 📌 Project Overview Q&A
 
-**1) 이 기술은 누가 사용하는 건가요?**
-* 자율주행 서비스 로봇 및 모바일 매니퓰레이터를 개발하는 로보틱스 엔지니어와 멀티모달 AI 연구자들이 사용합니다.
+<details>
+  <summary><b>🙋‍♂️ 1) 이 기술은 누가 사용하는 건가요?</b> (클릭해서 보기)</summary>
+  <div markdown="1">
+    <br>
+    자율주행 서비스 로봇 및 모바일 매니퓰레이터를 개발하는 로보틱스 엔지니어와 멀티모달 AI 연구자들이 사용합니다.
+  </div>
+</details>
 
-**2) 이 기술은 언제 사용하는 건가요?**
-* 로봇 자체 소음이 크거나, 물체가 실시간으로 이동하고, 가려진 공간이 존재하는 실제 가정 및 산업 현장에서 로봇의 안정적인 임무 수행이 필요할 때 사용합니다.
+<details>
+  <summary><b>⏱️ 2) 이 기술은 언제 사용하는 건가요?</b> (클릭해서 보기)</summary>
+  <div markdown="1">
+    <br>
+    로봇 자체 소음이 크거나, 물체가 실시간으로 이동하고, 가려진 공간이 존재하는 실제 가정 및 산업 현장에서 로봇의 안정적인 임무 수행이 필요할 때 사용합니다.
+  </div>
+</details>
 
-**3) 이 기술을 사용하면 무엇이 해결(개선)되나요?**
-* **소음 극복**: 사족보행 로봇의 구동 소음 속에서도 깨끗한 음성 명령을 추출합니다.
-* **입체적 인지**: 단순히 보는 것을 넘어 소리의 위치와 공간의 기하학적 구조를 결합해 이해합니다.
-* **기억의 고도화**: 한 번 본 환경을 계층적으로 저장하고, 변화하는 물체 상태를 실시간으로 씬그래프에 반영합니다.
-* **안전한 행동**: '어디에 물건을 놓아야 가장 안전한지'와 같은 고차원적인 판단을 실시간 빈공간 분석을 통해 수행합니다.
+<details>
+  <summary><b>💡 3) 이 기술을 사용하면 무엇이 해결(개선)되나요?</b> (클릭해서 보기)</summary>
+  <div markdown="1">
+    <br>
+    <ul>
+      <li><b>소음 극복</b>: 사족보행 로봇의 구동 소음 속에서도 깨끗한 음성 명령을 추출합니다.</li>
+      <li><b>입체적 인지</b>: 단순히 보는 것을 넘어 소리의 위치와 공간의 기하학적 구조를 결합해 이해합니다.</li>
+      <li><b>기억의 고도화</b>: 한 번 본 환경을 계층적으로 저장하고, 변화하는 물체 상태를 실시간으로 씬그래프에 반영합니다.</li>
+      <li><b>안전한 행동</b>: '어디에 물건을 놓아야 가장 안전한지'와 같은 고차원적인 판단을 실시간 빈공간 분석을 통해 수행합니다.</li>
+    </ul>
+  </div>
+</details>
 
-**4) 이 기술이 되면 사람들이 사용할까요?**
-* 통제되지 않은 실환경(In-the-wild)에서 로봇의 자율성을 비약적으로 높여주기 때문에, 차세대 가전 및 물류 로봇 시장에서 핵심 솔루션으로 활용될 것입니다.
+<details>
+  <summary><b>🚀 4) 이 기술이 되면 사람들이 사용할까요?</b> (클릭해서 보기)</summary>
+  <div markdown="1">
+    <br>
+    통제되지 않은 실환경(In-the-wild)에서 로봇의 자율성을 비약적으로 높여주기 때문에, 차세대 가전 및 물류 로봇 시장에서 핵심 솔루션으로 활용될 것입니다.
+  </div>
+</details>
 
 ---
 
 ## 👥 Team Profiles
 
-| 이름 | 역할 | 담당 컴포넌트 | 주요 기술 스택 |
-| :---: | :---: | :---: | :--- |
-| **동현** | 인지 (Audio) | **SpatialAudio** | FOA, SpatialAST, V_sphere/A_sphere |
-| **재우** | 인지 (Denoising) | **Denoising** | SGMSE, Diffusion, Aux Condition (Foot Force) |
-| **채희** | 인지 (Memory) | **Memory** | Hierarchical Scene Graph, Dynamic Update, Habitat-Sim |
-| **근서** | 인지 (Tactile/SLAM) | **Tactile** | Gaussian Splatting, Online SLAM, Material Embedding |
-| **성빈** | 추론 & 액션 | **Planning** | LLM Planner (PRED), Freespace V2, Isaac Sim |
+| 이름 | 역할 | 담당 컴포넌트 (폴더명) | 주요 기술 스택 |
+| :---: | :---: | :--- | :--- |
+| **류재우** | 팀장 | **Denoising**<br>(`LRDSE`) | <img src="https://img.shields.io/badge/SGMSE-000000?style=flat-square"/> <img src="https://img.shields.io/badge/Diffusion-4B32C3?style=flat-square"/> |
+| **이성빈** | 팀원 | **Planning**<br>(`sceneupdate`) | <img src="https://img.shields.io/badge/LLM-8E75B2?style=flat-square"/> <img src="https://img.shields.io/badge/Isaac_Sim-76B900?style=flat-square"/> |
+| **유동현** | 팀원 | **SpatialAudio**<br>(`SpatialAudio`) | <img src="https://img.shields.io/badge/FOA-FF6F00?style=flat-square"/> <img src="https://img.shields.io/badge/SpatialAST-0052CC?style=flat-square"/> |
+| **유채희** | 팀원 | **Memory**<br>(`hierarchy_...`) | <img src="https://img.shields.io/badge/Scene_Graph-FFB020?style=flat-square"/> <img src="https://img.shields.io/badge/Habitat_Sim-22314E?style=flat-square"/> |
+| **장근서** | 팀원 | **Tactile**<br>(`catkin_ws`) | <img src="https://img.shields.io/badge/Gaussian_Splatting-008080?style=flat-square"/> <img src="https://img.shields.io/badge/Online_SLAM-333333?style=flat-square"/> |
 
 ---
 
 ## 🧩 Components Detail
 
-### 🎧 1. SpatialAudio (동현)
-로봇 관점의 기하학적 맥락과 앰비소닉(Ambisonics) 오디오를 결합한 공간 음향 인지 시스템입니다.
-* **주요 기능**: FOA(First-Order Ambisonics) 기반 음원 위치 추적 및 SpatialAST 모델을 통한 성능 고도화를 수행합니다.
-* **차별점**: 시각 정보(`V_sphere`)와 오디오 정보(`A_sphere`)를 정합하여 가시 영역뿐 아니라 비가시 영역의 소리까지 통합적으로 인지합니다.
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #ff6f00; margin-bottom: 15px;">
+  <b>🎧 1. SpatialAudio (유동현)</b><br>
+  로봇 관점의 기하학적 맥락과 앰비소닉(Ambisonics) 오디오를 결합한 공간 음향 인지 시스템입니다.
+  <ul>
+    <li><b>주요 기능</b>: FOA 기반 음원 위치 추적 및 SpatialAST 모델을 통한 성능 고도화</li>
+    <li><b>차별점</b>: 시각 정보(<code>V_sphere</code>)와 오디오 정보(<code>A_sphere</code>)를 정합하여 비가시 영역의 소리까지 통합 인지</li>
+  </ul>
+</div>
 
-### 🔇 2. Denoising (재우)
-로봇 구동 시 발생하는 강력한 하드웨어 노이즈를 제거하는 로봇 특화 음성 향상 기술입니다.
-* **주요 기능**: SGMSE 및 RDDM 기반의 Diffusion 모델을 사용하여 깨끗한 음성을 복원합니다.
-* **차별점**: 로봇의 다리 관절 힘(Foot force) 데이터를 보조 조건(Auxiliary Condition)으로 입력받아, 구동 타이밍에 맞춘 정밀한 소음 제거가 가능합니다.
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #4b32c3; margin-bottom: 15px;">
+  <b>🔇 2. Denoising (류재우)</b><br>
+  로봇 구동 시 발생하는 강력한 하드웨어 노이즈를 제거하는 로봇 특화 음성 향상 기술입니다.
+  <ul>
+    <li><b>주요 기능</b>: SGMSE 및 RDDM 기반의 Diffusion 모델을 사용하여 깨끗한 음성 복원</li>
+    <li><b>차별점</b>: 다리 관절 힘(Foot force) 데이터를 보조 조건으로 입력받아 정밀한 소음 제거</li>
+  </ul>
+</div>
 
-### 🧠 3. Memory (채희)
-환경을 '건물-층-방-객체'로 구조화하여 관리하는 계층형 씬그래프 메모리 시스템입니다.
-* **주요 기능**: ConceptGraph를 활용한 초기 맵 생성 및 로봇의 활동 중 발생하는 객체 변화를 실시간으로 그래프에 반영합니다.
-* **차별점**: 장단기 메모리 구조를 통해 로봇이 과거의 경험을 바탕으로 현재 작업(Rearrangement 등)을 효율적으로 계획하도록 돕습니다.
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #ffb020; margin-bottom: 15px;">
+  <b>🧠 3. Memory (유채희)</b><br>
+  환경을 '건물-층-방-객체'로 구조화하여 관리하는 계층형 씬그래프 메모리 시스템입니다.
+  <ul>
+    <li><b>주요 기능</b>: ConceptGraph를 활용한 맵 생성 및 객체 변화를 실시간으로 씬그래프에 반영</li>
+    <li><b>차별점</b>: 장단기 메모리 구조를 통해 과거 경험 바탕으로 현재 작업(Rearrangement 등) 계획</li>
+  </ul>
+</div>
 
-### 🤲 4. Tactile (근서)
-시각 정보와 촉각/재질 정보를 융합하기 위한 3D Gaussian Splatting 기반 SLAM 시스템입니다.
-* **주요 기능**: 로봇 주행 중 수집된 RGB-Pose 데이터를 바탕으로 3D 가우시안 맵을 생성하고 업데이트합니다.
-* **차별점**: 향후 가우시안 맵에 재질(Material) 정보를 임베딩하여, 로봇이 물체의 시각적 형태뿐만 아니라 만졌을 때의 질감까지 이해하도록 확장 중입니다.
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #008080; margin-bottom: 15px;">
+  <b>🤲 4. Tactile (장근서)</b><br>
+  시각 정보와 촉각/재질 정보를 융합하기 위한 3D Gaussian Splatting 기반 SLAM 시스템입니다.
+  <ul>
+    <li><b>주요 기능</b>: RGB-Pose 데이터를 바탕으로 3D 가우시안 맵 생성 및 업데이트</li>
+    <li><b>차별점</b>: 가우시안 맵에 재질(Material) 정보를 임베딩하여 시각적 형태 및 질감까지 이해</li>
+  </ul>
+</div>
 
-### 🤖 5. Planning (성빈)
-LLM과 실시간 씬그래프를 결합하여 복잡한 명령을 수행하는 로봇 작업 지능 모듈입니다.
-* **주요 기능**: Gemini/Llama 등의 LLM을 백엔드로 활용하여 태스크 플래닝을 수행하고, VFH/ROS2 기반 네비게이션을 제어합니다.
-* **차별점**: **V2 빈공간 스코어링** 알고리즘을 통해 낙하 위험과 충돌 위험을 고려한 최적의 배치 지점(Sweet Spot)을 실시간으로 계산합니다.
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #76b900; margin-bottom: 15px;">
+  <b>🤖 5. Planning (이성빈)</b><br>
+  LLM과 실시간 씬그래프를 결합하여 복잡한 명령을 수행하는 로봇 작업 지능 모듈입니다.
+  <ul>
+    <li><b>주요 기능</b>: Gemini/Llama 활용 태스크 플래닝 및 VFH/ROS2 기반 네비게이션 제어</li>
+    <li><b>차별점</b>: <b>V2 빈공간 스코어링</b>으로 낙하/충돌 위험을 고려한 최적의 배치 지점(Sweet Spot) 실시간 계산</li>
+  </ul>
+</div>
 
 ---
 
 ## 🎬 DEMO (팀원별 결과 및 시각 자료)
 
-### 🎧 1. SpatialAudio (동현)
+### 🎧 1. SpatialAudio
 > 앰비소닉(Ambisonics) 오디오와 기하학적 맥락을 결합한 시공간 음향 인지 결과입니다.
 * **오디오 인지 파이프라인 데모**
-  * (여기에 동현 님의 데모 영상 링크나 결과물 이미지를 추가해 주세요. 예: `[시연 영상 보기](링크)`)
+  * (여기에 데모 영상 링크나 결과물 이미지를 추가해 주세요.)
 
 <br>
 
-### 🔇 2. Denoising (재우)
+### 🔇 2. Denoising
 > 사족보행 로봇의 구동 소음 환경에서 음성 명령만을 깨끗하게 추출한 결과입니다.
 * **음성 향상(Speech Enhancement) 전/후 비교**
-  * (여기에 재우 님의 오디오 샘플 링크나 디노이징 전후 스펙트로그램 이미지를 추가해 주세요.)
+  * (여기에 오디오 샘플 링크나 디노이징 전후 스펙트로그램 이미지를 추가해 주세요.)
 
 <br>
 
-### 🧠 3. Memory (채희)
+### 🧠 3. Memory
 > 계층형 씬그래프 구축 및 장단기 메모리를 활용한 로봇의 동적 환경 인지 결과입니다.
 
 #### 방 분리 결과 이미지
@@ -100,16 +149,25 @@ LLM과 실시간 씬그래프를 결합하여 복잡한 명령을 수행하는 �
 
 <br>
 
-### 🤲 4. Tactile (근서)
+### 🤲 4. Tactile
 > RGB-Pose 데이터를 바탕으로 실시간 3D 환경을 렌더링한 Continual Gaussian Splatting 매핑 결과입니다.
 * **3D Gaussian Splatting 실시간 매핑 데모**
-  * (여기에 근서 님의 SLAM 시각화 이미지나 렌더링 결과 영상 링크를 추가해 주세요.)
+  * (여기에 SLAM 시각화 이미지나 렌더링 결과 영상 링크를 추가해 주세요.)
 
 <br>
 
-### 🤖 5. Planning (성빈)
+### 🤖 5. Planning
 > LLM과 실시간 씬그래프, 그리고 V2 빈공간 스코어링을 활용하여 로봇이 작업을 계획하고 주행하는 결과입니다.
 * **모바일 매니퓰레이터 태스크 플래닝 및 주행 데모**
-  * (여기에 성빈 님의 Isaac Sim 시뮬레이션 주행 영상이나 플래닝 결과 화면을 추가해 주세요.)
+  * (여기에 Isaac Sim 시뮬레이션 주행 영상이나 플래닝 결과 화면을 추가해 주세요.)
 
 ---
+
+## 🚀 Getting Started (사용법)
+
+본 저장소의 각 하위 프로젝트는 서로 다른 연구 주제를 다루고 있어 독립적인 실행 환경과 dependency를 가집니다. 따라서 루트 디렉토리에서 한 번에 실행하지 않고, 필요한 하위 프로젝트 폴더로 이동하여 실행해야 합니다.
+
+### 1️⃣ 저장소 Clone
+```bash
+git clone [https://github.com/kookmin-sw/2026-capstone-43.git](https://github.com/kookmin-sw/2026-capstone-43.git)
+cd 2026-capstone-43
