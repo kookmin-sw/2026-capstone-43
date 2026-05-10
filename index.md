@@ -57,7 +57,7 @@
 | 이름 | 역할 | 담당 컴포넌트 (폴더명) | 주요 기술 스택 |
 | :---: | :---: | :--- | :--- |
 | **류재우** | 팀장 | **Denoising**<br>(`LRDSE`) | <img src="https://img.shields.io/badge/SGMSE-000000?style=flat-square"/> <img src="https://img.shields.io/badge/Diffusion-4B32C3?style=flat-square"/> |
-| **이성빈** | 팀원 | **Planning**<br>(`sceneupdate`) | <img src="https://img.shields.io/badge/LLM-8E75B2?style=flat-square"/> <img src="https://img.shields.io/badge/Isaac_Sim-76B900?style=flat-square"/> |
+| **이성빈** | 팀원 | **Task Execution**<br>(`sceneupdate`) | <img src="https://img.shields.io/badge/LLM-8E75B2?style=flat-square"/> <img src="https://img.shields.io/badge/Isaac_Sim-76B900?style=flat-square"/> |
 | **유동현** | 팀원 | **SpatialAudio**<br>(`SpatialAudio`) | <img src="https://img.shields.io/badge/FOA-FF6F00?style=flat-square"/> <img src="https://img.shields.io/badge/SpatialAST-0052CC?style=flat-square"/> |
 | **유채희** | 팀원 | **Memory**<br>(`hierarchy_...`) | <img src="https://img.shields.io/badge/Scene_Graph-FFB020?style=flat-square"/> <img src="https://img.shields.io/badge/Habitat_Sim-22314E?style=flat-square"/> |
 | **장근서** | 팀원 | **Tactile**<br>(`catkin_ws`) | <img src="https://img.shields.io/badge/Gaussian_Splatting-008080?style=flat-square"/> <img src="https://img.shields.io/badge/Online_SLAM-333333?style=flat-square"/> |
@@ -72,7 +72,14 @@
   <ul>
     <li><b>주요 기능</b>: FOA 기반 음원 위치 추적 및 SpatialAST 모델을 통한 성능 고도화</li>
     <li><b>차별점</b>: 시각 정보(<code>V_sphere</code>)와 오디오 정보(<code>A_sphere</code>)를 정합하여 비가시 영역의 소리까지 통합 인지</li>
-    <li><b>주요 참고 논문</b>: (추후 추가 예정)</li>
+    <li><b>주요 참고 논문</b>:
+      <ul>
+        <li>ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning</li>
+        <li>REACT: Real-time Efficient Attribute Clustering and Transfer for Updatable 3D Scene Graph</li>
+        <li>SayPlan: Grounding Large Language Models using 3D Scene Graphs for Scalable Robot Task Planning</li>
+        <li>RoboSpatial: Teaching Spatial Understanding to 2D and 3D Vision-Language Models for Robotics</li>
+      </ul>
+    </li>
   </ul>
 </div>
 
@@ -115,17 +122,31 @@
   <ul>
     <li><b>주요 기능</b>: RGB-Pose 데이터를 바탕으로 3D 가우시안 맵 생성 및 업데이트</li>
     <li><b>차별점</b>: 가우시안 맵에 재질(Material) 정보를 임베딩하여 시각적 형태 및 질감까지 이해</li>
-    <li><b>주요 참고 논문</b>: (추후 추가 예정)</li>
+    <li><b>주요 참고 논문</b>:
+      <ul>
+        <li>ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning</li>
+        <li>REACT: Real-time Efficient Attribute Clustering and Transfer for Updatable 3D Scene Graph</li>
+        <li>SayPlan: Grounding Large Language Models using 3D Scene Graphs for Scalable Robot Task Planning</li>
+        <li>RoboSpatial: Teaching Spatial Understanding to 2D and 3D Vision-Language Models for Robotics</li>
+      </ul>
+    </li>
   </ul>
 </div>
 
 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #76b900; margin-bottom: 15px;">
-  <b>🤖 5. Planning (이성빈)</b><br>
+  <b>🤖 5. Task Execution (이성빈)</b><br>
   LLM과 실시간 씬그래프를 결합하여 복잡한 명령을 수행하는 로봇 작업 지능 모듈입니다.
   <ul>
-    <li><b>주요 기능</b>: Gemini/Llama 활용 태스크 플래닝 및 VFH/ROS2 기반 네비게이션 제어</li>
-    <li><b>차별점</b>: <b>V2 빈공간 스코어링</b>으로 낙하/충돌 위험을 고려한 최적의 배치 지점(Sweet Spot) 실시간 계산</li>
-    <li><b>주요 참고 논문</b>: (추후 추가 예정)</li>
+    <li><b>주요 기능</b>: 동적 환경 그리고 빈공간에 대한 정보를 담은 씬그래프 구축 및 이를 활용한 task planning</li>
+    <li><b>차별점</b>: <b>빈공간 스코어링</b>으로 낙하/충돌 위험을 고려한 최적의 배치 지점(Sweet Spot) 실시간 계산 및 VLM이 빈공간 추론을 더 잘하기 위한 파인튜닝용 데이터 생성 파이프라인 구축</li>
+    <li><b>주요 참고 논문</b>:
+      <ul>
+        <li>ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning</li>
+        <li>REACT: Real-time Efficient Attribute Clustering and Transfer for Updatable 3D Scene Graph</li>
+        <li>SayPlan: Grounding Large Language Models using 3D Scene Graphs for Scalable Robot Task Planning</li>
+        <li>RoboSpatial: Teaching Spatial Understanding to 2D and 3D Vision-Language Models for Robotics</li>
+      </ul>
+    </li>
   </ul>
 </div>
 
@@ -174,8 +195,8 @@
 
 <br>
 
-### 🤖 5. Planning
-> LLM과 실시간 씬그래프, 그리고 V2 빈공간 스코어링을 활용하여 로봇이 작업을 계획하고 주행하는 결과입니다.
+### 🤖 5. Task Execution
+> LLM과 실시간 씬그래프, 그리고 빈공간 스코어링을 활용하여 로봇이 작업을 계획하고 주행하는 결과입니다.
 * **모바일 매니퓰레이터 태스크 플래닝 및 주행 데모**
   * (여기에 Isaac Sim 시뮬레이션 주행 영상이나 플래닝 결과 화면을 추가해 주세요.)
 
