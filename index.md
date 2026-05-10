@@ -64,7 +64,7 @@
 
 ---
 
-## 🧩 Components Detail
+# 🧩 Components Detail
 
 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #ff6f00; margin-bottom: 15px;">
   <b>🎧 1. SpatialAudio (유동현)</b><br>
@@ -72,6 +72,7 @@
   <ul>
     <li><b>주요 기능</b>: FOA 기반 음원 위치 추적 및 SpatialAST 모델을 통한 성능 고도화</li>
     <li><b>차별점</b>: 시각 정보(<code>V_sphere</code>)와 오디오 정보(<code>A_sphere</code>)를 정합하여 비가시 영역의 소리까지 통합 인지</li>
+    <li><b>주요 참고 논문</b>: (추후 추가 예정)</li>
   </ul>
 </div>
 
@@ -81,6 +82,7 @@
   <ul>
     <li><b>주요 기능</b>: SGMSE 및 RDDM 기반의 Diffusion 모델을 사용하여 깨끗한 음성 복원</li>
     <li><b>차별점</b>: 다리 관절 힘(Foot force) 데이터를 보조 조건으로 입력받아 정밀한 소음 제거</li>
+    <li><b>주요 참고 논문</b>: (추후 추가 예정)</li>
   </ul>
 </div>
 
@@ -90,6 +92,14 @@
   <ul>
     <li><b>주요 기능</b>: ConceptGraph를 활용한 맵 생성 및 객체 변화를 실시간으로 씬그래프에 반영</li>
     <li><b>차별점</b>: 장단기 메모리 구조를 통해 과거 경험 바탕으로 현재 작업(Rearrangement 등) 계획</li>
+    <li><b>주요 참고 논문</b>:
+      <ul>
+        <li>ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning</li>
+        <li>KARMA: Augmenting Embodied AI Agents with Long-and-short Term Memory Systems</li>
+        <li>Hierarchical Open-Vocabulary 3D Scene Graphs for Language-Grounded Robot Navigation</li>
+        <li>Dynamic Open-Vocabulary 3D Scene Graphs for Long-term Language-Guided Mobile Manipulation</li>
+      </ul>
+    </li>
   </ul>
 </div>
 
@@ -99,6 +109,7 @@
   <ul>
     <li><b>주요 기능</b>: RGB-Pose 데이터를 바탕으로 3D 가우시안 맵 생성 및 업데이트</li>
     <li><b>차별점</b>: 가우시안 맵에 재질(Material) 정보를 임베딩하여 시각적 형태 및 질감까지 이해</li>
+    <li><b>주요 참고 논문</b>: (추후 추가 예정)</li>
   </ul>
 </div>
 
@@ -108,6 +119,7 @@
   <ul>
     <li><b>주요 기능</b>: Gemini/Llama 활용 태스크 플래닝 및 VFH/ROS2 기반 네비게이션 제어</li>
     <li><b>차별점</b>: <b>V2 빈공간 스코어링</b>으로 낙하/충돌 위험을 고려한 최적의 배치 지점(Sweet Spot) 실시간 계산</li>
+    <li><b>주요 참고 논문</b>: (추후 추가 예정)</li>
   </ul>
 </div>
 
@@ -166,6 +178,8 @@
 ## 🚀 Getting Started (사용법)
 
 본 저장소의 각 하위 프로젝트는 서로 다른 연구 주제를 다루고 있어 독립적인 실행 환경과 dependency를 가집니다. 따라서 루트 디렉토리에서 한 번에 실행하지 않고, 필요한 하위 프로젝트 폴더로 이동하여 실행해야 합니다.
+
+---
 
 ### 1️⃣ 저장소 Clone
 ```bash
