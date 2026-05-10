@@ -81,25 +81,6 @@ SpatialAudio 연구 방향을 설정하기 위한 대표 baseline 논문 3편을
 - Sci-Phi (MSR 페이지): https://www.microsoft.com/en-us/research/publication/sci-phi-a-large-language-model-spatial-audio-descriptor/
 - Hear you are (OpenReview): https://openreview.net/forum?id=b6s1jIHj6o
 
----
-
-## End-to-End 흐름
-
-```mermaid
-flowchart LR
-    A[01_l3das<br/>HM3D 데이터/매니페스트 생성]
-    B[02_pipeline<br/>시각화/품질 점검]
-    C[03-07 SpatialAST<br/>학습/ablation]
-    D[08_multi_accdoa_head<br/>멀티소스 헤드 실험]
-    E[09_spherical_vision<br/>V_sphere 생성]
-    F[10_spherical_audio<br/>A_sphere 생성]
-    G[11-14 결과 분석/요약]
-
-    A --> B --> C --> G
-    C --> D --> G
-    B --> E
-    B --> F
-```
 
 ---
 
@@ -120,15 +101,99 @@ flowchart LR
 | `10_spherical_audio` | 멀티모달 정합용 표현 | FOA wav -> `A_sphere` 변환 |
 | `11_decode_overfit_test` | 실험 결과 분석 | decode overfit 결과 분석 |
 | `12_overfit_baseline` | 실험 결과 분석 | audio vs AV overfit 비교 |
-| `13_validation` | 실험 결과 분석 | validation 결과 요약 |
-| `14_curriculum_baseline` | 실험 결과 분석 | curriculum vs end-to-end 비교 분석 |
+| `13_curriculum_baseline` | 실험 결과 분석 | curriculum vs end-to-end 비교 분석 |
+| `14_sciphi_baselines` | 외부 baseline 모델 코드 | Sci-Phi / Sci-Phi-DINOv2-B 모델 구현 코드 |
+| `15_model_architectures` | 아키텍처 문서화 | 모델 구조 도식 및 설계 참고 이미지 |
 
 
 ## Model Architecture
 
+### Sci-Phi Baseline (14-1)
 
-## 연구 공통 규칙
+![Sci-Phi](15_model_architectures/Sci-Phi.png)
 
-- FOA 채널은 보통 원본 `WYZX`를 내부 `WXYZ`로 정규화해 사용합니다.
-- `11~14`는 결과 보관/분석 성격이 강하며, 원본 대용량 산출물은 일부 제거되어 있을 수 있습니다.
-- 실험 재현 시 경로, 매니페스트, 체크포인트 유무를 먼저 확인하세요.
+### Sci-Phi-DINOv2 (Vision Encoder 포함) (14-2) 
+
+![Sci-Phi-DINOv2](15_model_architectures/Sci-Phi-DINOv2.png)
+
+### Spatial Encoder 설계 
+#### Baseline
+| DCASE2023 SELD Baseline | SpatialAST-Binaural |
+| --- | --- |
+| ![DCASE2023 SELD Baseline](15_model_architectures/DCASE2023_seld_baseline.png) | ![SpatialAST-Binaural](15_model_architectures/SpatialAST-Binaural.png) |
+
+### Proposed Encoder: SpatialAST-FOA(03~07)
+
+![SpatialAST-FOA](15_model_architectures/SpatialAST_FOA.png)
+
+
+## Experiment Results
+
+> Last update: `2026-05-10`  
+> 산출 기준: `/home/yu/Project_git/11_1_outputs/**/metrics_summary.json`  
+> main 통계에서는 `smoke` run과 중복 보관본(`stage13/14_spatialast_FOA_frontreg__outputs_stage13`)을 제외했습니다.  
+> `best`는 `best.val_angular_error` 최소값 기준이며, angular/MAE는 낮을수록 좋고 accuracy/vector cosine은 높을수록 좋습니다.
+
+### Source Mapping
+
+| 현재 README 경로 | 원본 코드/결과 경로 | 통계에 사용한 결과 |
+| --- | --- | --- |
+| `03_spatialast_FOA` | `11_spatialast_FOA`, `11_1_outputs/stage3~6` | FOA-native 기본, unfreeze/recipe ablation |
+| `04_spatialast_FOA_conv` | `12_spatialast_FOA_conv`, `11_1_outputs/stage12` | FOA stem 폭 ablation |
+| `05_spatialast_FOA_conv64x2` | `13_spatialast_FOA_conv64x2`, `11_1_outputs/stage13` | FOA stem 깊이 ablation |
+| `06_spatialast_FOA_frontreg` | `14_spatialast_FOA_frontreg`, `11_1_outputs/stage14` | front-cone 회귀 supervision |
+| `07_spatialast_FOA_front9_and_reg` | `15_spatialast_FOA_front9_and_reg`, `11_1_outputs/stage15` | `metrics_summary.json` main run은 없음, stage16~18은 `train.log`만 존재 |
+| `08_multi_accdoa_head` | `17_multi_accdoa_head` | 저장된 추론 metric 없음, head/loss/test 코드 중심 |
+
+### Stage-Level Statistics
+
+| Stage | 현재 경로 | Main runs | Best run | Best Val Angular | Mean Best Angular | Median Best Angular | Mean Final Angular | Mean Final-Best Gap |
+| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| stage3 | `03_spatialast_FOA` | 8 | `overfit_128_foa_native` | 0.01° | 11.39° | 3.27° | 11.39° | 0.00° |
+| stage4 | `03_spatialast_FOA` | 13 | `foa_last4_longer` | 31.08° | 32.40° | 32.13° | 37.33° | 4.93° |
+| stage5 | `03_spatialast_FOA` | 4 | `foa_last4_cosine_warmup` | 34.49° | 34.83° | 34.86° | 38.30° | 3.47° |
+| stage6 | `03_spatialast_FOA` | 3 | `foa_stage3_last2_slow_recipe` | 31.66° | 31.90° | 32.01° | 36.39° | 4.49° |
+| stage12 | `04_spatialast_FOA_conv` | 6 | `subset_foa_conv64_out16_slow` | 30.39° | 31.42° | 31.46° | 37.01° | 5.59° |
+| stage13 | `05_spatialast_FOA_conv64x2` | 4 | `subset_foa_conv64_64_out8_slow` | 30.24° | 31.19° | 30.83° | 36.76° | 5.57° |
+| stage14 | `06_spatialast_FOA_frontreg` | 2 | `subset_foa_baseline_reg_slow` | 30.94° | 31.90° | 31.90° | 35.90° | 4.00° |
+| stage15 | `07_spatialast_FOA_front9_and_reg` | 0 | - | - | - | - | - | - |
+
+### Log-Only Outputs (`15_spatialast_FOA_front9_and_reg`)
+
+| Run | Log kind | Steps | Mean Loss | Min Loss | Mean Azimuth Loss / Acc-Ang | Mean Matched MAE | Mean Top-k MAE | Mean Act-F1@0.5 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `stage16_local_full360_glos` | val-step log | 7,453 | 0.8571 | 0.0070 | 0.4286 | - | - | - |
+| `stage17_audio_only_ambix70k` | val-step log | 56,035 | 0.0841 | 0.0000 | 0.0420 | - | - | - |
+| `stage18_multisrc_accdoa` | train-step log | 40,178 | 0.1275 | 0.0369 | 0.1408 | 24.28° | 28.81° | 0.626 |
+
+> 위 3개는 `metrics_summary.json`이 없어 stage-level angular error 집계에는 포함하지 않았습니다.
+
+### Best Run Per Stage
+
+| Stage | Best run | Variant / Head | Best Epoch | Val Angular | Az MAE | El MAE | Az Acc | El Acc | Vector Cos | Final Angular |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| stage3 | `overfit_128_foa_native` | `foa_native` | 119 | 0.01° | 0.00° | 0.00° | 100.0% | 100.0% | 0.980 | 0.01° |
+| stage4 | `foa_last4_longer` | `foa_native` | 4 | 31.08° | 21.68° | 19.43° | 11.0% | 19.8% | 0.855 | 37.80° |
+| stage5 | `foa_last4_cosine_warmup` | `foa_native` | 10 | 34.49° | 26.10° | 18.80° | 12.5% | 15.0% | 0.848 | 36.46° |
+| stage6 | `foa_stage3_last2_slow_recipe` | `foa_native` | 4 | 31.66° | 22.40° | 19.10° | 10.8% | 18.8% | 0.856 | 35.66° |
+| stage12 | `subset_foa_conv64_out16_slow` | `conv64_out16` | 4 | 30.39° | 22.47° | 17.73° | 11.3% | 14.7% | 0.851 | 37.69° |
+| stage13 | `subset_foa_conv64_64_out8_slow` | `conv64_64_out8` | 4 | 30.24° | 22.27° | 17.73° | 11.3% | 14.7% | 0.852 | 36.29° |
+| stage14 | `subset_foa_baseline_reg_slow` | `front_regression` | 3 | 30.94° | 22.73° | 17.48° | 13.3% | 16.0% | 0.849 | 34.31° |
+
+### Key Comparisons
+
+| 비교 | 결과 |
+| --- | --- |
+| FOA-native overfit | stage3의 16/64/128 sample overfit에서 `foa_native`는 모두 azimuth/elevation 100%까지 수렴했고 angular error는 약 `0.01°`였습니다. |
+| log-mel only overfit | 같은 overfit 조건에서 `logmel_only` angular error는 16 sample `10.43°`, 64 sample `6.06°`, 128 sample `0.47°`였습니다. |
+| 2400-sample 기본 일반화 | stage3 2400 run에서는 `logmel_only`가 `36.38°`, `foa_native`가 `37.78°`로, 단순 FOA-native stem만으로는 일반화 이득이 아직 작았습니다. |
+| stem 폭 ablation | stage12 subset 기준 `conv64_out16`이 `30.39°`로 baseline `32.85°`보다 개선됐습니다. |
+| stem 깊이 ablation | stage13 subset 기준 `conv64_64_out8`이 `30.24°`로 전체 main run 중 best angular를 기록했습니다. |
+| front regression | stage14 subset에서 `front_regression`은 `30.94°`, 기존 `full360_classification`은 `32.85°`로 front-cone task에 회귀 supervision이 더 맞았습니다. |
+| 최종 epoch collapse | stage12/13은 best 대비 final angular gap이 평균 `5.59°`/`5.57°`로 커서 early best checkpoint 선택이 중요합니다. |
+| Multi-ACCDOA | `17_multi_accdoa_head`에는 현재 저장된 inference metric이 없고, PIT/head/loss 단위 검증 코드만 있습니다. |
+
+
+## 비고 
+- 입력 FOA 채널은 AmbiX ACN/SN3D Format을 따르며 원본 `WYZX`를 내부 `WXYZ`로 Remapping 하여 사용합니다.
+- 결과 통계는 모델 아키텍처 계열 실험 산출물(`11_1_outputs`, `11~15_spatialast_*`, `17_multi_accdoa_head`) 기준으로 정리했습니다.
