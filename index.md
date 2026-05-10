@@ -1,4 +1,4 @@
-<img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/4487c38c-9ce1-4444-ac41-a26a34d965d9" /><div align="center">
+<div align="center">
   <img src="https://via.placeholder.com/800x300?text=Your+Project+Banner+Image" width="100%">
   <br><br>
   <h1>로봇을 위한 실세계 강인한 멀티모달 시공간 인지 기반의 전역적 동적 환경 인식 원천기술 개발</h1>
