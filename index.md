@@ -212,7 +212,6 @@
 <br>
 
 ### 🤖 5. Task Execution
-> LLM과 실시간 씬그래프, 그리고 빈공간 스코어링을 활용하여 로봇이 작업을 계획하고 주행하는 결과입니다.
 >
 > #### 📦 SceneUpdate — Isaac Sim 시뮬레이션 기반 빈공간 씬그래프 & Task Planning
 > Isaac Sim 환경에서 Depth 기반 실시간 빈공간 추정을 씬그래프에 통합하고, LLM planner로 pick-and-place 태스크를 수행합니다.
