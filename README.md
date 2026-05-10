@@ -1,4 +1,6 @@
 # 2026 Capstone Team 43
+[![Website](https://img.shields.io/badge/Website-Project_Page-181717?style=flat-square&logo=github)](https://kookmin-sw.github.io/2026-capstone-43/)
+🏠 [프로젝트 홈페이지 바로가기](https://kookmin-sw.github.io/2026-capstone-43/)
 
 ## 1. 프로젝트 소개
 
