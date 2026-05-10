@@ -11,8 +11,8 @@ an SGMSE+/score-based wrapper:
     model predicts score / denoiser / data depending on loss_type
 
 Optional aux_cond support is included for the user's foot_force condition.
-It is encoded as context tokens and consumed by attention blocks in the
-backbone (cross-attention style), instead of direct additive injection into `y`.
+It is projected into a real/imag STFT-shaped bias and added directly to the
+diffusion input before the NCSN++ backbone.
 """
 
 import time
@@ -23,6 +23,7 @@ from typing import Any, Dict, Optional, Tuple
 import torch
 import torch.distributed as dist
 import torch.nn as nn
+import torch.nn.functional as F
 try:
     import pytorch_lightning as pl
 except ModuleNotFoundError:
@@ -135,6 +136,104 @@ class AuxConditionContextEncoder(nn.Module):
         return self.context_scale * fused.transpose(1, 2).contiguous()
 
 
+class AuxConditionInputAddEncoder(nn.Module):
+    """
+    Project auxiliary condition tokens into a real/imag STFT bias.
+
+    Expected input:
+        aux_cond: [B, aux_cond_dim, K]
+
+    Output:
+        cond_bias: [B, 2, F, T]
+
+    K is linearly resized to the target STFT frame count T when needed. This
+    keeps contact timing information instead of averaging over time.
+    """
+
+    def __init__(
+        self,
+        aux_cond_dim: int = 8,
+        freq_bins: int = 256,
+        cond_scale_init: float = 0.1,
+    ):
+        super().__init__()
+        if aux_cond_dim <= 0:
+            raise ValueError(f"aux_cond_dim must be positive, got {aux_cond_dim}")
+        if freq_bins <= 0:
+            raise ValueError(f"freq_bins must be positive, got {freq_bins}")
+
+        self.aux_cond_dim = int(aux_cond_dim)
+        self.freq_bins = int(freq_bins)
+        # No bias: zero / fully masked aux should be identical to no additive condition.
+        self.cond_linear = nn.Linear(self.aux_cond_dim, 2 * self.freq_bins, bias=False)
+        self.cond_scale = nn.Parameter(torch.tensor(float(cond_scale_init)))
+
+    @staticmethod
+    def _resize_time(values: torch.Tensor, target_frames: int, mode: str = "linear") -> torch.Tensor:
+        if values.size(-1) == target_frames:
+            return values
+        if mode == "linear" and values.size(-1) == 1:
+            return values.expand(*values.shape[:-1], target_frames)
+        if mode == "linear":
+            return F.interpolate(values, size=target_frames, mode=mode, align_corners=True)
+        return F.interpolate(values, size=target_frames, mode=mode)
+
+    def forward(
+        self,
+        aux_cond: torch.Tensor,
+        target_shape: torch.Size,
+        aux_cond_mask: Optional[torch.Tensor] = None,
+        dtype: Optional[torch.dtype] = None,
+    ) -> torch.Tensor:
+        if aux_cond.dim() != 3:
+            raise ValueError(
+                f"Expected aux_cond shape [B, C_aux, K], got {tuple(aux_cond.shape)}"
+            )
+
+        batch, channels, _ = aux_cond.shape
+        if channels != self.aux_cond_dim:
+            raise ValueError(
+                f"Expected aux_cond channel dim={self.aux_cond_dim}, got {channels}"
+            )
+
+        if len(target_shape) != 4:
+            raise ValueError(f"Expected target shape [B, 1, F, T], got {tuple(target_shape)}")
+        target_batch, _, target_freq, target_frames = target_shape
+        if batch != target_batch:
+            raise ValueError(f"aux_cond batch mismatch: {batch} vs {target_batch}")
+        if target_freq != self.freq_bins:
+            raise ValueError(
+                f"aux condition Linear was initialized for F={self.freq_bins}, "
+                f"but dnn input has F={target_freq}"
+            )
+
+        aux = aux_cond
+        if aux_cond_mask is not None:
+            mask = aux_cond_mask
+            if mask.dim() == 3 and mask.size(1) == 1:
+                mask = mask.squeeze(1)
+            if mask.dim() != 2:
+                raise ValueError(f"Expected aux_cond_mask [B, K], got {tuple(mask.shape)}")
+            if mask.size(0) != batch or mask.size(1) != aux.size(-1):
+                raise ValueError(
+                    f"aux_cond_mask shape mismatch: {tuple(mask.shape)} vs aux={tuple(aux.shape)}"
+                )
+            aux = aux * mask.to(device=aux.device, dtype=aux.dtype).unsqueeze(1)
+
+        aux = self._resize_time(aux, int(target_frames), mode="linear")
+        cond = self.cond_linear(aux.transpose(1, 2).contiguous())  # [B, T, 2 * F]
+        cond = cond.transpose(1, 2).contiguous().view(
+            batch,
+            2,
+            self.freq_bins,
+            int(target_frames),
+        )
+
+        if dtype is not None:
+            cond = cond.to(dtype=dtype)
+        return cond
+
+
 class ScoreModel(pl.LightningModule):
     @staticmethod
     def add_argparse_args(parser):
@@ -160,6 +259,7 @@ class ScoreModel(pl.LightningModule):
         parser.add_argument("--aux_time_scale", type=float, default=0.05)
         parser.add_argument("--aux_time_embed_dim", type=int, default=128)
         parser.add_argument("--aux_time_max_period", type=float, default=10000.0)
+        parser.add_argument("--aux_freq_bins", type=int, default=256)
         return parser
 
     def __init__(
@@ -189,6 +289,7 @@ class ScoreModel(pl.LightningModule):
         aux_time_scale: float = 0.05,
         aux_time_embed_dim: int = 128,
         aux_time_max_period: float = 10000.0,
+        aux_freq_bins: int = 256,
         **kwargs,
     ):
         super().__init__()
@@ -202,12 +303,6 @@ class ScoreModel(pl.LightningModule):
                 f"Invalid aux_encoder={aux_encoder}. "
                 "Expected one of {'identity', 'mlp'}."
             )
-        aux_context_dim = aux_cond_dim if aux_encoder == "identity" else aux_hidden_dim
-        if use_aux_cond and backbone == "ncsnpp_v2":
-            dnn_kwargs["aux_context_dim"] = aux_context_dim
-            dnn_kwargs["aux_time_scale"] = aux_time_scale
-            dnn_kwargs["aux_time_embed_dim"] = aux_time_embed_dim
-            dnn_kwargs["aux_time_max_period"] = aux_time_max_period
         self.dnn = dnn_cls(**dnn_kwargs)
 
         sde_cls = SDERegistry.get_by_name(sde)
@@ -218,12 +313,13 @@ class ScoreModel(pl.LightningModule):
         self.aux_time_scale = aux_time_scale
         self.aux_time_embed_dim = aux_time_embed_dim
         self.aux_time_max_period = aux_time_max_period
-        self.aux_context_encoder = (
-            AuxConditionContextEncoder(
+        self.aux_freq_bins = int(aux_freq_bins)
+        self.aux_context_encoder = None
+        self.aux_input_add_encoder = (
+            AuxConditionInputAddEncoder(
                 aux_cond_dim=aux_cond_dim,
-                hidden_dim=aux_hidden_dim,
-                aux_scale_init=aux_scale_init,
-                encoder_type=aux_encoder,
+                freq_bins=self.aux_freq_bins,
+                cond_scale_init=aux_scale_init,
             )
             if self.use_aux_cond
             else None
@@ -261,8 +357,8 @@ class ScoreModel(pl.LightningModule):
 
     def ema_parameters(self):
         params = list(self.dnn.parameters())
-        if self.aux_context_encoder is not None:
-            params.extend(self.aux_context_encoder.parameters())
+        if self.aux_input_add_encoder is not None:
+            params.extend(self.aux_input_add_encoder.parameters())
         return params
 
     def configure_optimizers(self):
@@ -370,8 +466,8 @@ class ScoreModel(pl.LightningModule):
         y: torch.Tensor,
         aux_cond: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        # Keep noisy condition unchanged. Aux information is injected via
-        # cross-attention context inside the backbone attention blocks.
+        # Keep noisy condition unchanged. Aux information is added to the
+        # diffusion input in forward().
         return y
 
     def _encode_aux_context(
@@ -395,6 +491,24 @@ class ScoreModel(pl.LightningModule):
             aux_cond_mask=aux_cond_mask,
         )
         return aux_ctx.to(device=device, dtype=dtype)
+
+    def _make_aux_input_bias(
+        self,
+        aux_cond: Optional[torch.Tensor],
+        aux_cond_mask: Optional[torch.Tensor],
+        target: torch.Tensor,
+    ) -> Optional[torch.Tensor]:
+        if not self.use_aux_cond or aux_cond is None or self.aux_input_add_encoder is None:
+            return None
+        aux_cond = aux_cond.to(device=target.device, non_blocking=True)
+        if aux_cond_mask is not None:
+            aux_cond_mask = aux_cond_mask.to(device=target.device, non_blocking=True)
+        return self.aux_input_add_encoder(
+            aux_cond=aux_cond,
+            target_shape=target.shape,
+            aux_cond_mask=aux_cond_mask,
+            dtype=target.real.dtype if torch.is_complex(target) else target.dtype,
+        )
 
     def _make_score_fn_with_aux(
         self,
@@ -583,40 +697,42 @@ class ScoreModel(pl.LightningModule):
         aux_cond_mask: Optional[torch.Tensor] = None,
         aux_query_times: Optional[torch.Tensor] = None,
     ):
-        if aux_cond_times is not None:
-            if aux_cond_times.dim() == 1:
-                aux_cond_times = aux_cond_times.unsqueeze(0)
-            aux_cond_times = aux_cond_times.to(device=y.device, non_blocking=True)
+        _ = aux_cond_times
+        _ = aux_query_times
         if aux_cond_mask is not None:
             if aux_cond_mask.dim() == 1:
                 aux_cond_mask = aux_cond_mask.unsqueeze(0)
             aux_cond_mask = aux_cond_mask.to(device=y.device, non_blocking=True)
-        if aux_query_times is not None:
-            if aux_query_times.dim() == 1:
-                aux_query_times = aux_query_times.unsqueeze(0)
-            aux_query_times = aux_query_times.to(device=y.device, non_blocking=True)
 
         y_cond = self._augment_condition(y, aux_cond)
-        aux_context = self._encode_aux_context(
-            aux_cond=aux_cond,
-            aux_cond_times=aux_cond_times,
-            aux_cond_mask=aux_cond_mask,
-            device=y.device,
-            dtype=y.real.dtype if torch.is_complex(y) else y.dtype,
-        )
 
         if self.backbone == "ncsnpp_v2":
             dnn_in_x = self._c_in(t) * x_t
             dnn_in_y = self._c_in(t) * y_cond
-            dnn_out = self.dnn(
-                dnn_in_x,
-                dnn_in_y,
-                t,
-                aux_context=aux_context,
-                aux_cond_times=aux_cond_times,
-                aux_query_times=aux_query_times,
+            cond_bias = self._make_aux_input_bias(
+                aux_cond=aux_cond,
                 aux_cond_mask=aux_cond_mask,
+                target=dnn_in_x,
             )
+            if cond_bias is not None:
+                expected_shape = (
+                    dnn_in_x.size(0),
+                    2,
+                    dnn_in_x.size(-2),
+                    dnn_in_x.size(-1),
+                )
+                if cond_bias.shape != expected_shape:
+                    raise RuntimeError(
+                        f"condition bias shape mismatch: {tuple(cond_bias.shape)} vs {expected_shape}"
+                    )
+                cond_complex = torch.complex(cond_bias[:, 0], cond_bias[:, 1]).unsqueeze(1)
+                cond_scale = self.aux_input_add_encoder.cond_scale.to(
+                    device=dnn_in_x.device,
+                    dtype=dnn_in_x.real.dtype,
+                )
+                dnn_in_x = dnn_in_x + cond_scale * cond_complex
+
+            dnn_out = self.dnn(dnn_in_x, dnn_in_y, t)
 
             if self.network_scaling == "1/sigma":
                 std = self.sde._std(t)

@@ -67,7 +67,7 @@ DEFAULT_TRAIN_ARGS: Dict[str, Any] = {
     "aux_time_embed_dim": 128,
     "aux_time_max_period": 10000.0,
     "raw_force_scale": 220.0,
-    "d_force_scale": 9220.325595510363,
+    "d_force_scale": 255.0,
     "condition_smooth_win": 1,
     "batch_size": 4,
     "val_batch_size": 0,

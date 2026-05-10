@@ -150,7 +150,7 @@ class SpeechEnhancementDataset(Dataset):
         use_condition=True,
         condition_repr="8ch",
         raw_force_scale=220.0,
-        d_force_scale=9220.325595510363,
+        d_force_scale=255.0,
         condition_smooth_win=1,
     ):
         self.manifest_path = Path(manifest_path)

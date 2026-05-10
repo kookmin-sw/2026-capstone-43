@@ -1,6 +1,7 @@
 # src/condition/preprocess.py
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Optional, Tuple, List
 import json
@@ -21,8 +22,8 @@ class ConditionPreprocessConfig:
 
         diff 4ch:
             dFdt = (F[t] - F[t-1]) / (t[t] - t[t-1])
-            p90 = percentile(|dFdt|, 90)
-            D_norm = clip(dFdt / p90, -1, 1)
+            D_norm = clip(dFdt / d_force_scale, -1, 1)
+            d_force_scale=255 means dFdt in [-255, 255] maps to [-1, 1]
 
     output:
         cond_8ch:
@@ -35,9 +36,9 @@ class ConditionPreprocessConfig:
     """
     raw_force_scale: float = 220.0
 
-    # backward compatibility용 legacy field (현재 tanh는 사용하지 않음)
-    d_force_scale: float = 2872.58
-    # dFdt 정규화 분모를 |dFdt| percentile로 계산
+    # dFdt normalization denominator. 255 maps [-255, 255] to [-1, 1].
+    d_force_scale: float = 255.0
+    # backward compatibility용 legacy field (현재 정규화에는 사용하지 않음)
     d_force_percentile: float = 80.0
 
     # foot_force smoothing window (1이면 smoothing 없음)
@@ -391,15 +392,7 @@ def compute_force_and_derivative(
     d_fdt = np.zeros_like(df, dtype=np.float64)
     d_fdt[valid] = df[valid] / dt[valid, None]
 
-    p = float(np.clip(cfg.d_force_percentile, 0.0, 100.0))
-    finite_abs = np.abs(d_fdt[np.isfinite(d_fdt)])
-    if finite_abs.size == 0:
-        divisor = cfg.eps
-    else:
-        divisor = float(np.quantile(finite_abs, p / 100.0))
-        if (not math.isfinite(divisor)) or divisor <= cfg.eps:
-            divisor = max(float(np.max(finite_abs)), cfg.eps)
-
+    divisor = max(float(cfg.d_force_scale), cfg.eps)
     deriv_norm = d_fdt / divisor
     deriv_norm = np.clip(deriv_norm, -1.0, 1.0)
 
@@ -407,6 +400,33 @@ def compute_force_and_derivative(
     deriv_on_low[1:] = deriv_norm
 
     return t_low, force_norm, deriv_on_low
+
+
+@lru_cache(maxsize=2048)
+def load_condition_source_cached(
+    run_dir: str,
+    raw_force_scale: float,
+    d_force_scale: float,
+    smooth_win: int,
+    eps: float,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    cfg = ConditionPreprocessConfig(
+        raw_force_scale=float(raw_force_scale),
+        d_force_scale=float(d_force_scale),
+        smooth_win=int(smooth_win),
+        eps=float(eps),
+    )
+    lowstate_path = find_lowstate_file(run_dir)
+    anchor_path = find_anchor_file(run_dir)
+
+    t_low, foot_force = load_lowstate_time_and_force(lowstate_path)
+    anchor_sample_idx, anchor_mono_sec = load_anchor_sample_to_time(anchor_path)
+    t_low, force_norm, deriv_on_low = compute_force_and_derivative(
+        t_low=t_low,
+        foot_force=foot_force,
+        cfg=cfg,
+    )
+    return t_low, force_norm, deriv_on_low, anchor_sample_idx, anchor_mono_sec
 
 
 def build_condition_tokens_from_crop_window(
@@ -609,16 +629,15 @@ def preprocess_condition_for_train(
     if cfg is None:
         cfg = ConditionPreprocessConfig()
 
-    lowstate_path = find_lowstate_file(run_dir)
-    anchor_path = find_anchor_file(run_dir)
-
-    t_low, foot_force = load_lowstate_time_and_force(lowstate_path)
-    anchor_sample_idx, anchor_mono_sec = load_anchor_sample_to_time(anchor_path)
-
-    t_low, force_norm, deriv_on_low = compute_force_and_derivative(
-        t_low=t_low,
-        foot_force=foot_force,
-        cfg=cfg,
+    run_dir = str(Path(run_dir).expanduser().resolve())
+    t_low, force_norm, deriv_on_low, anchor_sample_idx, anchor_mono_sec = (
+        load_condition_source_cached(
+            run_dir,
+            float(cfg.raw_force_scale),
+            float(cfg.d_force_scale),
+            int(cfg.smooth_win),
+            float(cfg.eps),
+        )
     )
 
     crop_start_sample = int(crop_start_sample)

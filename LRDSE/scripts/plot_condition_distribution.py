@@ -481,7 +481,7 @@ def main():
     parser.add_argument(
         "--d-force-scale",
         type=float,
-        default=9220.325595510363,
+        default=255.0,
         help="model_tanh 모드에서 tanh(dF/dt / d_force_scale)의 scale",
     )
     parser.add_argument(

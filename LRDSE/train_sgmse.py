@@ -142,6 +142,7 @@ def build_model(args):
         aux_time_scale=args.aux_time_scale,
         aux_time_embed_dim=args.aux_time_embed_dim,
         aux_time_max_period=args.aux_time_max_period,
+        aux_freq_bins=args.n_fft // 2 + 1,
         nf=args.nf,
         ch_mult=ch_mult,
         num_res_blocks=args.num_res_blocks,
@@ -618,16 +619,10 @@ def evaluate_validation_loss(model, loader, args, device):
         if args.use_aux_cond:
             if "cond" not in batch:
                 raise RuntimeError("use_aux_cond=True but batch does not contain 'cond'")
-            if "cond_times" not in batch:
-                raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_times'")
             if "cond_mask" not in batch:
                 raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_mask'")
-            if "query_mono_times" not in batch:
-                raise RuntimeError("use_aux_cond=True but batch does not contain 'query_mono_times'")
             aux_cond = batch["cond"].to(device, non_blocking=True)
-            aux_cond_times = batch["cond_times"].to(device, non_blocking=True)
             aux_cond_mask = batch["cond_mask"].to(device, non_blocking=True)
-            aux_query_times = batch["query_mono_times"].to(device, non_blocking=True)
             if aux_cond.dim() != 3:
                 raise RuntimeError(
                     f"Expected aux_cond shape [B, C, K], got {tuple(aux_cond.shape)}"
@@ -636,29 +631,13 @@ def evaluate_validation_loss(model, loader, args, device):
                 raise RuntimeError(
                     f"Expected aux_cond channel={args.aux_cond_dim}, got {aux_cond.size(1)}"
                 )
-            if aux_cond_times.dim() != 2:
-                raise RuntimeError(
-                    f"Expected aux_cond_times shape [B, K], got {tuple(aux_cond_times.shape)}"
-                )
             if aux_cond_mask.dim() != 2:
                 raise RuntimeError(
                     f"Expected aux_cond_mask shape [B, K], got {tuple(aux_cond_mask.shape)}"
                 )
-            if aux_cond_times.size(1) != aux_cond.size(2):
-                raise RuntimeError(
-                    f"aux_cond_times length mismatch: {aux_cond_times.size(1)} vs {aux_cond.size(2)}"
-                )
             if aux_cond_mask.size(1) != aux_cond.size(2):
                 raise RuntimeError(
                     f"aux_cond_mask length mismatch: {aux_cond_mask.size(1)} vs {aux_cond.size(2)}"
-                )
-            if aux_query_times.dim() != 2:
-                raise RuntimeError(
-                    f"Expected aux_query_times shape [B, K_audio], got {tuple(aux_query_times.shape)}"
-                )
-            if aux_query_times.size(0) != aux_cond.size(0):
-                raise RuntimeError(
-                    f"aux_query_times batch mismatch: {aux_query_times.size(0)} vs {aux_cond.size(0)}"
                 )
 
         with autocast_context(device, enabled=(args.amp and device.type == "cuda")):
@@ -740,8 +719,8 @@ def main():
         "--aux-encoder",
         default="identity",
         choices=["identity", "mlp"],
-        help="'identity'는 정규화된 8ch condition을 그대로 attention context로 사용. "
-             "'mlp'는 기존 8->128 Linear projection 방식.",
+        help="Deprecated compatibility flag. Current SGMSE aux path uses "
+             "input-level addition via Linear(8, 2 * F), not cross-attention.",
     )
     parser.add_argument("--aux-cond-dim", type=int, default=8)
     parser.add_argument("--aux-hidden-dim", type=int, default=128)
@@ -750,13 +729,18 @@ def main():
         "--aux-time-scale",
         type=float,
         default=0.05,
-        help="Crop-relative monotonic time sinusoidal embedding scale in seconds. "
-             "Default 0.05 means the highest-frequency component has a 50 ms period.",
+        help="Deprecated compatibility flag from the old cross-attention path. "
+             "Current input-add condition keeps aux time order by resizing tokens.",
     )
     parser.add_argument("--aux-time-embed-dim", type=int, default=128)
     parser.add_argument("--aux-time-max-period", type=float, default=10000.0)
     parser.add_argument("--raw-force-scale", type=float, default=220.0)
-    parser.add_argument("--d-force-scale", type=float, default=9220.325595510363)
+    parser.add_argument(
+        "--d-force-scale",
+        type=float,
+        default=255.0,
+        help="Normalize foot-force derivative as clip(dFdt / d_force_scale, -1, 1).",
+    )
     parser.add_argument("--condition-smooth-win", type=int, default=1)
 
     parser.add_argument("--batch-size", type=int, default=4)
@@ -848,7 +832,7 @@ def main():
         )
     if args.use_aux_cond and args.aux_cond_dim != 8:
         raise ValueError(
-            f"Monotonic-only cross-attention path expects 8ch condition. "
+            f"Input-add condition path expects 8ch foot-force condition. "
             f"Set --aux-cond-dim 8 (got {args.aux_cond_dim})."
         )
     if args.use_aux_cond and args.backbone != "ncsnpp_v2":
@@ -856,10 +840,11 @@ def main():
             "use_aux_cond=True is currently wired only for backbone='ncsnpp_v2'. "
             f"Got backbone={args.backbone}."
         )
-    if args.use_aux_cond and args.aux_encoder == "identity" and args.aux_hidden_dim != args.aux_cond_dim:
+    if args.use_aux_cond and args.aux_hidden_dim != args.aux_cond_dim:
         print(
-            f"[aux encoder] identity mode uses aux_cond_dim={args.aux_cond_dim} "
-            f"directly. aux_hidden_dim={args.aux_hidden_dim} is ignored."
+            f"[aux condition] input-add mode uses Linear({args.aux_cond_dim}, 2 * F) "
+            f"directly. aux_encoder={args.aux_encoder} and "
+            f"aux_hidden_dim={args.aux_hidden_dim} are ignored."
         )
 
     if args.resume and args.use_aux_cond:
@@ -934,6 +919,7 @@ def main():
         shuffle=shuffle,
         num_workers=args.num_workers,
         pin_memory=(device.type == "cuda"),
+        persistent_workers=(args.num_workers > 0),
         drop_last=True,
     )
 
@@ -972,6 +958,7 @@ def main():
             shuffle=False,
             num_workers=val_num_workers,
             pin_memory=(device.type == "cuda"),
+            persistent_workers=(val_num_workers > 0),
             drop_last=False,
         )
 
@@ -1088,13 +1075,17 @@ def main():
     print("--------------------------------------------------")
     print("[condition config]")
     print(f"use_aux_cond       : {args.use_aux_cond}")
-    print(f"aux_encoder        : {args.aux_encoder}")
+    print("aux_injection      : input_add")
+    print(f"aux_freq_bins      : {args.n_fft // 2 + 1}")
+    print(f"aux_encoder        : {args.aux_encoder} (ignored)")
     print(f"aux_cond_dim       : {args.aux_cond_dim}")
-    print(f"aux_hidden_dim     : {args.aux_hidden_dim}")
-    print(f"aux_scale_init     : {args.aux_scale_init}")
-    print(f"aux_time_scale     : {args.aux_time_scale}")
-    print(f"aux_time_embed_dim : {args.aux_time_embed_dim}")
-    print(f"aux_time_max_period: {args.aux_time_max_period}")
+    print(f"aux_hidden_dim     : {args.aux_hidden_dim} (ignored)")
+    print(f"aux_scale_init     : {args.aux_scale_init} (cond_scale init)")
+    print(f"aux_time_scale     : {args.aux_time_scale} (ignored)")
+    print(f"aux_time_embed_dim : {args.aux_time_embed_dim} (ignored)")
+    print(f"aux_time_max_period: {args.aux_time_max_period} (ignored)")
+    print(f"raw_force_scale    : {args.raw_force_scale}")
+    print(f"d_force_scale      : {args.d_force_scale}")
     print("--------------------------------------------------")
     print("[model config]")
     print(f"backbone           : {args.backbone}")
@@ -1163,17 +1154,11 @@ def main():
             if args.use_aux_cond:
                 if "cond" not in batch:
                     raise RuntimeError("use_aux_cond=True but batch does not contain 'cond'")
-                if "cond_times" not in batch:
-                    raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_times'")
                 if "cond_mask" not in batch:
                     raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_mask'")
-                if "query_mono_times" not in batch:
-                    raise RuntimeError("use_aux_cond=True but batch does not contain 'query_mono_times'")
 
                 aux_cond = batch["cond"].to(device, non_blocking=True)
-                aux_cond_times = batch["cond_times"].to(device, non_blocking=True)
                 aux_cond_mask = batch["cond_mask"].to(device, non_blocking=True)
-                aux_query_times = batch["query_mono_times"].to(device, non_blocking=True)
                 if aux_cond.dim() != 3:
                     raise RuntimeError(
                         f"Expected aux_cond shape [B, C, K], got {tuple(aux_cond.shape)}"
@@ -1182,29 +1167,13 @@ def main():
                     raise RuntimeError(
                         f"Expected aux_cond channel={args.aux_cond_dim}, got {aux_cond.size(1)}"
                     )
-                if aux_cond_times.dim() != 2:
-                    raise RuntimeError(
-                        f"Expected aux_cond_times shape [B, K], got {tuple(aux_cond_times.shape)}"
-                    )
                 if aux_cond_mask.dim() != 2:
                     raise RuntimeError(
                         f"Expected aux_cond_mask shape [B, K], got {tuple(aux_cond_mask.shape)}"
                     )
-                if aux_cond_times.size(1) != aux_cond.size(2):
-                    raise RuntimeError(
-                        f"aux_cond_times length mismatch: {aux_cond_times.size(1)} vs {aux_cond.size(2)}"
-                    )
                 if aux_cond_mask.size(1) != aux_cond.size(2):
                     raise RuntimeError(
                         f"aux_cond_mask length mismatch: {aux_cond_mask.size(1)} vs {aux_cond.size(2)}"
-                    )
-                if aux_query_times.dim() != 2:
-                    raise RuntimeError(
-                        f"Expected aux_query_times shape [B, K_audio], got {tuple(aux_query_times.shape)}"
-                    )
-                if aux_query_times.size(0) != aux_cond.size(0):
-                    raise RuntimeError(
-                        f"aux_query_times batch mismatch: {aux_query_times.size(0)} vs {aux_cond.size(0)}"
                     )
 
             with autocast_context(device, enabled=(args.amp and device.type == "cuda")):

@@ -631,7 +631,7 @@ def main():
         help="0이면 U-Net mid_dim 사용.",
     )
     parser.add_argument("--raw-force-scale", type=float, default=220.0)
-    parser.add_argument("--d-force-scale", type=float, default=9220.325595510363)
+    parser.add_argument("--d-force-scale", type=float, default=255.0)
     parser.add_argument("--condition-smooth-win", type=int, default=1)
 
     parser.add_argument("--batch-size", type=int, default=2)
