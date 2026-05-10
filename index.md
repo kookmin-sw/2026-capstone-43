@@ -176,7 +176,7 @@
 ### 🧠 3. Memory
 > 계층형 씬그래프 구축 및 장단기 메모리를 활용한 로봇의 동적 환경 인지 결과입니다.
 
-#### 방 분리 결과 이미지
+* #### 방 분리 결과 이미지
 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: center;">
   <img src="https://github.com/user-attachments/assets/7df81276-5b42-450e-80fd-db56d06c4672" style="width: 100%;">
   <img src="https://github.com/user-attachments/assets/fd9f7897-26d1-40f4-9ea7-f96aff4e29f4" style="width: 100%;">
@@ -188,7 +188,21 @@
   <img src="https://github.com/user-attachments/assets/72bc62a4-aeca-4b1d-badf-0bf826dbaf57" style="width: 100%;">
 </div>
 
-#### Task 수행 동영상
+* #### 3D Scene Graph 동적 업데이트 예시
+로봇이 Rearrangement Task를 수행함에 따라 동적으로 Scene Graph가 갱신되는 시각화 결과입니다. 빨간색 원으로 표시된 타겟 객체(사과)가 주방(Kitchen)에서 거실(Living Room)의 커피 테이블로 이동한 것을 확인할 수 있습니다.
+
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: center; margin-top: 15px;">
+  <div>
+    <strong>Before (주방에 위치한 사과)</strong>
+    <img src="https://github.com/user-attachments/assets/727e31df-06f9-4609-99a0-d7ac6171fe73" style="width: 100%; border-radius: 8px; margin-top: 10px;">
+  </div>
+  <div>
+    <strong>After (거실 커피 테이블로 이동한 사과)</strong>
+    <img src="https://github.com/user-attachments/assets/ae3a147a-47c8-444e-9e0b-a397ee3e7da9" style="width: 100%; border-radius: 8px; margin-top: 10px;">
+  </div>
+</div>
+
+*#### Task 수행 동영상
 <iframe width="100%" height="450" src="https://www.youtube.com/embed/n9BuyLzmbgs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 <br>
