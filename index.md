@@ -29,7 +29,7 @@
 | :---: | :---: | :---: | :--- |
 | **동현** | 인지 (Audio) | **SpatialAudio** | FOA, SpatialAST, V_sphere/A_sphere |
 | **재우** | 인지 (Denoising) | **Denoising** | SGMSE, Diffusion, Aux Condition (Foot Force) |
-| **채희** | 인지 (Memory) | **Memory** | Hierarchical Scene Graph, Dynamic Update |
+| **채희** | 인지 (Memory) | **Memory** | Hierarchical Scene Graph, Dynamic Update, Habitat-Sim |
 | **근서** | 인지 (Tactile/SLAM) | **Tactile** | Gaussian Splatting, Online SLAM, Material Embedding |
 | **성빈** | 추론 & 액션 | **Planning** | LLM Planner (PRED), Freespace V2, Isaac Sim |
 
@@ -96,7 +96,7 @@ LLM과 실시간 씬그래프를 결합하여 복잡한 명령을 수행하는 �
 </div>
 
 #### Task 수행 동영상
-https://youtu.be/n9BuyLzmbgs
+<iframe width="100%" height="450" src="https://www.youtube.com/embed/n9BuyLzmbgs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 <br>
 
