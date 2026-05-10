@@ -30,6 +30,7 @@
 | `catkin_ws` | RGB-Pose Collection & Gaussian Splatting | 로봇에서 RGB image와 pose를 수집하고, 이를 Gaussian Splatting 및 continual mapping 실험에 활용합니다. |
 | `hierarchy_robot_interaction_scene_graph_submission` | Hierarchical Scene Graph | RGB-D/pose 기반 계층형 Scene Graph를 생성하고, LLM 기반 로봇 interaction에 활용합니다. |
 | `sceneupdate` | Isaac Sim Robot Interaction | Isaac Sim 환경에서 모바일 매니퓰레이터, Scene Graph, LLM planner, navigation, manipulation을 결합한 시뮬레이션 프로젝트입니다. |
+| `freespacepipeline` | Free Space-Aware Scene Graph VLM Fine-tuning | 씬그래프에 빈 공간(Free Space) 정보를 통합하기 위한 데이터 자동 생성 파이프라인 및 Qwen2-VL LoRA 파인튜닝 프로젝트입니다. |
 
 ---
 
@@ -46,7 +47,7 @@
 | 이름 | 역할 | 담당 내용 | GitHub 담당 하위 폴더 |
 | --- | --- | --- | --- |
 | 류재우 | 팀장 | Legged Robot noise speech enhancement 연구 및 LRDSE 구현 | `LRDSE` |
-| 이성빈 | 팀원 | Scene Graph 기반 환경 인식 및 시뮬레이션 기능 구현 | `sceneupdate` |
+| 이성빈 | 팀원 | Scene Graph 기반 환경 인식, Free Space VLM 파인튜닝 파이프라인 구현 | `sceneupdate`, `freespacepipeline` |
 | 유동현 | 팀원 | Spatial Audio 기반 로봇 공간 음향 인지 연구 및 구현 | `SpatialAudio` |
 | 유채희 | 팀원 | Hierarchical Scene Graph 기반 로봇 상호작용 연구 및 구현 | `hierarchy_robot_interaction_scene_graph_submission` |
 | 장근서 | 팀원 | RGB-Pose 수집 및 Gaussian Splatting 기반 3D scene reconstruction 연구 | `catkin_ws` |
