@@ -1,115 +1,112 @@
 # LRDSE
 
-Robot noise speech enhancement 실험용 코드입니다. Clean speech와 quadruped robot noise가 섞인 noisy speech를 paired manifest로 학습하며, 기본 학습 경로는 `train_sgmse.py`의 SGMSE 기반 모델입니다. Noisy sample 폴더에 robot `anchor` / `lowstate` 파일이 있으면 foot force 8ch auxiliary condition도 함께 사용할 수 있습니다.
+**LRDSE**는 *Legged Robot Diffusion Speech Enhancement*를 위한 연구 코드입니다.  
+목표는 사족보행 로봇이 이동하거나 발을 지면에 접촉할 때 발생하는 불규칙적이고 non-stationary한 robot noise를 줄이고, 사람 음성을 더 명확하게 복원하는 것입니다.
 
-## 폴더 구조
+기본 학습 경로는 `train_sgmse.py`입니다.  
+noisy sample 폴더에 `anchor` / `lowstate` 파일이 있으면 `foot_force`와 그 derivative를 8ch auxiliary condition으로 사용할 수 있습니다.
+
+---
+
+## 1. 연구 배경
+
+일반적인 speech enhancement는 배경 noise, 실내 환경 noise, 잡음이 섞인 음성 등을 제거하는 데 초점을 둡니다. 하지만 legged robot 환경에서는 robot 자체의 움직임이 noise 발생 원인이 됩니다.
+
+특히 Unitree GO2와 같은 사족보행 로봇은 발이 지면에 반복적으로 닿고 떨어지며, 이 과정에서 순간적이고 불규칙적인 contact noise가 발생할 수 있습니다. 이 noise는 단순히 일정하게 유지되는 stationary noise가 아니라, 보행 패턴, 속도, 자세, 회전, 지면 상태에 따라 계속 변하는 non-stationary noise입니다.
+
+따라서 본 프로젝트는 speech enhancement 문제를 단순 audio-only denoising으로 보지 않고, robot state를 함께 사용하는 conditional speech enhancement 문제로 다룹니다.
+
+---
+
+## 2. 핵심 아이디어
+
+LRDSE의 핵심 아이디어는 robot noise가 발 접촉과 강하게 관련될 수 있다는 점을 이용하는 것입니다.
+
+`lowstate`에서 얻은 `foot_force`는 각 발의 접촉 상태를 설명할 수 있는 cue로 사용할 수 있습니다. 이 프로젝트에서는 다음 8ch 값을 auxiliary condition으로 사용합니다.
 
 ```text
-LRDSE/
-├── train_sgmse.py              # SGMSE speech enhancement 학습 / 검증 / 샘플 저장
-├── train_rddm.py               # RDDM 실험 코드
-├── dataset.py                  # paired clean/noisy dataset, condition 로딩
-├── src/
-│   ├── audio/preprocess.py     # wav crop, STFT, spec transform, inverse transform
-│   ├── condition/preprocess.py # foot_force condition token 생성
-│   └── models/                 # SGMSE / RDDM model wrapper
-├── scripts/
-│   ├── build_manifest.py       # noisy/clean pair manifest 생성 및 train/val split
-│   ├── plot_epoch_loss.py      # epoch loss CSV plot
-│   ├── plot_stft.py            # wav STFT 시각화
-│   └── ...
-├── data/
-│   ├── make_noisy_data.py      # clean speech + robot noise 합성
-│   ├── manifest.csv            # 현재 paired manifest
-│   └── noisy/                  # noisy wav와 condition segment 파일
-├── checkpoints/                # 학습 checkpoint 저장 위치
-└── outputs/                    # debug/plot output 저장 위치
+4ch foot_force
+4ch foot_force derivative
 ```
 
-## 환경 준비
+`foot_force`는 현재 발 접촉의 크기 정보를 제공하고, derivative는 접촉 변화가 급격히 발생하는 순간을 강조합니다. 이를 diffusion speech enhancement model에 condition으로 제공하면, model이 speech 성분과 foot-contact 기반 robot noise를 더 잘 구분할 수 있을 것으로 기대합니다.
 
-이 저장소에는 별도 `requirements.txt`가 없으므로, 사용하는 환경에 맞춰 주요 패키지를 설치합니다.
+단, 현재 구현에서 `foot_force`는 speech enhancement를 위한 auxiliary cue로 사용됩니다. 정확한 물리 단위의 Ground Reaction Force를 직접 추정하거나 보정하는 것이 목표는 아닙니다.
+
+---
+
+## 3. 전체 pipeline
+
+```text
+Clean speech
+    +
+Robot noise recording
+    +
+Robot state logs
+    |
+    v
+Noisy data generation
+    |
+    ├── noisy wav
+    ├── anchor_segment.json
+    ├── lowstate_segment.jsonl
+    ├── highstate_segment.jsonl
+    └── segment_meta.json
+    |
+    v
+Manifest
+    |
+    v
+STFT preprocessing
+    |
+    ├── noisy complex spectrogram
+    ├── clean complex spectrogram
+    └── foot_force auxiliary condition
+    |
+    v
+SGMSE-based diffusion speech enhancement
+    |
+    v
+Enhanced speech
+```
+
+---
+
+## 4. 주요 실험 관점
+
+비교해야 하는 기본 실험은 다음과 같습니다.
+
+```text
+No condition baseline
+    - audio만 사용한 speech enhancement
+
+Foot force condition model
+    - audio + foot_force condition 사용
+```
+
+단순히 train loss만 비교하기보다 validation loss, enhanced wav, contact noise가 강한 구간의 spectrogram, 실제 청감 결과를 함께 확인하는 것이 좋습니다.
+
+---
+
+## 5. 실행 위치
+
+모든 명령은 `LRDSE` 디렉터리에서 실행합니다.
 
 ```bash
 cd /home/jaewoo/MAIR/ryu/robot_denoising/2026-capstone-43/LRDSE
+```
 
+필요 패키지는 환경에 맞게 설치합니다.
+
+```bash
 python3 -m pip install torch torchaudio numpy scipy soundfile matplotlib
 ```
 
-CUDA를 쓸 경우 PyTorch는 로컬 CUDA 버전에 맞는 wheel로 설치해야 합니다.
+---
 
-## 데이터 형식
+## 6. SGMSE 학습
 
-`SpeechEnhancementDataset`은 manifest CSV에서 `valid=1`인 row만 사용합니다. 핵심 컬럼은 아래와 같습니다.
-
-- `id`, `speaker_id`, `book_id`, `source_id`
-- `noisy_wav`: noisy wav/flac 경로
-- `clean_wav`: clean wav/flac 경로
-- `valid`: 학습 사용 가능 여부
-
-Aux condition을 쓰는 경우 noisy wav의 parent directory를 `run_dir`로 추론합니다. 해당 폴더에는 아래 파일 중 인식 가능한 이름이 있어야 합니다.
-
-```text
-<run_dir>/
-├── <source_id>.wav
-├── anchor_segment.json      # 또는 anchors.json, anchor.json
-├── lowstate_segment.jsonl   # 또는 lowstate.jsonl 등
-├── highstate_segment.jsonl
-└── segment_meta.json
-```
-
-기본 audio preprocess 설정은 16 kHz mono 기준입니다.
-
-- `target_sr=16000`
-- `n_fft=510`
-- `win_length=510`
-- `hop_length=128`
-- `num_frames=256`
-- `target_length=(num_frames - 1) * hop_length = 32640`
-
-`train_sgmse.py`는 `win_length == n_fft`와 위 `target_length` 관계를 검사합니다.
-
-## Manifest 생성
-
-이미 `data/manifest.csv`가 있으면 바로 학습할 수 있습니다. 새로 만들 때는 noisy root와 clean root를 지정합니다.
-
-```bash
-python3 scripts/build_manifest.py \
-  --noisy-root ./data/noisy \
-  --clean-root /path/to/clean \
-  --out ./data/manifest.csv \
-  --target-sr 16000 \
-  --val-ratio 0.1 \
-  --split-by speaker
-```
-
-기본 출력:
-
-- `data/manifest.csv`: 전체 row
-- `data/manifest_train.csv`: train split
-- `data/manifest_val.csv`: validation split
-
-## SGMSE 빠른 확인
-
-작은 샘플로 loss forward/backward가 도는지 먼저 확인할 때:
-
-```bash
-python3 train_sgmse.py \
-  --manifest ./data/manifest.csv \
-  --save-dir ./checkpoints/sgmse_debug \
-  --device cuda \
-  --overfit-samples 8 \
-  --batch-size 2 \
-  --max-steps 20 \
-  --log-every 1 \
-  --disable-checkpoint-save
-```
-
-CUDA가 없으면 `--device cpu`로 실행합니다.
-
-## SGMSE 학습
-
-Validation manifest가 있는 일반 학습 예시:
+### 6.1 No condition 학습
 
 ```bash
 python3 train_sgmse.py \
@@ -126,22 +123,9 @@ python3 train_sgmse.py \
   --num-sample-wavs 1
 ```
 
-Validation set 없이 현재 `data/manifest.csv`만 사용할 때:
+### 6.2 foot_force condition 학습
 
-```bash
-python3 train_sgmse.py \
-  --manifest ./data/manifest.csv \
-  --save-dir ./checkpoints/sgmse_se \
-  --device cuda \
-  --batch-size 4 \
-  --max-epochs 300
-```
-
-`--sample-every` 또는 `--sample-every-epochs`를 켜면 `--val-manifest`가 필요합니다.
-
-## Aux Condition 학습
-
-Foot force condition을 쓰려면 `--use-aux-cond`를 추가합니다. 현재 SGMSE aux path는 `backbone=ncsnpp_v2`, `aux_cond_dim=8` 조합을 전제로 합니다.
+`lowstate_segment.jsonl`과 `anchor_segment.json`이 noisy sample 폴더에 있을 때 사용합니다.
 
 ```bash
 python3 train_sgmse.py \
@@ -150,100 +134,109 @@ python3 train_sgmse.py \
   --save-dir ./checkpoints/sgmse_aux \
   --device cuda \
   --batch-size 4 \
+  --num-workers 2 \
+  --lr 1e-4 \
   --max-epochs 300 \
+  --save-every-epochs 5 \
+  --sample-every-epochs 50 \
+  --num-sample-wavs 1 \
   --use-aux-cond \
   --aux-cond-dim 8
 ```
 
-Condition preprocessing은 `lowstate`에서 4ch raw foot force와 4ch derivative를 만들고, crop 구간에 맞춰 `[8, 1024]` token으로 패딩합니다.
+학습 결과는 `--save-dir` 아래에 저장됩니다.
 
-## Checkpoint와 Resume
+```text
+checkpoints/sgmse_aux/
+├── latest.pt
+├── best.pt
+├── args.json
+├── epoch_losses.csv
+└── samples/
+```
 
-기본 저장 파일:
+---
 
-- `args.json`: 실행 설정
-- `latest.pt`: 최근 checkpoint
-- `best.pt`: validation loss가 있으면 best validation, 없으면 저장 시점 train loss 기준
-- `epoch_losses.csv`: epoch 평균 train/validation loss
-- `samples/step_*/`: validation sample에서 저장한 noisy/clean/enhanced wav
+## 7. 학습된 가중치로 denoising
 
-Resume:
+현재 코드는 별도 `denoise.py`가 아니라 `train_sgmse.py`의 sample 저장 기능으로 denoising 결과를 생성합니다.
+
+`--resume`에 학습된 checkpoint를 넣고, `--sample-every 1`을 사용하면 validation manifest의 sample에 대해 enhanced wav가 저장됩니다.
+
+### 7.1 No condition checkpoint로 denoising
 
 ```bash
 python3 train_sgmse.py \
   --manifest ./data/manifest_train.csv \
   --val-manifest ./data/manifest_val.csv \
-  --save-dir ./checkpoints/sgmse_se \
-  --resume ./checkpoints/sgmse_se/latest.pt
-```
-
-Step별 checkpoint도 남기려면 `--save-step-checkpoints`를 추가합니다.
-
-## Loss 시각화
-
-```bash
-python3 scripts/plot_epoch_loss.py \
-  --csv ./checkpoints/sgmse_se/epoch_losses.csv \
-  --out ./outputs/plots/epoch_loss.png \
-  --smooth-window 3
-```
-
-## Noisy 데이터 합성
-
-Clean source audio와 robot noise run을 섞어 `data/noisy` 구조를 만들 때 사용합니다.
-
-```bash
-python3 data/make_noisy_data.py \
-  --source-root /path/to/source_speech_root \
-  --noise-root /path/to/robot_noise_root \
-  --out-root ./data/noisy \
-  --snr-min -5 \
-  --snr-max 5 \
-  --seed 0
-```
-
-Noise run 폴더에는 `audio.wav`, `anchor.json`, `lowstate.jsonl`, `highstate.jsonl`이 필요합니다. 출력 sample 폴더에는 noisy wav와 `anchor_segment.json`, `lowstate_segment.jsonl`, `highstate_segment.jsonl`, `segment_meta.json`이 생성됩니다.
-
-## 유용한 스크립트
-
-```bash
-# dataset 로딩과 STFT inverse check
-python3 scripts/check_dataset.py \
-  --manifest ./data/manifest.csv \
-  --num-samples 4 \
-  --save-debug
-
-# RDDM forward/backward smoke test
-python3 scripts/check_model_forward.py \
-  --manifest ./data/manifest.csv \
-  --batch-size 1 \
-  --device cpu \
-  --dim 8 \
-  --dim-mults '(1, 2, 4)' \
-  --timesteps 10 \
-  --sampling-timesteps 2
-
-# wav의 STFT plot 저장
-python3 scripts/plot_stft.py --wav ./data/noisy/.../sample.wav --out ./outputs/debug/stft_plot.png
-
-# data/noisy 아래 wav duration 확인
-python3 data/check_duration.py --root ./data/noisy
-
-# lowstate foot force 통계 확인
-python3 data/check_max_foot_force.py --root ./data/noisy --pattern lowstate_segment.jsonl
-```
-
-## RDDM 실험
-
-`train_rddm.py`도 현재 디렉터리에서 바로 실행할 수 있습니다.
-
-```bash
-python3 train_rddm.py \
-  --manifest ./data/manifest.csv \
-  --save-dir ./checkpoints/rddm_se \
+  --save-dir ./outputs/denoise_sgmse \
+  --resume ./checkpoints/sgmse_se/best.pt \
   --device cuda \
-  --batch-size 2 \
-  --max-steps 1000
+  --batch-size 1 \
+  --num-workers 0 \
+  --max-steps 1 \
+  --lr 0 \
+  --sample-every 1 \
+  --num-sample-wavs 5 \
+  --sample-max-sec 0 \
+  --disable-checkpoint-save
 ```
 
-모든 실행 예시는 현재 환경에 맞춰 `python3` 기준으로 작성했습니다.
+### 7.2 foot_force condition checkpoint로 denoising
+
+```bash
+python3 train_sgmse.py \
+  --manifest ./data/manifest_train.csv \
+  --val-manifest ./data/manifest_val.csv \
+  --save-dir ./outputs/denoise_sgmse_aux \
+  --resume ./checkpoints/sgmse_aux/best.pt \
+  --device cuda \
+  --batch-size 1 \
+  --num-workers 0 \
+  --max-steps 1 \
+  --lr 0 \
+  --sample-every 1 \
+  --num-sample-wavs 5 \
+  --sample-max-sec 0 \
+  --disable-checkpoint-save \
+  --use-aux-cond \
+  --aux-cond-dim 8
+```
+
+결과 wav는 아래 위치에 저장됩니다.
+
+```text
+outputs/denoise_sgmse/samples/step_*/
+├── *_noisy_full.wav
+├── *_clean_full.wav
+└── *_enhanced_full.wav
+```
+
+`*_enhanced_full.wav`가 denoising 결과입니다.
+
+---
+
+## 8. 참고 연구 흐름
+
+LRDSE는 다음 흐름을 참고합니다.
+
+- SGMSE: complex STFT domain에서 score-based generative model을 사용하는 speech enhancement
+- Diffusion-based speech enhancement: noisy speech에서 clean speech distribution으로 복원하는 generative approach
+- RDDM: restoration 문제에서 residual diffusion과 noise diffusion을 분리해 해석하는 관점
+- Robot state-conditioned enhancement: audio 외부의 robot state를 condition으로 사용해 robot self-generated noise를 제거하는 방향
+
+---
+
+## 9. References
+
+- Simon Welker, Julius Richter, Timo Gerkmann, “Speech Enhancement with Score-Based Generative Models in the Complex STFT Domain”, Interspeech 2022.  
+  https://arxiv.org/abs/2203.17004
+
+- Julius Richter, Simon Welker, Jean-Marie Lemercier, Bunlong Lay, Timo Gerkmann, “Speech Enhancement and Dereverberation with Diffusion-Based Generative Models”, IEEE/ACM TASLP 2023.  
+  https://arxiv.org/abs/2208.05830
+
+- Jiawei Liu, Qiang Wang, Huijie Fan, Yinong Wang, Yandong Tang, Liangqiong Qu, “Residual Denoising Diffusion Models”, CVPR 2024.  
+  https://arxiv.org/abs/2308.13712
+
+- Unitree Robotics, Go2 SDK / LowState interface documentation.  
+  https://support.unitree.com/home/en/developer/Basic_services
