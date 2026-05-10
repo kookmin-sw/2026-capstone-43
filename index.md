@@ -72,13 +72,7 @@
   <ul>
     <li><b>주요 기능</b>: FOA 기반 음원 위치 추적 및 SpatialAST 모델을 통한 성능 고도화</li>
     <li><b>차별점</b>: 시각 정보(<code>V_sphere</code>)와 오디오 정보(<code>A_sphere</code>)를 정합하여 비가시 영역의 소리까지 통합 인지</li>
-    <li><b>주요 참고 논문</b>:
-      <ul>
-        <li>Speech Enhancement and Dereverberation with Diffusion-based Generative Models</li>
-        <li>Noise-aware Speech Enhancement using Diffusion Probabilistic Model</li>
-        <li>Residual Denoising Diffusion Models</li>
-      </ul>
-    </li>
+    <li><b>주요 참고 논문</b>: (추후 추가 예정)</li>
   </ul>
 </div>
 
@@ -88,7 +82,13 @@
   <ul>
     <li><b>주요 기능</b>: SGMSE 및 RDDM 기반의 Diffusion 모델을 사용하여 깨끗한 음성 복원</li>
     <li><b>차별점</b>: 다리 관절 힘(Foot force) 데이터를 보조 조건으로 입력받아 정밀한 소음 제거</li>
-    <li><b>주요 참고 논문</b>: (추후 추가 예정)</li>
+    <li><b>주요 참고 논문</b>:
+    <ul>
+        <li>Speech Enhancement and Dereverberation with Diffusion-based Generative Models</li>
+        <li>Noise-aware Speech Enhancement using Diffusion Probabilistic Model</li>
+        <li>Residual Denoising Diffusion Models</li>
+      </ul>
+    </li>
   </ul>
 </div>
 
