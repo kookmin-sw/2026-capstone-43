@@ -197,8 +197,15 @@
 
 ### 🤖 5. Task Execution
 > LLM과 실시간 씬그래프, 그리고 빈공간 스코어링을 활용하여 로봇이 작업을 계획하고 주행하는 결과입니다.
-* **모바일 매니퓰레이터 태스크 플래닝 및 주행 데모**
-  * (여기에 Isaac Sim 시뮬레이션 주행 영상이나 플래닝 결과 화면을 추가해 주세요.)
+
+* **freespace 씬그래프 시각화**<br>
+<img src="./assets/sceneupdate/freespace_scenegraph.jpg" width="100%">
+
+* **isaacsim 에서의 빈공간 추론을 활용한 task execution**<br>
+<video width="100%" controls>
+  <source src="./assets/sceneupdate/task_execution.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
 
 ---
 
