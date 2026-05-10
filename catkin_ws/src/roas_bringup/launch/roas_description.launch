@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-  
-  <param name="robot_description" command="$(find xacro)xacro '$(find roas_bringup)/urdf/roas.urdf.xacro'"/>
- 
-</launch>
