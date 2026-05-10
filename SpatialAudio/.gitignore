@@ -17,6 +17,7 @@ _tmp_*
 *.csv
 *.zip
 *.png
+!15_model_architectures/*.png
 *.jpg
 *.jpeg
 *.gif
