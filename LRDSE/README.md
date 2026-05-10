@@ -7,6 +7,7 @@ Robot noise speech enhancement 실험용 코드입니다. Clean speech와 quadru
 ```text
 LRDSE/
 ├── train_sgmse.py              # SGMSE speech enhancement 학습 / 검증 / 샘플 저장
+├── denoise_sgmse.py            # 학습된 SGMSE checkpoint로 noisy wav denoising
 ├── train_rddm.py               # RDDM 실험 코드
 ├── dataset.py                  # paired clean/noisy dataset, condition 로딩
 ├── src/
@@ -142,6 +143,7 @@ python3 train_sgmse.py \
 ## Aux Condition 학습
 
 Foot force condition을 쓰려면 `--use-aux-cond`를 추가합니다. 현재 SGMSE aux path는 `backbone=ncsnpp_v2`, `aux_cond_dim=8` 조합을 전제로 합니다.
+기본 `--aux-encoder identity`는 정규화된 foot force 8ch를 별도 Linear projection 없이 그대로 attention context로 사용합니다. Monotonic timestamp는 audio/lowstate 정렬에 사용한 뒤 crop 시작 시간을 뺀 상대 초 단위로 time embedding에 넣으며, 기본 time scale은 50 ms입니다.
 
 ```bash
 python3 train_sgmse.py \
@@ -151,11 +153,28 @@ python3 train_sgmse.py \
   --device cuda \
   --batch-size 4 \
   --max-epochs 300 \
-  --use-aux-cond \
-  --aux-cond-dim 8
+  --use-aux-cond
 ```
 
+기존 8ch→128ch Linear projection 방식으로 학습/재개하려면 `--aux-encoder mlp`를 사용합니다. 오래된 aux checkpoint를 denoise/resume할 때는 checkpoint weight shape을 보고 `mlp`로 자동 호환 처리합니다.
+
 Condition preprocessing은 `lowstate`에서 4ch raw foot force와 4ch derivative를 만들고, crop 구간에 맞춰 `[8, 1024]` token으로 패딩합니다.
+
+## Aux Condition Loss 점검
+
+Aux condition checkpoint에서 실제 condition 대신 zero/random condition을 넣었을 때 loss가 망가지는지 확인하려면:
+
+```bash
+python3 scripts/check_sgmse_condition_loss.py \
+  --checkpoint ./checkpoints/sgmse_aux/latest.pt \
+  --manifest ./data/manifest_val.csv \
+  --device cuda \
+  --batch-size 2 \
+  --num-batches 8 \
+  --repeats 3
+```
+
+기본 비교 mode는 `real`, `zero`, `zero_padded`, `random`, `shuffle`, `no_condition`입니다. 같은 batch/repeat에서는 diffusion timestep/noise seed를 고정하므로 condition 변화의 영향만 비교하기 쉽습니다.
 
 ## Checkpoint와 Resume
 
@@ -178,6 +197,29 @@ python3 train_sgmse.py \
 ```
 
 Step별 checkpoint도 남기려면 `--save-step-checkpoints`를 추가합니다.
+
+## SGMSE Denoising 추론
+
+학습된 `latest.pt` 또는 `best.pt`를 불러와 특정 noisy wav를 denoising할 때:
+
+```bash
+python3 denoise_sgmse.py \
+  --checkpoint ./checkpoints/sgmse_se/latest.pt \
+  --noisy-wav /path/to/noisy.wav \
+  --out ./outputs/denoise_sgmse/noisy_enhanced.wav \
+  --device cuda
+```
+
+출력 경로를 생략하면 `./outputs/denoise_sgmse/<파일명>_enhanced.wav`로 저장합니다.
+
+```bash
+python3 denoise_sgmse.py \
+  --checkpoint ./checkpoints/sgmse_se/best.pt \
+  --noisy-wav ./data/noisy/.../sample.wav \
+  --sampling-N 30
+```
+
+Aux condition으로 학습한 checkpoint라면 noisy wav의 parent directory를 `run_dir`로 자동 사용합니다. 별도 위치를 쓰려면 `--run-dir /path/to/run_dir`를 지정합니다.
 
 ## Loss 시각화
 

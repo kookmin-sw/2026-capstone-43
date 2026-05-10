@@ -295,8 +295,8 @@ class SpeechEnhancementDataset(Dataset):
                 sample["cond"] = cond_out["cond_10ch"].float()     # [10, 1024]
             else:
                 sample["cond"] = cond_out["cond_8ch"].float()      # [8, 1024]
-            sample["cond_times"] = cond_out["cond_times"]  # [1024], float64 monotonic sec
-            sample["query_mono_times"] = cond_out["query_mono_times"]  # [K_audio], float64 monotonic sec
+            sample["cond_times"] = cond_out["cond_times"]  # [1024], float64 crop-relative sec
+            sample["query_mono_times"] = cond_out["query_mono_times"]  # [K_audio], float64 crop-relative sec
             sample["cond_mask"] = cond_out["cond_mask"].bool()     # [1024]
             sample["real_token_count"] = cond_out["real_token_count"]
 

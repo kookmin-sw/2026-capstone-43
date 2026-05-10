@@ -44,7 +44,7 @@ class NCSNpp_v2(nn.Module):
         parser.add_argument("--num_res_blocks", type=int, default=2)
         parser.add_argument("--attn_resolutions", type=int, nargs='+', default=[16])
         parser.add_argument("--aux_context_dim", type=int, default=None)
-        parser.add_argument("--aux_time_scale", type=float, default=1000.0)
+        parser.add_argument("--aux_time_scale", type=float, default=0.05)
         parser.add_argument("--aux_time_embed_dim", type=int, default=128)
         parser.add_argument("--aux_time_max_period", type=float, default=10000.0)
         return parser
@@ -69,7 +69,7 @@ class NCSNpp_v2(nn.Module):
         embedding_type = 'fourier',
         dropout = .0,
         aux_context_dim = None,
-        aux_time_scale = 1000.0,
+        aux_time_scale = 0.05,
         aux_time_embed_dim = 128,
         aux_time_max_period = 10000.0,
         **unused_kwargs

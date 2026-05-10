@@ -135,6 +135,7 @@ def build_model(args):
         pesq_weight=args.pesq_weight,
         sr=args.target_sr,
         use_aux_cond=args.use_aux_cond,
+        aux_encoder=args.aux_encoder,
         aux_cond_dim=args.aux_cond_dim,
         aux_hidden_dim=args.aux_hidden_dim,
         aux_scale_init=args.aux_scale_init,
@@ -221,6 +222,34 @@ def load_checkpoint(path, model, optimizer=None, scaler=None, device="cpu"):
     return int(ckpt.get("step", 0)), float(ckpt.get("loss", 0.0))
 
 
+def infer_aux_encoder_from_checkpoint(path):
+    if not path:
+        return ""
+
+    ckpt = torch.load(path, map_location="cpu")
+    if isinstance(ckpt, dict) and isinstance(ckpt.get("model"), dict):
+        state_dict = ckpt["model"]
+    elif isinstance(ckpt, dict) and isinstance(ckpt.get("state_dict"), dict):
+        state_dict = ckpt["state_dict"]
+    elif isinstance(ckpt, dict) and ckpt and all(torch.is_tensor(v) for v in ckpt.values()):
+        state_dict = ckpt
+    else:
+        return ""
+
+    if any(str(k).startswith("aux_context_encoder.value_proj.") for k in state_dict):
+        return "mlp"
+
+    for key, value in state_dict.items():
+        if "ContextK.weight" in str(key) and torch.is_tensor(value) and value.dim() == 3:
+            in_channels = int(value.shape[1])
+            if in_channels == 8:
+                return "identity"
+            if in_channels == 128:
+                return "mlp"
+
+    return ""
+
+
 @torch.no_grad()
 def build_aux_cond_for_chunk(
     run_dir,
@@ -249,6 +278,55 @@ def build_aux_cond_for_chunk(
         "aux_cond_mask": cond_out["cond_mask"].unsqueeze(0).to(device, non_blocking=True),
         "aux_query_times": cond_out["query_mono_times"].unsqueeze(0).to(device, non_blocking=True),
     }
+
+
+@torch.no_grad()
+def apply_aux_cond_mode_for_sample(aux_payload, args, chunk_start_sample):
+    mode = str(getattr(args, "aux_cond_mode", "real")).strip().lower().replace("-", "_")
+    if mode in {"", "real"}:
+        return aux_payload
+
+    aux_cond = aux_payload["aux_cond"]
+    aux_cond_mask = aux_payload["aux_cond_mask"].bool()
+
+    if mode == "zero":
+        aux_payload["aux_cond"] = torch.zeros_like(aux_cond)
+        return aux_payload
+
+    if mode == "zero_padded":
+        aux_payload["aux_cond"] = torch.zeros_like(aux_cond)
+        aux_payload["aux_cond_mask"] = torch.zeros_like(aux_cond_mask, dtype=torch.bool)
+        return aux_payload
+
+    if mode == "random":
+        valid_mask = aux_cond_mask.unsqueeze(1).expand_as(aux_cond)
+        if valid_mask.any():
+            valid_values = aux_cond[valid_mask]
+        else:
+            valid_values = aux_cond.reshape(-1)
+
+        mean = valid_values.mean()
+        std = valid_values.std(unbiased=False).clamp_min(1e-6)
+        seed = int(getattr(args, "aux_cond_seed", 0)) + int(chunk_start_sample)
+        generator = torch.Generator()
+        generator.manual_seed(seed)
+        random_cond = torch.randn(
+            aux_cond.shape,
+            generator=generator,
+            dtype=aux_cond.dtype,
+        ).to(device=aux_cond.device)
+        random_cond = random_cond * std + mean
+        aux_payload["aux_cond"] = torch.where(
+            valid_mask,
+            random_cond,
+            torch.zeros_like(random_cond),
+        )
+        return aux_payload
+
+    raise ValueError(
+        f"Invalid aux_cond_mode={mode}. "
+        "Expected one of {'real', 'zero', 'zero_padded', 'random'}."
+    )
 
 
 @torch.no_grad()
@@ -337,7 +415,8 @@ def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
         f"hop={chunk_hop}, "
         f"chunks={len(starts)}, "
         f"normfac={normfac.item():.6f}, "
-        f"use_aux_cond={args.use_aux_cond}"
+        f"use_aux_cond={args.use_aux_cond}, "
+        f"aux_cond_mode={getattr(args, 'aux_cond_mode', 'real')}"
     )
 
     for ci, start in enumerate(starts):
@@ -361,6 +440,11 @@ def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
                 noisy_spec=y_spec.squeeze(0),
                 args=args,
                 device=device,
+            )
+            aux_payload = apply_aux_cond_mode_for_sample(
+                aux_payload=aux_payload,
+                args=args,
+                chunk_start_sample=start,
             )
             aux_cond = aux_payload["aux_cond"]
             aux_cond_times = aux_payload["aux_cond_times"]
@@ -652,10 +736,23 @@ def main():
     parser.add_argument("--pesq-weight", type=float, default=0.0)
 
     parser.add_argument("--use-aux-cond", action="store_true")
+    parser.add_argument(
+        "--aux-encoder",
+        default="identity",
+        choices=["identity", "mlp"],
+        help="'identity'는 정규화된 8ch condition을 그대로 attention context로 사용. "
+             "'mlp'는 기존 8->128 Linear projection 방식.",
+    )
     parser.add_argument("--aux-cond-dim", type=int, default=8)
     parser.add_argument("--aux-hidden-dim", type=int, default=128)
     parser.add_argument("--aux-scale-init", type=float, default=0.1)
-    parser.add_argument("--aux-time-scale", type=float, default=1000.0)
+    parser.add_argument(
+        "--aux-time-scale",
+        type=float,
+        default=0.05,
+        help="Crop-relative monotonic time sinusoidal embedding scale in seconds. "
+             "Default 0.05 means the highest-frequency component has a 50 ms period.",
+    )
     parser.add_argument("--aux-time-embed-dim", type=int, default=128)
     parser.add_argument("--aux-time-max-period", type=float, default=10000.0)
     parser.add_argument("--raw-force-scale", type=float, default=220.0)
@@ -759,6 +856,20 @@ def main():
             "use_aux_cond=True is currently wired only for backbone='ncsnpp_v2'. "
             f"Got backbone={args.backbone}."
         )
+    if args.use_aux_cond and args.aux_encoder == "identity" and args.aux_hidden_dim != args.aux_cond_dim:
+        print(
+            f"[aux encoder] identity mode uses aux_cond_dim={args.aux_cond_dim} "
+            f"directly. aux_hidden_dim={args.aux_hidden_dim} is ignored."
+        )
+
+    if args.resume and args.use_aux_cond:
+        inferred_aux_encoder = infer_aux_encoder_from_checkpoint(args.resume)
+        if inferred_aux_encoder and inferred_aux_encoder != args.aux_encoder:
+            print(
+                f"[resume] checkpoint aux_encoder={inferred_aux_encoder}; "
+                f"overriding requested aux_encoder={args.aux_encoder} for compatibility."
+            )
+            args.aux_encoder = inferred_aux_encoder
 
     if args.win_length != args.n_fft:
         raise ValueError(
@@ -977,6 +1088,7 @@ def main():
     print("--------------------------------------------------")
     print("[condition config]")
     print(f"use_aux_cond       : {args.use_aux_cond}")
+    print(f"aux_encoder        : {args.aux_encoder}")
     print(f"aux_cond_dim       : {args.aux_cond_dim}")
     print(f"aux_hidden_dim     : {args.aux_hidden_dim}")
     print(f"aux_scale_init     : {args.aux_scale_init}")

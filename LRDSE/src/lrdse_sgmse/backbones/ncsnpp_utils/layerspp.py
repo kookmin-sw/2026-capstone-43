@@ -59,8 +59,8 @@ class Combine(nn.Module):
       raise ValueError(f'Method {self.method} not recognized.')
 
 
-def monotonic_sinusoidal_embedding(times, embedding_dim, max_period=10000.0, time_scale=1000.0):
-  """Deterministic sinusoidal embedding for absolute monotonic times."""
+def monotonic_sinusoidal_embedding(times, embedding_dim, max_period=10000.0, time_scale=0.05):
+  """Deterministic sinusoidal embedding for crop-relative monotonic times in seconds."""
   if embedding_dim <= 0:
     raise ValueError(f"embedding_dim must be positive, got {embedding_dim}")
   if times.dim() != 2:
@@ -97,7 +97,7 @@ class AttnBlockpp(nn.Module):
       skip_rescale=False,
       init_scale=0.,
       context_dim=None,
-      aux_time_scale=1000.0,
+      aux_time_scale=0.05,
       aux_time_embed_dim=128,
       aux_time_max_period=10000.0,
   ):
@@ -195,12 +195,14 @@ class AttnBlockpp(nn.Module):
         q_cross = q_cross + q_time_bias
 
       resized_ctx_mask = None
+      valid_ctx_sample = None
       if context_mask is not None:
         resized_ctx_mask = context_mask
         if resized_ctx_mask.dim() == 3 and resized_ctx_mask.size(1) == 1:
           resized_ctx_mask = resized_ctx_mask.squeeze(1)
         resized_ctx_mask = resized_ctx_mask.to(device=q.device, dtype=q.dtype)
         resized_ctx_mask = self._resize_1d(resized_ctx_mask, k_ctx.size(-1), mode="nearest") > 0.5
+        valid_ctx_sample = resized_ctx_mask.any(dim=1).to(dtype=q.dtype)
 
       if self.use_monotonic_time and context_times is not None:
         ctx_times = context_times
@@ -227,6 +229,8 @@ class AttnBlockpp(nn.Module):
       h_ctx = torch.bmm(attn_ctx, v_ctx.transpose(1, 2))  # [B, HW, C]
       h_ctx = h_ctx.permute(0, 2, 1).reshape(B, C, H, W).contiguous()
       h_ctx = self.ContextOut(h_ctx)
+      if valid_ctx_sample is not None:
+        h_ctx = h_ctx * valid_ctx_sample[:, None, None, None]
 
       h = h + h_ctx
 

@@ -208,6 +208,56 @@ def load_lowstate_time_and_force(lowstate_path: str) -> Tuple[np.ndarray, np.nda
     return t, f
 
 
+def _append_segment_boundary_anchors(
+    anchor_path: str,
+    sample_idx: np.ndarray,
+    mono_sec: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    meta_path = Path(anchor_path).with_name("segment_meta.json")
+    if not meta_path.is_file():
+        return sample_idx, mono_sec
+
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return sample_idx, mono_sec
+
+    if not isinstance(meta, dict):
+        return sample_idx, mono_sec
+
+    extra_samples = []
+    extra_times = []
+
+    start_ns = meta.get("noise_start_clock_monotonic_ns", None)
+    if isinstance(start_ns, (int, float)):
+        extra_samples.append(0.0)
+        extra_times.append(float(start_ns) / 1e9)
+
+    end_ns = meta.get("noise_end_clock_monotonic_ns", None)
+    duration_sec = meta.get("duration_sec", None)
+    sr = meta.get("source_sr", meta.get("noise_sr", None))
+    if (
+        isinstance(end_ns, (int, float))
+        and isinstance(duration_sec, (int, float))
+        and isinstance(sr, (int, float))
+        and float(duration_sec) > 0.0
+        and float(sr) > 0.0
+    ):
+        extra_samples.append(round(float(duration_sec) * float(sr)))
+        extra_times.append(float(end_ns) / 1e9)
+
+    if not extra_samples:
+        return sample_idx, mono_sec
+
+    sample_idx = np.concatenate(
+        [sample_idx, np.asarray(extra_samples, dtype=np.float64)]
+    )
+    mono_sec = np.concatenate(
+        [mono_sec, np.asarray(extra_times, dtype=np.float64)]
+    )
+    return sample_idx, mono_sec
+
+
 def load_anchor_sample_to_time(anchor_path: str) -> Tuple[np.ndarray, np.ndarray]:
     raw = json.loads(Path(anchor_path).read_text(encoding="utf-8"))
 
@@ -254,6 +304,11 @@ def load_anchor_sample_to_time(anchor_path: str) -> Tuple[np.ndarray, np.ndarray
 
     sample_idx = np.asarray(sample_idx, dtype=np.float64)
     mono_sec = np.asarray(mono_sec, dtype=np.float64)
+    sample_idx, mono_sec = _append_segment_boundary_anchors(
+        anchor_path=anchor_path,
+        sample_idx=sample_idx,
+        mono_sec=mono_sec,
+    )
 
     order = np.argsort(sample_idx)
     sample_idx = sample_idx[order]
@@ -376,7 +431,7 @@ def build_condition_tokens_from_crop_window(
 
         cond_times:
             [condition_num_frames]
-            padding 위치는 0
+            absolute monotonic time (sec). padding 위치는 0
 
         real_token_count:
             crop 구간 안에서 실제로 발견된 lowstate sample 수
@@ -544,7 +599,9 @@ def preprocess_condition_for_train(
 
         query_mono_times:
             [num_frames]
-            STFT frame query용 절대 monotonic time (sec).
+            STFT frame query용 crop-relative monotonic time (sec).
+            absolute monotonic time은 audio/lowstate 정렬에만 사용하고,
+            모델 time embedding에는 crop 시작 시간을 뺀 상대 시간을 사용한다.
 
         real_token_count:
             crop 구간 안에 실제로 들어온 lowstate sample 수
@@ -585,7 +642,7 @@ def preprocess_condition_for_train(
     if crop_end_time < crop_start_time:
         crop_start_time, crop_end_time = crop_end_time, crop_start_time
 
-    cond_np, mask_np, cond_times_np, real_token_count = build_condition_tokens_from_crop_window(
+    cond_np, mask_np, cond_abs_times_np, real_token_count = build_condition_tokens_from_crop_window(
         t_low=t_low,
         force_norm=force_norm,
         deriv_on_low=deriv_on_low,
@@ -593,6 +650,9 @@ def preprocess_condition_for_train(
         crop_end_time=crop_end_time,
         condition_num_frames=cfg.condition_num_frames,
     )
+
+    cond_times_np = np.zeros_like(cond_abs_times_np, dtype=np.float64)
+    cond_times_np[mask_np] = np.maximum(cond_abs_times_np[mask_np] - crop_start_time, 0.0)
 
     cond_8ch = torch.from_numpy(cond_np).float()
     cond_10ch = torch.from_numpy(
@@ -613,6 +673,8 @@ def preprocess_condition_for_train(
         anchor_sample_idx,
         anchor_mono_sec,
     ).astype(np.float64)
+    query_abs_mono_times_np = query_mono_times_np
+    query_mono_times_np = np.maximum(query_abs_mono_times_np - crop_start_time, 0.0)
     query_mono_times = torch.from_numpy(query_mono_times_np).to(torch.float64)
 
     return {
@@ -622,6 +684,8 @@ def preprocess_condition_for_train(
         "cond_times": cond_times,
         "query_mono_times": query_mono_times,
         "real_token_count": torch.tensor(real_token_count, dtype=torch.long),
-        "crop_start_time": torch.tensor(crop_start_time, dtype=torch.float32),
-        "crop_end_time": torch.tensor(crop_end_time, dtype=torch.float32),
+        "crop_start_time": torch.tensor(crop_start_time, dtype=torch.float64),
+        "crop_end_time": torch.tensor(crop_end_time, dtype=torch.float64),
+        "cond_abs_mono_times": torch.from_numpy(cond_abs_times_np).to(torch.float64),
+        "query_abs_mono_times": torch.from_numpy(query_abs_mono_times_np).to(torch.float64),
     }

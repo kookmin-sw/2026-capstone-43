@@ -69,18 +69,28 @@ class AuxConditionContextEncoder(nn.Module):
         hidden_dim: int = 128,
         num_layers: int = 3,
         aux_scale_init: float = 0.1,
+        encoder_type: str = "identity",
     ):
         super().__init__()
-        # Keep num_layers argument for compatibility; this encoder does token-wise
-        # projection only (no Conv1d token mixing).
+        self.encoder_type = str(encoder_type).strip().lower()
         _ = num_layers
-        self.value_proj = nn.Linear(aux_cond_dim, hidden_dim)
-        self.fuse = nn.Sequential(
-            nn.SiLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-        )
-        self.out_dim = hidden_dim
-        self.context_scale = nn.Parameter(torch.tensor(float(aux_scale_init)))
+
+        if self.encoder_type == "identity":
+            self.out_dim = int(aux_cond_dim)
+        elif self.encoder_type == "mlp":
+            # Backward-compatible token-wise projection used by older checkpoints.
+            self.value_proj = nn.Linear(aux_cond_dim, hidden_dim)
+            self.fuse = nn.Sequential(
+                nn.SiLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+            )
+            self.context_scale = nn.Parameter(torch.tensor(float(aux_scale_init)))
+            self.out_dim = int(hidden_dim)
+        else:
+            raise ValueError(
+                f"Invalid aux encoder_type={encoder_type}. "
+                "Expected one of {'identity', 'mlp'}."
+            )
 
     def forward(
         self,
@@ -92,13 +102,26 @@ class AuxConditionContextEncoder(nn.Module):
             raise ValueError(
                 f"Expected aux_cond shape [B, C_aux, K], got {tuple(aux_cond.shape)}"
             )
-        if aux_cond.size(1) != self.value_proj.in_features:
+
+        expected_dim = self.out_dim if self.encoder_type == "identity" else self.value_proj.in_features
+        if aux_cond.size(1) != expected_dim:
             raise ValueError(
-                f"Expected aux_cond channel dim={self.value_proj.in_features}, got {aux_cond.size(1)}"
+                f"Expected aux_cond channel dim={expected_dim}, got {aux_cond.size(1)}"
             )
 
         _ = aux_cond_times
         aux = aux_cond.to(dtype=torch.float32)
+
+        if self.encoder_type == "identity":
+            context = aux
+            if aux_cond_mask is not None:
+                mask = aux_cond_mask
+                if mask.dim() == 3 and mask.size(1) == 1:
+                    mask = mask.squeeze(1)
+                mask = mask.to(device=context.device, dtype=context.dtype).unsqueeze(1)
+                context = context * mask
+            return context.contiguous()
+
         fused = self.fuse(self.value_proj(aux.transpose(1, 2)))
 
         if aux_cond_mask is not None:
@@ -130,10 +153,11 @@ class ScoreModel(pl.LightningModule):
         parser.add_argument("--pesq_weight", type=float, default=0.0)
         parser.add_argument("--sr", type=int, default=16000)
         parser.add_argument("--use_aux_cond", action="store_true")
+        parser.add_argument("--aux_encoder", type=str, default="identity", choices=["identity", "mlp"])
         parser.add_argument("--aux_cond_dim", type=int, default=8)
         parser.add_argument("--aux_hidden_dim", type=int, default=128)
         parser.add_argument("--aux_scale_init", type=float, default=0.1)
-        parser.add_argument("--aux_time_scale", type=float, default=1000.0)
+        parser.add_argument("--aux_time_scale", type=float, default=0.05)
         parser.add_argument("--aux_time_embed_dim", type=int, default=128)
         parser.add_argument("--aux_time_max_period", type=float, default=10000.0)
         return parser
@@ -158,10 +182,11 @@ class ScoreModel(pl.LightningModule):
         sr: int = 16000,
         data_module_cls=None,
         use_aux_cond: bool = False,
+        aux_encoder: str = "identity",
         aux_cond_dim: int = 8,
         aux_hidden_dim: int = 128,
         aux_scale_init: float = 0.1,
-        aux_time_scale: float = 1000.0,
+        aux_time_scale: float = 0.05,
         aux_time_embed_dim: int = 128,
         aux_time_max_period: float = 10000.0,
         **kwargs,
@@ -171,8 +196,15 @@ class ScoreModel(pl.LightningModule):
         self.backbone = backbone
         dnn_cls = BackboneRegistry.get_by_name(backbone)
         dnn_kwargs = dict(kwargs)
+        aux_encoder = str(aux_encoder).strip().lower()
+        if aux_encoder not in {"identity", "mlp"}:
+            raise ValueError(
+                f"Invalid aux_encoder={aux_encoder}. "
+                "Expected one of {'identity', 'mlp'}."
+            )
+        aux_context_dim = aux_cond_dim if aux_encoder == "identity" else aux_hidden_dim
         if use_aux_cond and backbone == "ncsnpp_v2":
-            dnn_kwargs["aux_context_dim"] = aux_hidden_dim
+            dnn_kwargs["aux_context_dim"] = aux_context_dim
             dnn_kwargs["aux_time_scale"] = aux_time_scale
             dnn_kwargs["aux_time_embed_dim"] = aux_time_embed_dim
             dnn_kwargs["aux_time_max_period"] = aux_time_max_period
@@ -182,6 +214,7 @@ class ScoreModel(pl.LightningModule):
         self.sde = sde_cls(**kwargs)
 
         self.use_aux_cond = bool(use_aux_cond)
+        self.aux_encoder = aux_encoder
         self.aux_time_scale = aux_time_scale
         self.aux_time_embed_dim = aux_time_embed_dim
         self.aux_time_max_period = aux_time_max_period
@@ -190,6 +223,7 @@ class ScoreModel(pl.LightningModule):
                 aux_cond_dim=aux_cond_dim,
                 hidden_dim=aux_hidden_dim,
                 aux_scale_init=aux_scale_init,
+                encoder_type=aux_encoder,
             )
             if self.use_aux_cond
             else None
