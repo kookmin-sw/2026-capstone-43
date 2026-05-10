@@ -1,0 +1,17 @@
+output_dir: outputs/demo
+channel_order: WXYZ
+target_sr:
+normalize_audio: false
+num_az_bins: 24
+num_el_bins: 8
+window_sec: 2.0
+hop_sec: 1.0
+aggregation: both
+pooling_mode: both
+pooling_mapping: sector
+n_fft: 1024
+stft_hop_length:
+stft_window: hann
+aiv_sign: 1.0
+export_pt: false
+
