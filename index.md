@@ -1,5 +1,8 @@
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/948dfaa9-a3a2-4f47-8ae0-6376b43308b8" width="100%" alt="project banner" />
+</p>
+
 <div align="center">
-  <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/948dfaa9-a3a2-4f47-8ae0-6376b43308b8" />
   <br><br>
   <h1>로봇을 위한 실세계 강인한 멀티모달 시공간 인지 기반의 전역적 동적 환경 인식 원천기술 개발</h1>
   <i>"시각, 청각, 촉각 및 계층적 기억을 융합한 로봇 지능 원천기술"</i>
