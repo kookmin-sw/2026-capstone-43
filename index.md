@@ -84,10 +84,16 @@ LLM과 실시간 씬그래프를 결합하여 복잡한 명령을 수행하는 �
 > 계층형 씬그래프 구축 및 장단기 메모리를 활용한 로봇의 동적 환경 인지 결과입니다.
 
 #### 방 분리 결과 이미지
-| 1 | 2 | 3 | 4 |
-|:---:|:---:|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/7df81276-5b42-450e-80fd-db56d06c4672" width="100%"> | <img src="https://github.com/user-attachments/assets/fd9f7897-26d1-40f4-9ea7-f96aff4e29f4" width="100%"> | <img src="https://github.com/user-attachments/assets/4c4a1582-b464-4bd6-9245-c3db899da223" width="100%"> | <img src="https://github.com/user-attachments/assets/aee2a039-f5be-4c46-8c86-43087035b166" width="100%"> |
-| <img src="https://github.com/user-attachments/assets/a05f5b52-b137-4c49-9282-a24b14fc4c00" width="100%"> | <img src="https://github.com/user-attachments/assets/7d870580-b98e-4b76-a55c-707be50fa546" width="100%"> | <img src="https://github.com/user-attachments/assets/0a615ba2-0ebe-43a9-80dc-ffe3f911b23b" width="100%"> | <img src="https://github.com/user-attachments/assets/72bc62a4-aeca-4b1d-badf-0bf826dbaf57" width="100%"> |
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: center;">
+  <img src="https://github.com/user-attachments/assets/7df81276-5b42-450e-80fd-db56d06c4672" style="width: 100%;">
+  <img src="https://github.com/user-attachments/assets/fd9f7897-26d1-40f4-9ea7-f96aff4e29f4" style="width: 100%;">
+  <img src="https://github.com/user-attachments/assets/4c4a1582-b464-4bd6-9245-c3db899da223" style="width: 100%;">
+  <img src="https://github.com/user-attachments/assets/aee2a039-f5be-4c46-8c86-43087035b166" style="width: 100%;">
+  <img src="https://github.com/user-attachments/assets/a05f5b52-b137-4c49-9282-a24b14fc4c00" style="width: 100%;">
+  <img src="https://github.com/user-attachments/assets/7d870580-b98e-4b76-a55c-707be50fa546" style="width: 100%;">
+  <img src="https://github.com/user-attachments/assets/0a615ba2-0ebe-43a9-80dc-ffe3f911b23b" style="width: 100%;">
+  <img src="https://github.com/user-attachments/assets/72bc62a4-aeca-4b1d-badf-0bf826dbaf57" style="width: 100%;">
+</div>
 
 #### Task 수행 동영상
 https://youtu.be/n9BuyLzmbgs
