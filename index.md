@@ -64,12 +64,46 @@ LLM과 실시간 씬그래프를 결합하여 복잡한 명령을 수행하는 �
 
 ---
 
-## 🎬 DEMO
+## 🎬 DEMO (팀원별 결과 및 시각 자료)
 
-### Memory & Interaction
-로봇이 실시간으로 변화하는 환경을 인지하고 씬그래프를 업데이트하며 작업을 수행하는 과정입니다.
-* **Demo Video**: [YouTube 보기](https://youtu.be/n9BuyLzmbgs)
-* **Scene Segmentation**: 계층형 구조로 분리된 공간 인지 결과
-  ![Segmentation](https://github.com/user-attachments/assets/7df81276-5b42-450e-80fd-db56d06c4672)
+### 🎧 1. SpatialAudio (동현)
+> 앰비소닉(Ambisonics) 오디오와 기하학적 맥락을 결합한 시공간 음향 인지 결과입니다.
+* **오디오 인지 파이프라인 데모**
+  * (여기에 동현 님의 데모 영상 링크나 결과물 이미지를 추가해 주세요. 예: `[시연 영상 보기](링크)`)
+
+<br>
+
+### 🔇 2. Denoising (재우)
+> 사족보행 로봇의 구동 소음 환경에서 음성 명령만을 깨끗하게 추출한 결과입니다.
+* **음성 향상(Speech Enhancement) 전/후 비교**
+  * (여기에 재우 님의 오디오 샘플 링크나 디노이징 전후 스펙트로그램 이미지를 추가해 주세요.)
+
+<br>
+
+### 🧠 3. Memory (채희)
+> 계층형 씬그래프 구축 및 장단기 메모리를 활용한 로봇의 동적 환경 인지 결과입니다.
+
+#### 방 분리 결과 이미지
+| 1 | 2 | 3 | 4 |
+|:---:|:---:|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/7df81276-5b42-450e-80fd-db56d06c4672" width="100%"> | <img src="https://github.com/user-attachments/assets/fd9f7897-26d1-40f4-9ea7-f96aff4e29f4" width="100%"> | <img src="https://github.com/user-attachments/assets/4c4a1582-b464-4bd6-9245-c3db899da223" width="100%"> | <img src="https://github.com/user-attachments/assets/aee2a039-f5be-4c46-8c86-43087035b166" width="100%"> |
+| <img src="https://github.com/user-attachments/assets/a05f5b52-b137-4c49-9282-a24b14fc4c00" width="100%"> | <img src="https://github.com/user-attachments/assets/7d870580-b98e-4b76-a55c-707be50fa546" width="100%"> | <img src="https://github.com/user-attachments/assets/0a615ba2-0ebe-43a9-80dc-ffe3f911b23b" width="100%"> | <img src="https://github.com/user-attachments/assets/72bc62a4-aeca-4b1d-badf-0bf826dbaf57" width="100%"> |
+
+#### Task 수행 동영상
+https://youtu.be/n9BuyLzmbgs
+
+<br>
+
+### 🤲 4. Tactile (근서)
+> RGB-Pose 데이터를 바탕으로 실시간 3D 환경을 렌더링한 Continual Gaussian Splatting 매핑 결과입니다.
+* **3D Gaussian Splatting 실시간 매핑 데모**
+  * (여기에 근서 님의 SLAM 시각화 이미지나 렌더링 결과 영상 링크를 추가해 주세요.)
+
+<br>
+
+### 🤖 5. Planning (성빈)
+> LLM과 실시간 씬그래프, 그리고 V2 빈공간 스코어링을 활용하여 로봇이 작업을 계획하고 주행하는 결과입니다.
+* **모바일 매니퓰레이터 태스크 플래닝 및 주행 데모**
+  * (여기에 성빈 님의 Isaac Sim 시뮬레이션 주행 영상이나 플래닝 결과 화면을 추가해 주세요.)
 
 ---
