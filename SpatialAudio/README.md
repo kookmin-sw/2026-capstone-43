@@ -158,6 +158,36 @@ SpatialAudio 연구 방향을 설정하기 위한 대표 baseline 논문 3편을
 | stage14 | `06_spatialast_FOA_frontreg` | 2 | `subset_foa_baseline_reg_slow` | 30.94° | 31.90° | 31.90° | 35.90° | 4.00° |
 | stage15 | `07_spatialast_FOA_front9_and_reg` | 0 | - | - | - | - | - | - |
 
+### Accuracy Statistics
+
+> Accuracy는 `val_azimuth_acc`와 `val_elevation_acc`를 분리해 집계했습니다.
+
+| Stage | Runs | Mean Best Az Acc | Median Best Az Acc | Max Best Az Acc | Mean Best El Acc | Median Best El Acc | Max Best El Acc | Mean Vector Cos | Mean Az MAE | Mean El MAE |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| stage3 | 8 | 75.9% | 95.7% | 100.0% | 74.3% | 94.5% | 100.0% | 0.909 | 7.88° | 6.48° |
+| stage4 | 13 | 10.9% | 10.8% | 12.5% | 18.9% | 19.2% | 21.0% | 0.850 | 22.51° | 20.08° |
+| stage5 | 4 | 11.4% | 11.0% | 12.5% | 15.2% | 15.0% | 16.5% | 0.805 | 26.44° | 18.73° |
+| stage6 | 3 | 11.2% | 11.0% | 12.0% | 20.2% | 21.0% | 21.0% | 0.858 | 22.09° | 19.25° |
+| stage12 | 6 | 10.8% | 11.0% | 11.8% | 16.2% | 14.7% | 21.0% | 0.853 | 22.56° | 18.43° |
+| stage13 | 4 | 10.5% | 10.3% | 11.3% | 14.5% | 14.7% | 14.7% | 0.851 | 23.15° | 17.92° |
+| stage14 | 2 | 11.7% | 11.7% | 13.3% | 15.0% | 15.0% | 16.0% | 0.849 | 23.56° | 17.93° |
+| stage15 | 0 | - | - | - | - | - | - | - | - | - |
+
+### Generalization Top Runs
+
+| Rank | Stage | Run | Variant / Head | Az Acc | El Acc | Angular | Az MAE | El MAE | Vector Cos |
+| ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | stage13 | `subset_foa_conv64_64_out8_slow` | `conv64_64_out8` | 11.3% | 14.7% | 30.24° | 22.27° | 17.73° | 0.852 |
+| 2 | stage12 | `subset_foa_conv64_out16_slow` | `conv64_out16` | 11.3% | 14.7% | 30.39° | 22.47° | 17.73° | 0.851 |
+| 3 | stage12 | `subset_foa_conv64_out8_slow` | `conv64_out8` | 10.7% | 14.7% | 30.47° | 22.67° | 17.71° | 0.852 |
+| 4 | stage13 | `subset_foa_conv64_out8_slow` | `conv64_out8` | 10.7% | 14.7% | 30.47° | 22.67° | 17.71° | 0.852 |
+| 5 | stage14 | `subset_foa_baseline_reg_slow` | `front_regression` | 13.3% | 16.0% | 30.94° | 22.73° | 17.48° | 0.849 |
+| 6 | stage4 | `foa_last4_longer` | `foa_native` | 11.0% | 19.8% | 31.08° | 21.68° | 19.43° | 0.855 |
+| 7 | stage13 | `subset_foa_conv64_64_out16_slow` | `conv64_64_out16` | 10.0% | 14.7% | 31.19° | 23.27° | 17.85° | 0.850 |
+| 8 | stage12 | `full_foa_baseline_slow` | `baseline` | 10.0% | 18.5% | 31.34° | 21.73° | 18.94° | 0.858 |
+| 9 | stage12 | `full_foa_conv64_out8_slow` | `conv64_out8` | 11.8% | 21.0% | 31.57° | 21.32° | 19.33° | 0.859 |
+| 10 | stage6 | `foa_stage3_last2_slow_recipe` | `foa_native` | 10.8% | 18.8% | 31.66° | 22.40° | 19.10° | 0.856 |
+
 ### Log-Only Outputs (`15_spatialast_FOA_front9_and_reg`)
 
 | Run | Log kind | Steps | Mean Loss | Min Loss | Mean Azimuth Loss / Acc-Ang | Mean Matched MAE | Mean Top-k MAE | Mean Act-F1@0.5 |
