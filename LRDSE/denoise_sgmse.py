@@ -61,7 +61,7 @@ DEFAULT_TRAIN_ARGS: Dict[str, Any] = {
     "use_aux_cond": False,
     "aux_encoder": "identity",
     "aux_cond_dim": 8,
-    "aux_hidden_dim": 128,
+    "aux_hidden_dim": 512,
     "aux_scale_init": 0.1,
     "aux_time_scale": 0.05,
     "aux_time_embed_dim": 128,

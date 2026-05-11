@@ -65,6 +65,51 @@ def count_params(model):
     return sum(p.numel() for p in model.parameters())
 
 
+def get_aux_cond_scale(model):
+    if hasattr(model, "module"):
+        model = model.module
+    aux_encoder = getattr(model, "aux_input_add_encoder", None)
+    if aux_encoder is None:
+        return None
+    cond_scale = getattr(aux_encoder, "cond_scale", None)
+    if cond_scale is None:
+        return None
+    return float(cond_scale.detach().cpu().item())
+
+
+def get_aux_condition_monitor(model):
+    if hasattr(model, "module"):
+        model = model.module
+
+    aux_encoder = getattr(model, "aux_input_add_encoder", None)
+    if aux_encoder is None:
+        return {}
+
+    monitor = {}
+    cond_scale = getattr(aux_encoder, "cond_scale", None)
+    if cond_scale is not None:
+        monitor["cond_scale"] = float(cond_scale.detach().cpu().item())
+
+    cond_mlp = getattr(aux_encoder, "cond_mlp", None)
+    if cond_mlp is not None:
+        sq_norm = None
+        for param in cond_mlp.parameters():
+            value = param.detach().float().pow(2).sum()
+            sq_norm = value if sq_norm is None else sq_norm + value
+        if sq_norm is not None:
+            monitor["cond_mlp_norm"] = float(torch.sqrt(sq_norm).cpu().item())
+
+    stats = getattr(model, "_last_aux_input_stats", None)
+    if isinstance(stats, dict):
+        for key, value in stats.items():
+            if torch.is_tensor(value):
+                monitor[key] = float(value.detach().cpu().item())
+            else:
+                monitor[key] = float(value)
+
+    return monitor
+
+
 def autocast_context(device, enabled: bool):
     if not enabled:
         return nullcontext()
@@ -205,7 +250,13 @@ def load_checkpoint(path, model, optimizer=None, scaler=None, device="cpu"):
     model.load_state_dict(ckpt["model"], strict=True)
 
     if optimizer is not None and "optimizer" in ckpt:
-        optimizer.load_state_dict(ckpt["optimizer"])
+        try:
+            optimizer.load_state_dict(ckpt["optimizer"])
+        except ValueError as e:
+            print(
+                f"[resume] skipped optimizer state because model trainable "
+                f"parameters changed: {e}"
+            )
 
     if scaler is not None and "scaler" in ckpt:
         scaler.load_state_dict(ckpt["scaler"])
@@ -720,10 +771,10 @@ def main():
         default="identity",
         choices=["identity", "mlp"],
         help="Deprecated compatibility flag. Current SGMSE aux path uses "
-             "input-level addition via Linear(8, 2 * F), not cross-attention.",
+             "input-level addition via an MLP, not cross-attention.",
     )
     parser.add_argument("--aux-cond-dim", type=int, default=8)
-    parser.add_argument("--aux-hidden-dim", type=int, default=128)
+    parser.add_argument("--aux-hidden-dim", type=int, default=512)
     parser.add_argument("--aux-scale-init", type=float, default=0.1)
     parser.add_argument(
         "--aux-time-scale",
@@ -839,12 +890,6 @@ def main():
         raise ValueError(
             "use_aux_cond=True is currently wired only for backbone='ncsnpp_v2'. "
             f"Got backbone={args.backbone}."
-        )
-    if args.use_aux_cond and args.aux_hidden_dim != args.aux_cond_dim:
-        print(
-            f"[aux condition] input-add mode uses Linear({args.aux_cond_dim}, 2 * F) "
-            f"directly. aux_encoder={args.aux_encoder} and "
-            f"aux_hidden_dim={args.aux_hidden_dim} are ignored."
         )
 
     if args.resume and args.use_aux_cond:
@@ -1077,10 +1122,14 @@ def main():
     print(f"use_aux_cond       : {args.use_aux_cond}")
     print("aux_injection      : input_add")
     print(f"aux_freq_bins      : {args.n_fft // 2 + 1}")
+    print(
+        f"aux_mlp            : Linear({args.aux_cond_dim}, {args.aux_hidden_dim}) "
+        f"-> LeakyReLU(0.2) -> Linear({args.aux_hidden_dim}, {2 * (args.n_fft // 2 + 1)})"
+    )
     print(f"aux_encoder        : {args.aux_encoder} (ignored)")
     print(f"aux_cond_dim       : {args.aux_cond_dim}")
-    print(f"aux_hidden_dim     : {args.aux_hidden_dim} (ignored)")
-    print(f"aux_scale_init     : {args.aux_scale_init} (cond_scale init)")
+    print(f"aux_hidden_dim     : {args.aux_hidden_dim}")
+    print(f"aux_scale_init     : {args.aux_scale_init} (fixed cond_scale)")
     print(f"aux_time_scale     : {args.aux_time_scale} (ignored)")
     print(f"aux_time_embed_dim : {args.aux_time_embed_dim} (ignored)")
     print(f"aux_time_max_period: {args.aux_time_max_period} (ignored)")
@@ -1224,12 +1273,25 @@ def main():
             running_count = 0
 
             aux_shape = None if aux_cond is None else tuple(aux_cond.shape)
+            aux_monitor = get_aux_condition_monitor(model)
+            aux_cond_scale = aux_monitor.get("cond_scale", None)
+            aux_cond_scale_str = "None" if aux_cond_scale is None else f"{aux_cond_scale:.6f}"
+            aux_mlp_norm = aux_monitor.get("cond_mlp_norm", None)
+            aux_mlp_norm_str = "None" if aux_mlp_norm is None else f"{aux_mlp_norm:.6f}"
+            aux_to_x = aux_monitor.get("cond_bias_to_x_rms", None)
+            aux_to_x_str = "None" if aux_to_x is None else f"{aux_to_x:.6f}"
+            aux_to_y = aux_monitor.get("cond_bias_to_y_rms", None)
+            aux_to_y_str = "None" if aux_to_y is None else f"{aux_to_y:.6f}"
             print(
                 f"[step {step:07d}/{total_steps:07d}] "
                 f"epoch~{step / updates_per_epoch:.2f} "
                 f"loss={avg_loss:.8f} "
                 f"mean_loss={mean_loss:.8f} "
                 f"aux={aux_shape} "
+                f"cond_scale={aux_cond_scale_str} "
+                f"cond_mlp_norm={aux_mlp_norm_str} "
+                f"cond/x={aux_to_x_str} "
+                f"cond/y={aux_to_y_str} "
                 f"time={elapsed:.2f}s"
             )
 
@@ -1260,6 +1322,13 @@ def main():
             )
             if val_loss is not None:
                 epoch_log += f" val_loss={val_loss:.8f}"
+            aux_monitor = get_aux_condition_monitor(model)
+            aux_cond_scale = aux_monitor.get("cond_scale", None)
+            if aux_cond_scale is not None:
+                epoch_log += f" cond_scale={aux_cond_scale:.6f}"
+            aux_mlp_norm = aux_monitor.get("cond_mlp_norm", None)
+            if aux_mlp_norm is not None:
+                epoch_log += f" cond_mlp_norm={aux_mlp_norm:.6f}"
             print(epoch_log)
 
             if epoch_loss_csv_path is not None:

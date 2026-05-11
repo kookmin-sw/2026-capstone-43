@@ -153,20 +153,29 @@ class AuxConditionInputAddEncoder(nn.Module):
     def __init__(
         self,
         aux_cond_dim: int = 8,
+        hidden_dim: int = 512,
         freq_bins: int = 256,
         cond_scale_init: float = 0.1,
     ):
         super().__init__()
         if aux_cond_dim <= 0:
             raise ValueError(f"aux_cond_dim must be positive, got {aux_cond_dim}")
+        if hidden_dim <= 0:
+            raise ValueError(f"hidden_dim must be positive, got {hidden_dim}")
         if freq_bins <= 0:
             raise ValueError(f"freq_bins must be positive, got {freq_bins}")
 
         self.aux_cond_dim = int(aux_cond_dim)
+        self.hidden_dim = int(hidden_dim)
         self.freq_bins = int(freq_bins)
         # No bias: zero / fully masked aux should be identical to no additive condition.
-        self.cond_linear = nn.Linear(self.aux_cond_dim, 2 * self.freq_bins, bias=False)
-        self.cond_scale = nn.Parameter(torch.tensor(float(cond_scale_init)))
+        self.cond_mlp = nn.Sequential(
+            nn.Linear(self.aux_cond_dim, self.hidden_dim, bias=False),
+            nn.LeakyReLU(negative_slope=0.2),
+            nn.Linear(self.hidden_dim, 2 * self.freq_bins, bias=False),
+        )
+        # Fixed scale: keep injection strength controlled by the experiment config.
+        self.register_buffer("cond_scale", torch.tensor(float(cond_scale_init)))
 
     @staticmethod
     def _resize_time(values: torch.Tensor, target_frames: int, mode: str = "linear") -> torch.Tensor:
@@ -221,7 +230,7 @@ class AuxConditionInputAddEncoder(nn.Module):
             aux = aux * mask.to(device=aux.device, dtype=aux.dtype).unsqueeze(1)
 
         aux = self._resize_time(aux, int(target_frames), mode="linear")
-        cond = self.cond_linear(aux.transpose(1, 2).contiguous())  # [B, T, 2 * F]
+        cond = self.cond_mlp(aux.transpose(1, 2).contiguous())  # [B, T, 2 * F]
         cond = cond.transpose(1, 2).contiguous().view(
             batch,
             2,
@@ -254,7 +263,7 @@ class ScoreModel(pl.LightningModule):
         parser.add_argument("--use_aux_cond", action="store_true")
         parser.add_argument("--aux_encoder", type=str, default="identity", choices=["identity", "mlp"])
         parser.add_argument("--aux_cond_dim", type=int, default=8)
-        parser.add_argument("--aux_hidden_dim", type=int, default=128)
+        parser.add_argument("--aux_hidden_dim", type=int, default=512)
         parser.add_argument("--aux_scale_init", type=float, default=0.1)
         parser.add_argument("--aux_time_scale", type=float, default=0.05)
         parser.add_argument("--aux_time_embed_dim", type=int, default=128)
@@ -284,7 +293,7 @@ class ScoreModel(pl.LightningModule):
         use_aux_cond: bool = False,
         aux_encoder: str = "identity",
         aux_cond_dim: int = 8,
-        aux_hidden_dim: int = 128,
+        aux_hidden_dim: int = 512,
         aux_scale_init: float = 0.1,
         aux_time_scale: float = 0.05,
         aux_time_embed_dim: int = 128,
@@ -318,12 +327,14 @@ class ScoreModel(pl.LightningModule):
         self.aux_input_add_encoder = (
             AuxConditionInputAddEncoder(
                 aux_cond_dim=aux_cond_dim,
+                hidden_dim=aux_hidden_dim,
                 freq_bins=self.aux_freq_bins,
                 cond_scale_init=aux_scale_init,
             )
             if self.use_aux_cond
             else None
         )
+        self._last_aux_input_stats = None
 
         self.lr = lr
         self.ema_decay = ema_decay
@@ -699,6 +710,7 @@ class ScoreModel(pl.LightningModule):
     ):
         _ = aux_cond_times
         _ = aux_query_times
+        self._last_aux_input_stats = None
         if aux_cond_mask is not None:
             if aux_cond_mask.dim() == 1:
                 aux_cond_mask = aux_cond_mask.unsqueeze(0)
@@ -730,7 +742,20 @@ class ScoreModel(pl.LightningModule):
                     device=dnn_in_x.device,
                     dtype=dnn_in_x.real.dtype,
                 )
-                dnn_in_x = dnn_in_x + cond_scale * cond_complex
+                scaled_cond = cond_scale * cond_complex
+                with torch.no_grad():
+                    cond_rms = torch.sqrt(torch.mean(torch.abs(scaled_cond.detach()).pow(2)))
+                    x_rms = torch.sqrt(torch.mean(torch.abs(dnn_in_x.detach()).pow(2)))
+                    y_rms = torch.sqrt(torch.mean(torch.abs(dnn_in_y.detach()).pow(2)))
+                    eps = torch.tensor(1e-12, device=dnn_in_x.device, dtype=dnn_in_x.real.dtype)
+                    self._last_aux_input_stats = {
+                        "cond_bias_rms": cond_rms,
+                        "x_rms": x_rms,
+                        "y_rms": y_rms,
+                        "cond_bias_to_x_rms": cond_rms / torch.clamp(x_rms, min=eps),
+                        "cond_bias_to_y_rms": cond_rms / torch.clamp(y_rms, min=eps),
+                    }
+                dnn_in_x = dnn_in_x + scaled_cond
 
             dnn_out = self.dnn(dnn_in_x, dnn_in_y, t)
 
