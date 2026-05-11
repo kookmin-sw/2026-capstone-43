@@ -125,6 +125,20 @@ python3 scripts/view_depth_point_cloud.py \
   /home/harudev/rgb_pose_dataset_01/sparse_pc.ply
 ```
 
+standalone으로 SfM-style point만 만들고 싶으면:
+
+```bash
+python3 scripts/depth_pose_to_sfm_points.py \
+  /home/harudev/rgb_pose_dataset_01 \
+  --keep-every 3 \
+  --point-stride 6 \
+  --voxel-size 0.01 \
+  --output /home/harudev/rgb_pose_dataset_01/sparse_pc.ply \
+  --colmap-points3d-output /home/harudev/rgb_pose_dataset_01/points3D.txt
+```
+
+이 `points3D.txt`는 COLMAP text 형식과 비슷한 debug/export 파일이다. 실제 Nerfstudio `splatfacto` 초기화에는 `sparse_pc.ply`와 `transforms.json`의 `ply_file_path`를 쓰는 흐름이 더 직접적이다.
+
 ## 2. Online GS 등록 실행
 
 Ubuntu 20.04의 기본 Python은 3.8이므로 최신 PyTorch/typing-extensions가 안 맞을 수 있다. 아래처럼 Python 3.8 호환 버전을 설치한다.
