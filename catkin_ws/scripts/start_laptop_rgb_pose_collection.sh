@@ -4,8 +4,14 @@ set -eo pipefail
 ROS_MASTER_URI_VALUE="${ROS_MASTER_URI_VALUE:-http://192.168.0.4:11311}"
 ROS_IP_VALUE="${ROS_IP_VALUE:-192.168.0.100}"
 IMAGE_TOPIC="${IMAGE_TOPIC:-/camera/color/image_raw_3hz}"
+DEPTH_TOPIC="${DEPTH_TOPIC:-/camera/aligned_depth_to_color/image_raw_3hz}"
+CAMERA_INFO_TOPIC="${CAMERA_INFO_TOPIC:-/camera/color/camera_info}"
+DEPTH_CAMERA_INFO_TOPIC="${DEPTH_CAMERA_INFO_TOPIC:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-$HOME/rgb_pose_dataset_01}"
 MIN_INTERVAL="${MIN_INTERVAL:-0.333333}"
+SAVE_DEPTH="${SAVE_DEPTH:-False}"
+REQUIRE_DEPTH="${REQUIRE_DEPTH:-True}"
+SYNC_SLOP="${SYNC_SLOP:-0.08}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -20,11 +26,19 @@ unset ROS_HOSTNAME
 echo "[laptop-collector] ROS_MASTER_URI=$ROS_MASTER_URI"
 echo "[laptop-collector] ROS_IP=$ROS_IP"
 echo "[laptop-collector] image_topic=$IMAGE_TOPIC"
+echo "[laptop-collector] depth_topic=$DEPTH_TOPIC"
+echo "[laptop-collector] save_depth=$SAVE_DEPTH"
 echo "[laptop-collector] output_dir=$OUTPUT_DIR"
 
 exec roslaunch uni_navigation collect_rgb_pose.launch \
   image_topic:="$IMAGE_TOPIC" \
+  depth_topic:="$DEPTH_TOPIC" \
+  camera_info_topic:="$CAMERA_INFO_TOPIC" \
+  depth_camera_info_topic:="$DEPTH_CAMERA_INFO_TOPIC" \
   output_dir:="$OUTPUT_DIR" \
   min_interval:="$MIN_INTERVAL" \
   min_translation:=0.0 \
-  min_rotation:=0.0
+  min_rotation:=0.0 \
+  save_depth:="$SAVE_DEPTH" \
+  require_depth:="$REQUIRE_DEPTH" \
+  sync_slop:="$SYNC_SLOP"

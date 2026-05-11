@@ -1,7 +1,9 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="image_topic" default="/camera/color/image_raw"/>
+  <arg name="depth_topic" default="/camera/aligned_depth_to_color/image_raw"/>
   <arg name="camera_info_topic" default="/camera/color/camera_info"/>
+  <arg name="depth_camera_info_topic" default=""/>
   <arg name="odom_topic" default="/robot/odom"/>
   <arg name="pose_source" default="odom"/>
   <arg name="target_frame" default="odom"/>
@@ -13,10 +15,15 @@
   <arg name="min_rotation" default="0.0"/>
   <arg name="image_format" default="png"/>
   <arg name="use_latest_tf" default="true"/>
+  <arg name="save_depth" default="false"/>
+  <arg name="require_depth" default="true"/>
+  <arg name="sync_slop" default="0.05"/>
 
   <node pkg="uni_navigation" type="collect_rgb_pose.py" name="collect_rgb_pose" output="screen">
     <param name="image_topic" value="$(arg image_topic)"/>
+    <param name="depth_topic" value="$(arg depth_topic)"/>
     <param name="camera_info_topic" value="$(arg camera_info_topic)"/>
+    <param name="depth_camera_info_topic" value="$(arg depth_camera_info_topic)"/>
     <param name="odom_topic" value="$(arg odom_topic)"/>
     <param name="pose_source" value="$(arg pose_source)"/>
     <param name="target_frame" value="$(arg target_frame)"/>
@@ -28,5 +35,8 @@
     <param name="min_rotation" value="$(arg min_rotation)"/>
     <param name="image_format" value="$(arg image_format)"/>
     <param name="use_latest_tf" value="$(arg use_latest_tf)"/>
+    <param name="save_depth" value="$(arg save_depth)"/>
+    <param name="require_depth" value="$(arg require_depth)"/>
+    <param name="sync_slop" value="$(arg sync_slop)"/>
   </node>
 </launch>
