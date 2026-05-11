@@ -18,6 +18,8 @@
   <arg name="save_depth" default="false"/>
   <arg name="require_depth" default="true"/>
   <arg name="sync_slop" default="0.05"/>
+  <arg name="sync_odom" default="true"/>
+  <arg name="max_pose_dt" default="0.2"/>
 
   <node pkg="uni_navigation" type="collect_rgb_pose.py" name="collect_rgb_pose" output="screen">
     <param name="image_topic" value="$(arg image_topic)"/>
@@ -38,5 +40,7 @@
     <param name="save_depth" value="$(arg save_depth)"/>
     <param name="require_depth" value="$(arg require_depth)"/>
     <param name="sync_slop" value="$(arg sync_slop)"/>
+    <param name="sync_odom" value="$(arg sync_odom)"/>
+    <param name="max_pose_dt" value="$(arg max_pose_dt)"/>
   </node>
 </launch>

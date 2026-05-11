@@ -76,6 +76,8 @@ class RgbPoseCollector:
         self.save_depth = bool(rospy.get_param("~save_depth", False))
         self.require_depth = bool(rospy.get_param("~require_depth", True))
         self.sync_slop = float(rospy.get_param("~sync_slop", 0.05))
+        self.sync_odom = bool(rospy.get_param("~sync_odom", True))
+        self.max_pose_dt = float(rospy.get_param("~max_pose_dt", 0.2))
 
         if self.image_format not in ("png", "jpg", "jpeg"):
             raise ValueError("~image_format must be png, jpg, or jpeg")
@@ -138,6 +140,8 @@ class RgbPoseCollector:
             "save_depth": self.save_depth,
             "require_depth": self.require_depth,
             "sync_slop": self.sync_slop,
+            "sync_odom": self.sync_odom,
+            "max_pose_dt": self.max_pose_dt,
         }
         with open(self.output_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=2)
@@ -145,14 +149,33 @@ class RgbPoseCollector:
         if self.save_depth:
             self.rgb_sub = message_filters.Subscriber(self.image_topic, Image)
             self.depth_sub = message_filters.Subscriber(self.depth_topic, Image)
-            self.sync = message_filters.ApproximateTimeSynchronizer(
-                [self.rgb_sub, self.depth_sub],
-                queue_size=10,
-                slop=self.sync_slop,
-            )
-            self.sync.registerCallback(self.rgb_depth_callback)
+            if self.pose_source == "odom" and self.sync_odom:
+                self.odom_sync_sub = message_filters.Subscriber(self.odom_topic, Odometry)
+                self.sync = message_filters.ApproximateTimeSynchronizer(
+                    [self.rgb_sub, self.depth_sub, self.odom_sync_sub],
+                    queue_size=20,
+                    slop=self.sync_slop,
+                )
+                self.sync.registerCallback(self.rgb_depth_odom_callback)
+            else:
+                self.sync = message_filters.ApproximateTimeSynchronizer(
+                    [self.rgb_sub, self.depth_sub],
+                    queue_size=10,
+                    slop=self.sync_slop,
+                )
+                self.sync.registerCallback(self.rgb_depth_callback)
         else:
-            self.sub = rospy.Subscriber(self.image_topic, Image, self.image_callback, queue_size=3, buff_size=2**24)
+            if self.pose_source == "odom" and self.sync_odom:
+                self.rgb_sub = message_filters.Subscriber(self.image_topic, Image)
+                self.odom_sync_sub = message_filters.Subscriber(self.odom_topic, Odometry)
+                self.sync = message_filters.ApproximateTimeSynchronizer(
+                    [self.rgb_sub, self.odom_sync_sub],
+                    queue_size=20,
+                    slop=self.sync_slop,
+                )
+                self.sync.registerCallback(self.image_odom_callback)
+            else:
+                self.sub = rospy.Subscriber(self.image_topic, Image, self.image_callback, queue_size=3, buff_size=2**24)
         self.info_sub = rospy.Subscriber(self.camera_info_topic, CameraInfo, self.camera_info_callback, queue_size=1)
         if self.depth_camera_info_topic:
             self.depth_info_sub = rospy.Subscriber(
@@ -161,7 +184,7 @@ class RgbPoseCollector:
                 self.depth_camera_info_callback,
                 queue_size=1,
             )
-        if self.pose_source == "odom":
+        if self.pose_source == "odom" and not self.sync_odom:
             self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odom_callback, queue_size=20)
         rospy.on_shutdown(self.close)
 
@@ -207,7 +230,7 @@ class RgbPoseCollector:
         with open(self.output_dir / "depth_camera_info.json", "w") as f:
             json.dump(intrinsics, f, indent=2)
 
-    def lookup_pose(self, source_frame, stamp):
+    def lookup_pose(self, source_frame, stamp, odom_msg=None):
         if self.pose_source == "tf":
             lookup_time = rospy.Time(0) if self.use_latest_tf else stamp
             tf = self.tf_buffer.lookup_transform(self.target_frame, source_frame, lookup_time, rospy.Duration(0.2))
@@ -218,16 +241,22 @@ class RgbPoseCollector:
         if self.pose_source != "odom":
             raise ValueError("~pose_source must be odom or tf")
 
-        if self.latest_odom is None:
+        odom = odom_msg or self.latest_odom
+        if odom is None:
             raise RuntimeError("No odom received yet on " + self.odom_topic)
 
-        tf = self.tf_buffer.lookup_transform(self.base_frame, source_frame, rospy.Time(0), rospy.Duration(0.2))
+        pose_dt = abs((odom.header.stamp - stamp).to_sec())
+        if self.max_pose_dt > 0.0 and pose_dt > self.max_pose_dt:
+            raise RuntimeError(f"Odom/image timestamp mismatch {pose_dt:.3f}s > max_pose_dt {self.max_pose_dt:.3f}s")
+
+        lookup_time = rospy.Time(0) if self.use_latest_tf else stamp
+        tf = self.tf_buffer.lookup_transform(self.base_frame, source_frame, lookup_time, rospy.Duration(0.2))
         bt = tf.transform.translation
         bq = tf.transform.rotation
         base_to_camera_t = (bt.x, bt.y, bt.z)
         base_to_camera_q = (bq.x, bq.y, bq.z, bq.w)
 
-        odom_pose = self.latest_odom.pose.pose
+        odom_pose = odom.pose.pose
         ot = odom_pose.position
         oq = odom_pose.orientation
         odom_to_base_t = (ot.x, ot.y, ot.z)
@@ -239,7 +268,7 @@ class RgbPoseCollector:
             base_to_camera_t,
             base_to_camera_q,
         )
-        return translation, quaternion, self.latest_odom.header.stamp
+        return translation, quaternion, odom.header.stamp
 
     def should_save(self, stamp, translation, quaternion):
         if self.last_stamp is None:
@@ -258,12 +287,18 @@ class RgbPoseCollector:
         return dist >= self.min_translation or angle >= self.min_rotation
 
     def image_callback(self, msg):
-        self.save_sample(msg, None)
+        self.save_sample(msg, None, None)
+
+    def image_odom_callback(self, msg, odom_msg):
+        self.save_sample(msg, None, odom_msg)
 
     def rgb_depth_callback(self, rgb_msg, depth_msg):
-        self.save_sample(rgb_msg, depth_msg)
+        self.save_sample(rgb_msg, depth_msg, None)
 
-    def save_sample(self, rgb_msg, depth_msg):
+    def rgb_depth_odom_callback(self, rgb_msg, depth_msg, odom_msg):
+        self.save_sample(rgb_msg, depth_msg, odom_msg)
+
+    def save_sample(self, rgb_msg, depth_msg, odom_msg=None):
         if self.save_depth and depth_msg is None and self.require_depth:
             return
 
@@ -273,7 +308,7 @@ class RgbPoseCollector:
             return
 
         try:
-            translation, quaternion, pose_stamp = self.lookup_pose(source_frame, rgb_msg.header.stamp)
+            translation, quaternion, pose_stamp = self.lookup_pose(source_frame, rgb_msg.header.stamp, odom_msg)
         except Exception as exc:
             rospy.logwarn_throttle(2.0, "Pose lookup failed: %s", exc)
             return

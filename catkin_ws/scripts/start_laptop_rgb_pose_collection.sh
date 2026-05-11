@@ -12,6 +12,9 @@ MIN_INTERVAL="${MIN_INTERVAL:-0.333333}"
 SAVE_DEPTH="${SAVE_DEPTH:-False}"
 REQUIRE_DEPTH="${REQUIRE_DEPTH:-True}"
 SYNC_SLOP="${SYNC_SLOP:-0.08}"
+SYNC_ODOM="${SYNC_ODOM:-True}"
+MAX_POSE_DT="${MAX_POSE_DT:-0.2}"
+USE_LATEST_TF="${USE_LATEST_TF:-False}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -39,6 +42,9 @@ exec roslaunch uni_navigation collect_rgb_pose.launch \
   min_interval:="$MIN_INTERVAL" \
   min_translation:=0.0 \
   min_rotation:=0.0 \
+  use_latest_tf:="$USE_LATEST_TF" \
   save_depth:="$SAVE_DEPTH" \
   require_depth:="$REQUIRE_DEPTH" \
-  sync_slop:="$SYNC_SLOP"
+  sync_slop:="$SYNC_SLOP" \
+  sync_odom:="$SYNC_ODOM" \
+  max_pose_dt:="$MAX_POSE_DT"
