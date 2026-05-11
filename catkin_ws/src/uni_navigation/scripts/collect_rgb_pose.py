@@ -271,7 +271,11 @@ class RgbPoseCollector:
                 f"(pose_time_offset={self.pose_time_offset:.6f}s)"
             )
 
-        lookup_time = rospy.Time(0) if self.use_latest_tf else lookup_stamp
+        # The odom message and image stream can have a clock offset, but the
+        # robot TF tree is usually available around the current image stamp.
+        # Applying pose_time_offset to base->camera TF can request a future TF.
+        tf_lookup_stamp = stamp
+        lookup_time = rospy.Time(0) if self.use_latest_tf else tf_lookup_stamp
         tf = self.tf_buffer.lookup_transform(self.base_frame, source_frame, lookup_time, rospy.Duration(0.2))
         bt = tf.transform.translation
         bq = tf.transform.rotation
