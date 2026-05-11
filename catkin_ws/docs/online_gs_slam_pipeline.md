@@ -7,9 +7,11 @@
 ```text
 ROS collector
   /camera/color/image_raw
+  /camera/aligned_depth_to_color/image_raw
   /camera/color/camera_info
   /robot/odom + base_link -> camera TF
     -> rgb/*.png
+    -> depth/*.png
     -> poses.csv
     -> camera_info.json
 
@@ -22,7 +24,7 @@ online_gs_slam
     -> GaussianMap checkpoint
 ```
 
-## 1. 3Hz RGB + Pose 수집 시작
+## 1. 3Hz RGB-D + Pose 수집 시작
 
 권장 방식은 로봇에서 image topic을 3Hz로 throttle하고, 노트북에서 collector를 실행하는 것이다.
 
@@ -30,7 +32,7 @@ online_gs_slam
 
 ```bash
 cd ~/catkin_ws
-./scripts/start_robot_image_throttle.sh
+THROTTLE_DEPTH=True ./scripts/start_robot_image_throttle.sh
 ```
 
 노트북 `192.168.0.100`에서:
@@ -38,6 +40,7 @@ cd ~/catkin_ws
 ```bash
 cd ~/catkin_ws
 OUTPUT_DIR=/home/harudev/rgb_pose_dataset_01 \
+SAVE_DEPTH=True \
 ./scripts/start_laptop_rgb_pose_collection.sh
 ```
 
@@ -66,6 +69,8 @@ unset ROS_HOSTNAME
 
 roslaunch uni_navigation collect_rgb_pose.launch \
   image_topic:=/camera/color/image_raw_3hz \
+  depth_topic:=/camera/aligned_depth_to_color/image_raw_3hz \
+  save_depth:=true \
   output_dir:=/home/harudev/rgb_pose_dataset_01
 ```
 
@@ -78,6 +83,61 @@ min_rotation: 0.0
 ```
 
 즉 약 1초에 3장을 저장한다.
+
+## 1.5. COLMAP 없이 Depth 기반 sparse point cloud 만들기
+
+RealSense aligned depth가 있으면 COLMAP/SfM을 돌리지 않고도 Gaussian Splatting 초기 point cloud를 만들 수 있다.
+
+```bash
+cd ~/catkin_ws
+DATA_DIR=/home/harudev/rgb_pose_dataset_01 \
+KEEP_EVERY=3 \
+INCLUDE_DEPTH=True \
+GENERATE_POINT_CLOUD=True \
+POINT_STRIDE=6 \
+MAX_POINTS_PER_FRAME=12000 \
+MAX_TOTAL_POINTS=1500000 \
+VOXEL_SIZE=0.01 \
+./scripts/export_nerfstudio_dataset.sh
+```
+
+생성 파일:
+
+```text
+/home/harudev/rgb_pose_dataset_01/transforms.json
+/home/harudev/rgb_pose_dataset_01/sparse_pc.ply
+```
+
+동작:
+
+```text
+1. aligned depth pixel을 camera intrinsics로 3D back-projection
+2. poses.csv의 camera pose로 world frame에 변환
+3. RGB image에서 같은 pixel color를 가져와 point color로 저장
+4. voxel downsample 후 sparse_pc.ply 생성
+5. transforms.json에 ply_file_path를 기록해서 Nerfstudio splatfacto 초기점으로 사용
+```
+
+시각화:
+
+```bash
+python3 scripts/view_depth_point_cloud.py \
+  /home/harudev/rgb_pose_dataset_01/sparse_pc.ply
+```
+
+standalone으로 SfM-style point만 만들고 싶으면:
+
+```bash
+python3 scripts/depth_pose_to_sfm_points.py \
+  /home/harudev/rgb_pose_dataset_01 \
+  --keep-every 3 \
+  --point-stride 6 \
+  --voxel-size 0.01 \
+  --output /home/harudev/rgb_pose_dataset_01/sparse_pc.ply \
+  --colmap-points3d-output /home/harudev/rgb_pose_dataset_01/points3D.txt
+```
+
+이 `points3D.txt`는 COLMAP text 형식과 비슷한 debug/export 파일이다. 실제 Nerfstudio `splatfacto` 초기화에는 `sparse_pc.ply`와 `transforms.json`의 `ply_file_path`를 쓰는 흐름이 더 직접적이다.
 
 ## 2. Online GS 등록 실행
 
@@ -233,6 +293,8 @@ python3 scripts/view_gsplat_checkpoint.py \
 cd ~/catkin_ws
 DATA_DIR=/home/harudev/rgb_pose_dataset_01 \
 KEEP_EVERY=5 \
+INCLUDE_DEPTH=True \
+GENERATE_POINT_CLOUD=True \
 ./scripts/export_nerfstudio_dataset.sh
 ```
 
@@ -240,6 +302,7 @@ KEEP_EVERY=5 \
 
 ```text
 /home/harudev/rgb_pose_dataset_01/transforms.json
+/home/harudev/rgb_pose_dataset_01/sparse_pc.ply
 ```
 
 Nerfstudio 설치 후 학습:
