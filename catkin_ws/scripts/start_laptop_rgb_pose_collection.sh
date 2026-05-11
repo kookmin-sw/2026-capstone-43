@@ -15,6 +15,8 @@ SYNC_SLOP="${SYNC_SLOP:-0.08}"
 SYNC_ODOM="${SYNC_ODOM:-True}"
 MAX_POSE_DT="${MAX_POSE_DT:-0.2}"
 USE_LATEST_TF="${USE_LATEST_TF:-False}"
+POSE_TIME_OFFSET="${POSE_TIME_OFFSET:-0.0}"
+AUTO_POSE_TIME_OFFSET="${AUTO_POSE_TIME_OFFSET:-False}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -47,4 +49,6 @@ exec roslaunch uni_navigation collect_rgb_pose.launch \
   require_depth:="$REQUIRE_DEPTH" \
   sync_slop:="$SYNC_SLOP" \
   sync_odom:="$SYNC_ODOM" \
-  max_pose_dt:="$MAX_POSE_DT"
+  max_pose_dt:="$MAX_POSE_DT" \
+  pose_time_offset:="$POSE_TIME_OFFSET" \
+  auto_pose_time_offset:="$AUTO_POSE_TIME_OFFSET"

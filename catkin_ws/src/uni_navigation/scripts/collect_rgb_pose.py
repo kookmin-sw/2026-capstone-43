@@ -4,6 +4,7 @@ import csv
 import json
 import math
 import os
+from collections import deque
 from pathlib import Path
 
 import cv2
@@ -78,6 +79,8 @@ class RgbPoseCollector:
         self.sync_slop = float(rospy.get_param("~sync_slop", 0.05))
         self.sync_odom = bool(rospy.get_param("~sync_odom", True))
         self.max_pose_dt = float(rospy.get_param("~max_pose_dt", 0.2))
+        self.pose_time_offset = float(rospy.get_param("~pose_time_offset", 0.0))
+        self.auto_pose_time_offset = bool(rospy.get_param("~auto_pose_time_offset", False))
 
         if self.image_format not in ("png", "jpg", "jpeg"):
             raise ValueError("~image_format must be png, jpg, or jpeg")
@@ -97,6 +100,7 @@ class RgbPoseCollector:
         self.last_translation = None
         self.last_quaternion = None
         self.latest_odom = None
+        self.odom_buffer = deque(maxlen=5000)
         self.camera_info = None
         self.depth_camera_info = None
 
@@ -142,6 +146,8 @@ class RgbPoseCollector:
             "sync_slop": self.sync_slop,
             "sync_odom": self.sync_odom,
             "max_pose_dt": self.max_pose_dt,
+            "pose_time_offset": self.pose_time_offset,
+            "auto_pose_time_offset": self.auto_pose_time_offset,
         }
         with open(self.output_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=2)
@@ -184,8 +190,8 @@ class RgbPoseCollector:
                 self.depth_camera_info_callback,
                 queue_size=1,
             )
-        if self.pose_source == "odom" and not self.sync_odom:
-            self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odom_callback, queue_size=20)
+        if self.pose_source == "odom" and (not self.sync_odom or self.auto_pose_time_offset or abs(self.pose_time_offset) > 1e-9):
+            self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odom_callback, queue_size=200)
         rospy.on_shutdown(self.close)
 
         rospy.loginfo("Saving RGB+pose dataset to %s", self.output_dir)
@@ -195,6 +201,7 @@ class RgbPoseCollector:
 
     def odom_callback(self, msg):
         self.latest_odom = msg
+        self.odom_buffer.append(msg)
 
     def camera_info_callback(self, msg):
         if self.camera_info is not None:
@@ -230,9 +237,15 @@ class RgbPoseCollector:
         with open(self.output_dir / "depth_camera_info.json", "w") as f:
             json.dump(intrinsics, f, indent=2)
 
+    def find_nearest_odom(self, stamp):
+        if not self.odom_buffer:
+            return self.latest_odom
+        return min(self.odom_buffer, key=lambda msg: abs((msg.header.stamp - stamp).to_sec()))
+
     def lookup_pose(self, source_frame, stamp, odom_msg=None):
+        lookup_stamp = stamp + rospy.Duration.from_sec(self.pose_time_offset)
         if self.pose_source == "tf":
-            lookup_time = rospy.Time(0) if self.use_latest_tf else stamp
+            lookup_time = rospy.Time(0) if self.use_latest_tf else lookup_stamp
             tf = self.tf_buffer.lookup_transform(self.target_frame, source_frame, lookup_time, rospy.Duration(0.2))
             t = tf.transform.translation
             q = tf.transform.rotation
@@ -241,15 +254,24 @@ class RgbPoseCollector:
         if self.pose_source != "odom":
             raise ValueError("~pose_source must be odom or tf")
 
-        odom = odom_msg or self.latest_odom
+        if self.auto_pose_time_offset and odom_msg is None and self.latest_odom is not None:
+            self.pose_time_offset = (self.latest_odom.header.stamp - stamp).to_sec()
+            lookup_stamp = stamp + rospy.Duration.from_sec(self.pose_time_offset)
+            self.auto_pose_time_offset = False
+            rospy.logwarn("Auto pose_time_offset locked to %.6f sec", self.pose_time_offset)
+
+        odom = odom_msg or self.find_nearest_odom(lookup_stamp)
         if odom is None:
             raise RuntimeError("No odom received yet on " + self.odom_topic)
 
-        pose_dt = abs((odom.header.stamp - stamp).to_sec())
+        pose_dt = abs((odom.header.stamp - lookup_stamp).to_sec())
         if self.max_pose_dt > 0.0 and pose_dt > self.max_pose_dt:
-            raise RuntimeError(f"Odom/image timestamp mismatch {pose_dt:.3f}s > max_pose_dt {self.max_pose_dt:.3f}s")
+            raise RuntimeError(
+                f"Odom/lookup timestamp mismatch {pose_dt:.3f}s > max_pose_dt {self.max_pose_dt:.3f}s "
+                f"(pose_time_offset={self.pose_time_offset:.6f}s)"
+            )
 
-        lookup_time = rospy.Time(0) if self.use_latest_tf else stamp
+        lookup_time = rospy.Time(0) if self.use_latest_tf else lookup_stamp
         tf = self.tf_buffer.lookup_transform(self.base_frame, source_frame, lookup_time, rospy.Duration(0.2))
         bt = tf.transform.translation
         bq = tf.transform.rotation

@@ -20,6 +20,8 @@
   <arg name="sync_slop" default="0.05"/>
   <arg name="sync_odom" default="true"/>
   <arg name="max_pose_dt" default="0.2"/>
+  <arg name="pose_time_offset" default="0.0"/>
+  <arg name="auto_pose_time_offset" default="false"/>
 
   <node pkg="uni_navigation" type="collect_rgb_pose.py" name="collect_rgb_pose" output="screen">
     <param name="image_topic" value="$(arg image_topic)"/>
@@ -42,5 +44,7 @@
     <param name="sync_slop" value="$(arg sync_slop)"/>
     <param name="sync_odom" value="$(arg sync_odom)"/>
     <param name="max_pose_dt" value="$(arg max_pose_dt)"/>
+    <param name="pose_time_offset" value="$(arg pose_time_offset)"/>
+    <param name="auto_pose_time_offset" value="$(arg auto_pose_time_offset)"/>
   </node>
 </launch>
