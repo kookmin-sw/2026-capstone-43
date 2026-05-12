@@ -177,6 +177,8 @@ python3 -m src.check.check_sgmse_condition_loss \
 
 `train_condition_encoder.py`는 noisy speech가 아니라 robot noise-only audio와 foot force만으로 noise-only STFT magnitude prior를 예측하는 condition encoder 학습 코드입니다. 입력 feature는 STFT hop인 8 ms frame마다 4 legs × `[mean, max, std, p95, dmean, dmax_abs] = 24ch`로 만들고, target은 `log(1 + |STFT(noise)|)` `[256, 256]`입니다.
 
+실시간 denoising까지 고려해 기본 condition encoder는 causal depthwise-separable TCN입니다. 기본값은 `hidden=64`, `layers=4`, `kernel=3`, `max_dilation=8`이며, encoder receptive field는 31 frames, 약 248 ms의 과거 force history입니다. 온라인 추론에서는 future look-ahead 없이 history buffer만 유지하면 됩니다.
+
 먼저 GO2 noise-only run 폴더를 manifest로 만듭니다. 현재 기본 noise root는 `./data/noise`이며, 이 경로는 `/home/jaewoo/Downloads/output/go2_train/` symlink입니다. 각 run은 `0001/audio.wav`, `0001/anchor.json`, `0001/lowstate.jsonl`, `0001/highstate.jsonl` 형태를 기대합니다. `contaminated/` 아래 run은 기본 제외됩니다.
 
 ```bash
@@ -201,8 +203,15 @@ python3 train_condition_encoder.py \
   --device cuda \
   --batch-size 16 \
   --num-workers 2 \
+  --max-epochs 3 \
+  --eval-every-epochs 1 \
+  --save-every-epochs 1 \
   --auto-delay
 ```
+
+위 설정은 총 3 epoch를 돌고, 매 epoch 끝에서 validation을 수행한 뒤 `latest.pt`와 개선된 경우 `best.pt`를 저장합니다.
+
+예전의 무거운 dense Conv1d TCN으로 비교하려면 `--encoder-conv-type standard --hidden-channels 256 --num-layers 8 --kernel-size 5 --max-dilation 16`을 추가합니다.
 
 학습이 안정화된 뒤 band/event loss를 추가:
 

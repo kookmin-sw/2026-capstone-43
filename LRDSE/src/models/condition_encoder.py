@@ -1,5 +1,3 @@
-from typing import Optional, Tuple
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -20,19 +18,37 @@ class TemporalBlock(nn.Module):
         dilation: int = 1,
         dropout: float = 0.0,
         causal: bool = True,
+        conv_type: str = "separable",
     ):
         super().__init__()
         if kernel_size < 1 or kernel_size % 2 == 0:
             raise ValueError("kernel_size must be a positive odd integer")
+        conv_type = str(conv_type).strip().lower()
+        if conv_type not in {"standard", "separable"}:
+            raise ValueError(f"conv_type must be 'standard' or 'separable', got {conv_type}")
 
         self.kernel_size = int(kernel_size)
         self.dilation = int(dilation)
         self.causal = bool(causal)
+        self.conv_type = conv_type
         self.left_pad = (self.kernel_size - 1) * self.dilation if self.causal else 0
         self.same_pad = ((self.kernel_size - 1) * self.dilation) // 2
 
         self.norm1 = nn.GroupNorm(_group_count(channels), channels)
-        self.conv1 = nn.Conv1d(channels, channels, kernel_size, dilation=dilation)
+        if self.conv_type == "standard":
+            self.temporal = nn.Conv1d(channels, channels, kernel_size, dilation=dilation)
+        else:
+            self.temporal = nn.Sequential(
+                nn.Conv1d(
+                    channels,
+                    channels,
+                    kernel_size,
+                    dilation=dilation,
+                    groups=channels,
+                    bias=False,
+                ),
+                nn.Conv1d(channels, channels, 1),
+            )
         self.norm2 = nn.GroupNorm(_group_count(channels), channels)
         self.conv2 = nn.Conv1d(channels, channels, 1)
         self.dropout = nn.Dropout(float(dropout))
@@ -45,7 +61,7 @@ class TemporalBlock(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         y = self.norm1(x)
         y = F.silu(y)
-        y = self.conv1(self._pad(y))
+        y = self.temporal(self._pad(y))
         y = self.dropout(y)
         y = self.norm2(y)
         y = F.silu(y)
@@ -69,12 +85,13 @@ class ConditionEncoder(nn.Module):
         self,
         in_channels: int = 24,
         freq_bins: int = 256,
-        hidden_channels: int = 256,
-        num_layers: int = 8,
-        kernel_size: int = 5,
+        hidden_channels: int = 64,
+        num_layers: int = 4,
+        kernel_size: int = 3,
         dropout: float = 0.05,
         causal: bool = True,
-        max_dilation: int = 16,
+        max_dilation: int = 8,
+        encoder_conv_type: str = "separable",
     ):
         super().__init__()
         if in_channels <= 0:
@@ -94,6 +111,12 @@ class ConditionEncoder(nn.Module):
         self.dropout = float(dropout)
         self.causal = bool(causal)
         self.max_dilation = int(max_dilation)
+        self.encoder_conv_type = str(encoder_conv_type).strip().lower()
+        if self.encoder_conv_type not in {"standard", "separable"}:
+            raise ValueError(
+                "encoder_conv_type must be 'standard' or 'separable', "
+                f"got {encoder_conv_type}"
+            )
 
         self.input_proj = nn.Conv1d(self.in_channels, self.hidden_channels, 1)
         blocks = []
@@ -106,6 +129,7 @@ class ConditionEncoder(nn.Module):
                     dilation=dilation,
                     dropout=self.dropout,
                     causal=self.causal,
+                    conv_type=self.encoder_conv_type,
                 )
             )
             dilation = min(dilation * 2, self.max_dilation)

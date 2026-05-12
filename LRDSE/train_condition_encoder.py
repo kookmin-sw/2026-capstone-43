@@ -49,6 +49,15 @@ def count_params(model) -> int:
     return sum(p.numel() for p in model.parameters())
 
 
+def temporal_receptive_field_frames(args) -> int:
+    receptive_field = 1
+    dilation = 1
+    for _ in range(args.num_layers):
+        receptive_field += (args.kernel_size - 1) * dilation
+        dilation = min(dilation * 2, args.max_dilation)
+    return receptive_field
+
+
 def build_model(args):
     return ConditionEncoder(
         in_channels=24,
@@ -59,6 +68,7 @@ def build_model(args):
         dropout=args.dropout,
         causal=args.causal,
         max_dilation=args.max_dilation,
+        encoder_conv_type=args.encoder_conv_type,
     )
 
 
@@ -169,11 +179,17 @@ def main():
     parser.add_argument("--d-force-scale", type=float, default=255.0)
     parser.add_argument("--condition-smooth-win", type=int, default=1)
 
-    parser.add_argument("--hidden-channels", type=int, default=256)
-    parser.add_argument("--num-layers", type=int, default=8)
-    parser.add_argument("--kernel-size", type=int, default=5)
+    parser.add_argument("--hidden-channels", type=int, default=64)
+    parser.add_argument("--num-layers", type=int, default=4)
+    parser.add_argument("--kernel-size", type=int, default=3)
     parser.add_argument("--dropout", type=float, default=0.05)
-    parser.add_argument("--max-dilation", type=int, default=16)
+    parser.add_argument("--max-dilation", type=int, default=8)
+    parser.add_argument(
+        "--encoder-conv-type",
+        default="separable",
+        choices=["separable", "standard"],
+        help="separable is the lightweight real-time default; standard keeps the old dense Conv1d blocks.",
+    )
     parser.add_argument("--causal", action="store_true", default=True)
     parser.add_argument("--non-causal", dest="causal", action="store_false")
 
@@ -202,6 +218,13 @@ def main():
 
     parser.add_argument("--log-every", type=int, default=20)
     parser.add_argument("--eval-every", type=int, default=500)
+    parser.add_argument(
+        "--eval-every-epochs",
+        type=float,
+        default=0.0,
+        help="0보다 크면 epoch 기준 validation/best checkpoint 주기. "
+             "예: 1이면 매 epoch 끝에서 validation 후 best.pt 갱신.",
+    )
     parser.add_argument("--save-every", type=int, default=1000)
     parser.add_argument("--save-every-epochs", type=float, default=0.0)
     parser.add_argument("--epoch-loss-csv", default="epoch_losses.csv")
@@ -324,6 +347,11 @@ def main():
         if args.save_every_epochs > 0
         else int(args.save_every)
     )
+    eval_every_steps = (
+        max(1, int(math.ceil(updates_per_epoch * args.eval_every_epochs)))
+        if args.eval_every_epochs > 0
+        else int(args.eval_every)
+    )
 
     model = build_model(args).to(device)
     optimizer = torch.optim.AdamW(
@@ -374,7 +402,12 @@ def main():
     print(f"val_manifest       : {args.val_manifest if args.val_manifest else '(none)'}")
     print(f"updates_per_epoch  : {updates_per_epoch}")
     print(f"max_steps          : {total_steps}")
+    print(f"max_epochs         : {args.max_epochs}")
     print(f"batch_size         : {args.batch_size}")
+    print(f"eval_every_steps   : {eval_every_steps}")
+    print(f"eval_every_epochs  : {args.eval_every_epochs}")
+    print(f"save_every_steps   : {save_every_steps}")
+    print(f"save_every_epochs  : {args.save_every_epochs}")
     print(f"lr                 : {args.lr}")
     print(f"amp                : {args.amp}")
     print(f"save_dir           : {save_dir}")
@@ -390,6 +423,9 @@ def main():
     print("[model/loss]")
     print(f"params             : {count_params(model):,}")
     print(f"hidden/layers      : {args.hidden_channels}/{args.num_layers}")
+    print(f"encoder_conv_type  : {args.encoder_conv_type}")
+    rf_frames = temporal_receptive_field_frames(args)
+    print(f"encoder_rf         : {rf_frames} frames ({rf_frames * args.hop_length / args.target_sr * 1000:.1f} ms)")
     print(f"causal             : {args.causal}")
     print(f"delay_frames       : {args.delay_frames}")
     print(f"band_weight        : {args.band_weight}")
@@ -447,7 +483,11 @@ def main():
         running_count += 1
 
         val_metrics = None
-        should_eval = val_loader is not None and args.eval_every > 0 and step % args.eval_every == 0
+        should_eval = (
+            val_loader is not None
+            and eval_every_steps > 0
+            and (step % eval_every_steps == 0 or step == total_steps)
+        )
         if should_eval:
             val_metrics = evaluate(model, val_loader, args, device, band_slices)
 

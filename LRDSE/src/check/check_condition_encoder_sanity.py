@@ -46,6 +46,7 @@ def namespace_from_args_dict(args_dict):
         "dropout": 0.05,
         "causal": True,
         "max_dilation": 16,
+        "encoder_conv_type": "standard",
         "delay_frames": 0,
     }
     defaults.update(args_dict or {})
@@ -82,6 +83,7 @@ def build_model(args):
         dropout=args.dropout,
         causal=args.causal,
         max_dilation=args.max_dilation,
+        encoder_conv_type=args.encoder_conv_type,
     )
 
 
