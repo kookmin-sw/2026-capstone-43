@@ -1,4 +1,4 @@
-# scripts/plot_stft.py
+# src/plot/plot_stft.py
 
 """
 Input:
@@ -21,7 +21,7 @@ import torch
 import matplotlib.pyplot as plt
 
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(PROJECT_ROOT)
 
 

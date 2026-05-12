@@ -3,14 +3,14 @@
 Compare clean, noisy, and enhanced waveforms before/after STFT preprocessing.
 
 Typical usage with a generated sample:
-    python3 scripts/plot_clean_noisy_enhanced.py \
+    python3 -m src.plot.plot_clean_noisy_enhanced \
         --manifest data/manifest_val.csv \
         --index 0 \
         --enhanced-wav checkpoints/.../samples/step_XXXX/00_xxx_enhanced_full.wav \
         --out-dir outputs/plots/clean_noisy_enhanced
 
 You can also provide all three wav paths directly:
-    python3 scripts/plot_clean_noisy_enhanced.py \
+    python3 -m src.plot.plot_clean_noisy_enhanced \
         --clean-wav clean.flac \
         --noisy-wav noisy.wav \
         --enhanced-wav enhanced.wav
@@ -31,7 +31,7 @@ import numpy as np
 import torch
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from dataset import resolve_manifest_path  # noqa: E402

@@ -12,7 +12,7 @@ This script follows the same paired preprocessing used by SpeechEnhancementDatas
     -> real/imag 2-channel tensor
 
 Example:
-    python3 scripts/plot_stft_before_after.py \
+    python3 -m src.plot.plot_stft_before_after \
         --manifest data/manifest_val.csv \
         --index 0 \
         --out-dir outputs/plots/stft_before_after
@@ -33,7 +33,7 @@ import numpy as np
 import torch
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from dataset import resolve_manifest_path  # noqa: E402

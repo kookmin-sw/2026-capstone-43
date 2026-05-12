@@ -1,4 +1,4 @@
-# scripts/check_stft.py
+# src/check/check_stft.py
 
 """
 Check SGMSE+-style audio preprocessing.
@@ -40,10 +40,10 @@ This script checks two paths:
        outputs/debug/inference_reconstructed.wav
 
 Usage:
-    python scripts/check_stft.py --wav noisy.wav
+    python3 -m src.check.check_stft --wav noisy.wav
 
 Optional:
-    python scripts/check_stft.py --wav noisy.wav --out_dir outputs/debug
+    python3 -m src.check.check_stft --wav noisy.wav --out_dir outputs/debug
 """
 
 import argparse
@@ -55,7 +55,7 @@ import torchaudio
 import soundfile as sf
 
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(PROJECT_ROOT)
 
 

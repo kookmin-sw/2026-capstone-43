@@ -77,7 +77,7 @@ def stft_2ch_to_wav(
     """
     Reconstruct a normalized waveform from the transformed 2ch STFT used by this dataset.
 
-    This compatibility helper is used by scripts/check_dataset.py.
+    This compatibility helper is used by src/check/check_dataset.py.
     """
     if win_length != n_fft:
         raise ValueError(

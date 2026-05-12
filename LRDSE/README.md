@@ -12,15 +12,12 @@ LRDSE/
 ├── dataset.py                  # paired clean/noisy dataset, condition 로딩
 ├── src/
 │   ├── audio/preprocess.py     # wav crop, STFT, spec transform, inverse transform
+│   ├── check/                  # dataset/model/condition sanity check 유틸
 │   ├── condition/preprocess.py # foot_force condition token 생성
-│   └── models/                 # SGMSE / RDDM model wrapper
-├── scripts/
-│   ├── build_manifest.py       # noisy/clean pair manifest 생성 및 train/val split
-│   ├── plot_epoch_loss.py      # epoch loss CSV plot
-│   ├── plot_stft.py            # wav STFT 시각화
-│   └── ...
+│   ├── models/                 # SGMSE / RDDM / condition encoder model wrapper
+│   ├── plot/                   # STFT/loss/condition 시각화 유틸
+│   └── prepare/                # manifest / noisy data 생성 유틸
 ├── data/
-│   ├── make_noisy_data.py      # clean speech + robot noise 합성
 │   ├── manifest.csv            # 현재 paired manifest
 │   └── noisy/                  # noisy wav와 condition segment 파일
 ├── checkpoints/                # 학습 checkpoint 저장 위치
@@ -75,7 +72,7 @@ Aux condition을 쓰는 경우 noisy wav의 parent directory를 `run_dir`로 추
 이미 `data/manifest.csv`가 있으면 바로 학습할 수 있습니다. 새로 만들 때는 noisy root와 clean root를 지정합니다.
 
 ```bash
-python3 scripts/build_manifest.py \
+python3 -m src.prepare.build_manifest \
   --noisy-root ./data/noisy \
   --clean-root /path/to/clean \
   --out ./data/manifest.csv \
@@ -165,7 +162,7 @@ Condition preprocessing은 `lowstate`에서 4ch raw foot force와 4ch derivative
 Aux condition checkpoint에서 실제 condition 대신 zero/random condition을 넣었을 때 loss가 망가지는지 확인하려면:
 
 ```bash
-python3 scripts/check_sgmse_condition_loss.py \
+python3 -m src.check.check_sgmse_condition_loss \
   --checkpoint ./checkpoints/sgmse_aux/latest.pt \
   --manifest ./data/manifest_val.csv \
   --device cuda \
@@ -175,6 +172,65 @@ python3 scripts/check_sgmse_condition_loss.py \
 ```
 
 기본 비교 mode는 `real`, `zero`, `zero_padded`, `random`, `shuffle`, `no_condition`입니다. 같은 batch/repeat에서는 diffusion timestep/noise seed를 고정하므로 condition 변화의 영향만 비교하기 쉽습니다.
+
+## Step 1: Condition Encoder
+
+`train_condition_encoder.py`는 noisy speech가 아니라 robot noise-only audio와 foot force만으로 noise-only STFT magnitude prior를 예측하는 condition encoder 학습 코드입니다. 입력 feature는 STFT hop인 8 ms frame마다 4 legs × `[mean, max, std, p95, dmean, dmax_abs] = 24ch`로 만들고, target은 `log(1 + |STFT(noise)|)` `[256, 256]`입니다.
+
+먼저 GO2 noise-only run 폴더를 manifest로 만듭니다. 현재 기본 noise root는 `./data/noise`이며, 이 경로는 `/home/jaewoo/Downloads/output/go2_train/` symlink입니다. 각 run은 `0001/audio.wav`, `0001/anchor.json`, `0001/lowstate.jsonl`, `0001/highstate.jsonl` 형태를 기대합니다. `contaminated/` 아래 run은 기본 제외됩니다.
+
+```bash
+python3 -m src.prepare.build_noise_only_manifest \
+  --noise-root ./data/noise \
+  --out ./data/noise_only_manifest.csv \
+  --target-sr 16000 \
+  --val-ratio 0.1
+```
+
+`contaminated/`까지 포함해서 manifest를 만들고 싶으면 `--recursive --include-contaminated`를 추가합니다.
+
+기존 paired/noisy manifest는 Step 1의 권장 입력이 아닙니다. 디버그 호환을 위해 `segment_meta.json`에서 원본 robot noise crop을 역추적하는 경로는 남겨두었지만, 실제 Step 1 실험은 `noise_only_manifest_train.csv` / `noise_only_manifest_val.csv`를 사용합니다.
+
+기본 L1 magnitude loss로 시작:
+
+```bash
+python3 train_condition_encoder.py \
+  --manifest ./data/noise_only_manifest_train.csv \
+  --val-manifest ./data/noise_only_manifest_val.csv \
+  --save-dir ./checkpoints/condition_encoder \
+  --device cuda \
+  --batch-size 16 \
+  --num-workers 2 \
+  --auto-delay
+```
+
+학습이 안정화된 뒤 band/event loss를 추가:
+
+```bash
+python3 train_condition_encoder.py \
+  --manifest ./data/noise_only_manifest_train.csv \
+  --val-manifest ./data/noise_only_manifest_val.csv \
+  --save-dir ./checkpoints/condition_encoder_band_event \
+  --device cuda \
+  --batch-size 16 \
+  --auto-delay \
+  --band-weight 0.5 \
+  --event-weight 0.1 \
+  --event-percentile 85
+```
+
+Sanity check:
+
+```bash
+python3 -m src.check.check_condition_encoder_sanity \
+  --checkpoint ./checkpoints/condition_encoder/latest.pt \
+  --manifest ./data/noise_only_manifest_val.csv \
+  --out-dir ./outputs/condition_encoder_sanity \
+  --device cuda \
+  --batch-size 8
+```
+
+이 스크립트는 force derivative magnitude와 noise energy의 cross-correlation delay, matched vs shuffled loss ratio, time-shift loss curve, `target M / predicted M_hat / error / shuffled-force prediction` heatmap을 저장합니다. 기대 기준은 `shuffled_target_ratio > 1.2`이며, time-shift curve는 추정 delay 근처에 valley가 생기는지 확인합니다.
 
 ## Checkpoint와 Resume
 
@@ -224,7 +280,7 @@ Aux condition으로 학습한 checkpoint라면 noisy wav의 parent directory를 
 ## Loss 시각화
 
 ```bash
-python3 scripts/plot_epoch_loss.py \
+python3 -m src.plot.plot_epoch_loss \
   --csv ./checkpoints/sgmse_se/epoch_losses.csv \
   --out ./outputs/plots/epoch_loss.png \
   --smooth-window 3
@@ -235,7 +291,7 @@ python3 scripts/plot_epoch_loss.py \
 Clean source audio와 robot noise run을 섞어 `data/noisy` 구조를 만들 때 사용합니다.
 
 ```bash
-python3 data/make_noisy_data.py \
+python3 -m src.prepare.make_noisy_data \
   --source-root /path/to/source_speech_root \
   --noise-root /path/to/robot_noise_root \
   --out-root ./data/noisy \
@@ -250,13 +306,13 @@ Noise run 폴더에는 `audio.wav`, `anchor.json`, `lowstate.jsonl`, `highstate.
 
 ```bash
 # dataset 로딩과 STFT inverse check
-python3 scripts/check_dataset.py \
+python3 -m src.check.check_dataset \
   --manifest ./data/manifest.csv \
   --num-samples 4 \
   --save-debug
 
 # RDDM forward/backward smoke test
-python3 scripts/check_model_forward.py \
+python3 -m src.check.check_model_forward \
   --manifest ./data/manifest.csv \
   --batch-size 1 \
   --device cpu \
@@ -266,13 +322,13 @@ python3 scripts/check_model_forward.py \
   --sampling-timesteps 2
 
 # wav의 STFT plot 저장
-python3 scripts/plot_stft.py --wav ./data/noisy/.../sample.wav --out ./outputs/debug/stft_plot.png
+python3 -m src.plot.plot_stft --wav ./data/noisy/.../sample.wav --out ./outputs/debug/stft_plot.png
 
 # data/noisy 아래 wav duration 확인
-python3 data/check_duration.py --root ./data/noisy
+python3 -m src.check.check_duration --root ./data/noisy
 
 # lowstate foot force 통계 확인
-python3 data/check_max_foot_force.py --root ./data/noisy --pattern lowstate_segment.jsonl
+python3 -m src.check.check_max_foot_force --root ./data/noisy --pattern lowstate_segment.jsonl
 ```
 
 ## RDDM 실험
