@@ -59,7 +59,7 @@ ConceptGraph, SayPlan 등의 연구를 통해 씬그래프(Scene Graph)가 공�
 ## 실행
 
 ```bash
-cd sceneupdate
+cd /home/sungbin/isaac/sg/sceneupdate
 
 # [권장] 최신 빈공간(Freespace V2) 스코어링 및 Custom 플래너 + ROS2 네비게이션 실행
 python3 main.py --planner custom --nav ros2 --llm gemini
@@ -113,6 +113,28 @@ sceneupdate/
 | **플래너 ↔ LLM** | `llm_wrapper` | Gemini API 호출 또는 로컬 Ollama REST API 호출 |
 | **메인 ↔ REACT** | IPC 파일 교환 | `/tmp/react_*` 파일을 통한 이미지/포즈 전송 및 씬그래프 갱신 수신 |
 | **REACT 파이프라인**| YOLO+임베딩 | 프레임 수신 → YOLO-World 객체 탐지 → EfficientNet-B2 임베딩 매칭 → NEW/MOVED/ABSENT 판정 |
+
+### 실시간 씬그래프 갱신 (Real-time Scene Graph Update) 로직 및 코드
+
+동적 환경에서 로봇이 태스크를 수행하기 위해서는 사물의 이동, 생성, 소멸을 실시간으로 감지하고 씬그래프에 반영하는 것이 필수적입니다. 본 시스템은 독립된 워커 프로세스를 통해 실시간으로 씬그래프를 갱신합니다.
+
+**1. 주요 코드 파일**
+- **`react_bridge.py`**: Isaac Sim 메인 프로세스에서 동작. 로봇의 RGB-D 카메라 프레임과 현재 포즈(Pose) 데이터를 수집하여 `/tmp/react_*.npy` 형태의 IPC 파일로 전달합니다.
+- **`react_worker.py`**: 별도의 `react_venv` 가상환경에서 동작. 무거운 PyTorch, YOLO, EfficientNet 연산을 메인 시뮬레이션 루프와 분리하여 병목을 방지합니다.
+
+**2. 갱신 로직 (REACT 파이프라인)**
+1. **프레임 수집 및 객체 탐지**: `react_worker.py`의 `process_frame()`이 호출되면, 수신된 RGB 이미지에 대해 **YOLO-World** (Open-vocabulary Object Detection) 모델을 실행하여 이미지 내의 모든 객체 바운딩 박스를 추출합니다.
+2. **3D 위치 추정 및 특징 추출**:
+   - Depth 이미지를 이용해 바운딩 박스 픽셀들의 실제 3D 월드 좌표(Position)와 크기(Extent)를 계산합니다 (`estimate_3d_position`, `estimate_3d_extent`).
+   - 객체 영역(Crop)에 대해 **EfficientNet-B2** 모델을 적용하여 1408차원의 임베딩 벡터(특징)를 추출합니다.
+3. **매칭 및 변화 판정 (`_match_and_update`, `_check_absent_objects`)**:
+   - 기존 씬그래프의 객체들과 임베딩 코사인 유사도(Cosine Similarity) 및 3D 공간적 거리(L2 Distance)를 비교합니다.
+   - **MOVED (이동)**: 기존 객체와 임베딩이 일치하지만 위치가 일정 임계값 이상 변경된 경우.
+   - **NEW (신규)**: 기존 씬그래프에 매칭되는 임베딩이 없는 새로운 객체가 발견된 경우.
+   - **ABSENT (사라짐)**: 로봇의 시야(FOV) 안에 있어야 할 객체가 탐지되지 않는 경우, 해당 객체를 부재 상태로 마킹합니다.
+4. **씬그래프 동기화 (`_apply_sg_updates`, `_sync_sg_to_disk`)**:
+   - 변경된 좌표, 신규 노드 추가, 상태 플래그 등을 반영하여 `hierarchical_scene_graph.json` 파일을 실시간으로 덮어씁니다.
+   - 플래너(SayPlan, PRED 등)는 갱신된 씬그래프를 읽어들여 항상 최신 환경 정보를 바탕으로 다음 행동을 계획(Replanning)하게 됩니다.
 
 ### 주요 기능 및 특징 (현재 사용 중인 방식)
 
