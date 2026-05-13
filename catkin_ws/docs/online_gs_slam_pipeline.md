@@ -200,6 +200,45 @@ VLM/Grounded-SAM 등으로 얻은 2D segmentation mask를 여러 view에서 Gaus
 
 이 방향은 LEGS(Language-Embedded Gaussian Splats)의 language-embedded Gaussian representation과 잘 맞는다. LEGS는 mobile robot으로 room-scale Gaussian splat을 incremental하게 만들고, language feature를 Gaussian map에 결합한다. 여기서는 우선 VLM mask에서 얻은 Gaussian/point label을 4D hash grid로 distill하는 lightweight prototype으로 시작한다.
 
+### 1.7.1. splatfacto Gaussian을 VLM으로 labeling하기
+
+학습된 `splatfacto` checkpoint를 Gaussian PLY로 export한다.
+
+```bash
+source ~/miniconda3/bin/activate ns310
+cd ~/catkin_ws
+
+ns-export gaussian-splat \
+  --load-config outputs/rtabmap_nerfstudio_dataset_01/splatfacto/2026-05-13_163403/config.yml \
+  --output-dir outputs/rtabmap_nerfstudio_dataset_01/exported_gaussians \
+  --output-filename splat_rgb.ply \
+  --ply-color-mode rgb
+```
+
+CLIPSeg dependency를 설치한다.
+
+```bash
+python -m pip install transformers
+```
+
+Nerfstudio `transforms.json`의 camera views에 CLIPSeg mask를 만들고, Gaussian centers를 각 view에 project해서 label vote를 누적한다.
+
+```bash
+PYTHONPATH=catkin_ws python3 catkin_ws/scripts/label_gaussians_with_clipseg.py \
+  --gaussian-ply outputs/rtabmap_nerfstudio_dataset_01/exported_gaussians/splat_rgb.ply \
+  --transforms /home/harudev/rtabmap_nerfstudio_dataset_01/transforms.json \
+  --data-dir /home/harudev/rtabmap_nerfstudio_dataset_01 \
+  --prompts floor table chair wall robot \
+  --output outputs/hash_grid/semantic_points_clipseg.npz \
+  --preview-ply outputs/hash_grid/semantic_points_clipseg_preview.ply \
+  --max-gaussians 120000 \
+  --max-frames 24 \
+  --mask-threshold 0.45
+```
+
+> [!NOTE]
+> CLIPSeg는 Grounded-SAM보다 가볍고 설치가 쉽지만 mask 품질은 제한적이다. 이 스크립트의 출력 형식은 `semantic_points.npz`로 고정되어 있으므로, 이후 Grounded-SAM/LEGS-style language feature로 바꿔도 4D hash grid 학습 코드는 그대로 쓸 수 있다.
+
 입력 supervision 파일 형식:
 
 ```text
@@ -217,7 +256,7 @@ semantic_points.npz
 cd ~/catkin_ws
 
 python3 scripts/train_4d_hash_grid_field.py \
-  --samples /home/harudev/semantic_points.npz \
+  --samples outputs/hash_grid/semantic_points_clipseg.npz \
   --output outputs/hash_grid/semantic_hash_grid.pt \
   --preview-ply outputs/hash_grid/semantic_preview.ply \
   --steps 2000 \
