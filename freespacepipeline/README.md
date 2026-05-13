@@ -1,52 +1,52 @@
-# Surface QA Dataset Generation Pipeline
+# Surface QA 데이터셋 생성 파이프라인
 
-Visual QA dataset generation pipeline for **placeable surface understanding** in robotic manipulation contexts.
+로봇 조작 환경에서 **물체를 올려놓을 수 있는 표면(support surface) 이해**를 위한 Visual QA 데이터셋 생성 파이프라인입니다.
 
-Two complementary pipelines produce QA pairs that teach vision-language models (VLMs) to identify support surfaces and the objects placed on them:
+두 가지 파이프라인이 상호 보완적으로 QA 쌍을 생성하여, VLM(비전-언어 모델)이 지지 표면과 그 위에 놓인 물체를 인식하도록 학습시킵니다.
 
-| Pipeline | Dataset | Scene type | Surface detection method |
+| 파이프라인 | 데이터셋 | 씬 유형 | 표면 감지 방식 |
 |---|---|---|---|
-| **GraspNet Tabletop v2** | GraspNet-1Billion | Tabletop close-up | Depth + camera-table transform |
-| **ScanNet++ Indoor** | ScanNet++ | Full indoor room | 3D OBB + mesh + ray casting |
+| **GraspNet Tabletop v2** | GraspNet-1Billion | 테이블탑 근접 촬영 | 깊이 + 카메라-테이블 변환 행렬 |
+| **ScanNet++ Indoor** | ScanNet++ | 실내 공간 전체 | 3D OBB + 메쉬 + 레이 캐스팅 |
 
 ---
 
-## Repository Structure
+## 저장소 구조
 
 ```
 scripts/
-  graspnet_surface_qa_v2.py       # GraspNet tabletop QA generator (v2)
-  scannetpp_indoor_surface_qa.py  # ScanNet++ indoor surface QA generator
+  graspnet_surface_qa_v2.py       # GraspNet 테이블탑 QA 생성기 (v2)
+  scannetpp_indoor_surface_qa.py  # ScanNet++ 실내 표면 QA 생성기
 annotations/
-  graspnet/          # GraspNet test scene QA (scene_0090~)
-  graspnet_train1/   # GraspNet train scene QA (scene_0000~)
-  scannetpp/         # ScanNet++ indoor QA
+  graspnet/          # GraspNet 테스트 씬 QA (scene_0090~)
+  graspnet_train1/   # GraspNet 학습 씬 QA (scene_0000~)
+  scannetpp/         # ScanNet++ 실내 QA
 ```
 
 ---
 
-## Pipeline 1 — GraspNet Tabletop v2
+## 파이프라인 1 — GraspNet Tabletop v2
 
-### Overview
+### 개요
 
-Generates `table_layout`, `object_layout`, and `freespace` QA for tabletop scenes in the GraspNet-1Billion dataset. Uses the camera-to-table extrinsic matrix and per-pixel object labels for pixel-accurate surface extraction — no mesh or OBB approximation needed.
+GraspNet-1Billion 데이터셋의 테이블탑 씬에 대해 `table_layout`, `object_layout`, `freespace` QA를 생성합니다. 카메라-테이블 외부 행렬과 픽셀 단위 물체 레이블을 사용하여 메쉬나 OBB 근사 없이 픽셀 정확도의 표면 추출이 가능합니다.
 
-### Why v2?
+### v2로 개선한 이유
 
-v1 problems:
-- Estimated table Z from depth only → convex hull extended beyond the actual table edge
-- Object subtraction used OBB projection → inaccurate outlines
+**v1의 문제점:**
+- 깊이만으로 추정한 테이블 Z + 볼록 껍질(convex hull) → 테이블 바깥까지 freespace로 잘못 표시
+- OBB 투영으로만 물체를 차감 → 경계가 부정확
 
-v2 fixes:
-- Uses `cam0_wrt_table.npy` (camera→table frame transform) → table Z=0 plane is exact
-- Transforms depth into table frame, keeps only pixels with |z| < 3 cm → pixel-perfect table mask
-- Uses `label/{frame}.png` (per-pixel object ID) → exact object footprints, no OBB needed
-- Removes convex hull step → correctly handles rounded/partially-visible table edges
-- Excludes pixels touching image edges from free space
+**v2 개선 사항:**
+- `cam0_wrt_table.npy` (카메라→테이블 프레임 변환) 사용 → 테이블 Z=0 평면이 정확하게 정의됨
+- 깊이를 테이블 프레임으로 변환 후 |z| < 3cm 픽셀만 유지 → 픽셀 단위 정확도의 테이블 마스크
+- `label/{frame}.png` (픽셀별 물체 ID) 사용 → 물체 경계 100% 정확, OBB 불필요
+- 볼록 껍질 단계 제거 → 모서리가 둥근 테이블이나 부분적으로 보이는 테이블 경계를 올바르게 처리
+- 이미지 가장자리에 닿은 픽셀을 freespace에서 제외
 
-### Data Requirements
+### 필요 데이터
 
-[GraspNet-1Billion](https://graspnet.net/) dataset with the following structure per scene:
+[GraspNet-1Billion](https://graspnet.net/) 데이터셋, 씬별 구조:
 
 ```
 {scene_id}/
@@ -54,12 +54,12 @@ v2 fixes:
     rgb/{frame:04d}.png
     depth/{frame:04d}.png
     label/{frame:04d}.png
-    camera_poses.npy          # (N, 4, 4) camera pose per frame
-    cam0_wrt_table.npy        # (4, 4) camera-0 to table transform
-    camK.npy                  # (3, 3) intrinsic matrix
+    camera_poses.npy          # (N, 4, 4) 프레임별 카메라 포즈
+    cam0_wrt_table.npy        # (4, 4) 카메라-0 → 테이블 변환 행렬
+    camK.npy                  # (3, 3) 내부 파라미터 행렬
 ```
 
-### Usage
+### 사용법
 
 ```bash
 python scripts/graspnet_surface_qa_v2.py \
@@ -71,7 +71,7 @@ python scripts/graspnet_surface_qa_v2.py \
     [--frame_step 5]
 ```
 
-### Output QA format
+### 출력 QA 형식
 
 ```json
 {
@@ -81,67 +81,75 @@ python scripts/graspnet_surface_qa_v2.py \
 }
 ```
 
-QA types produced:
-- `table_layout` — visible table surface polygon and area
-- `object_layout` — per-object footprint polygon (with 15 px safety margin)
-- `freespace` — free placement region on the table
+생성되는 QA 유형:
+- `table_layout` — 보이는 테이블 표면 폴리곤 및 면적
+- `object_layout` — 물체별 발자국 폴리곤 (15px 안전 여백 포함)
+- `freespace` — 테이블 위 빈 배치 가능 영역
 
 ---
 
-## Pipeline 2 — ScanNet++ Indoor Surface
+## 파이프라인 2 — ScanNet++ Indoor Surface
 
-### Overview
+### 개요
 
-Generates `surface_layout` and `objects_on_surface` QA for indoor scenes in ScanNet++. Detects support surfaces (tables, desks, counters, etc.) using 3D oriented bounding boxes (OBB) from dense reconstruction annotations, refines boundaries with the scene mesh, and verifies visibility with ray casting.
+ScanNet++ 실내 씬에 대해 `surface_layout`, `objects_on_surface` QA를 생성합니다. 밀집 재구성 어노테이션의 3D 방향성 바운딩 박스(OBB)로 지지 표면(테이블, 책상, 카운터 등)을 감지하고, 씬 메쉬로 경계를 정제하며, 레이 캐스팅으로 가시성을 검증합니다.
 
-### Key Design Decisions
+### 핵심 설계 결정
 
-#### No dependency on depth estimation
-The OBB annotations in `segments_anno.json` provide exact 3D extents. The top face of each OBB gives a precise surface plane — no depth map or plane fitting needed.
+#### 깊이 추정 미사용
+`segments_anno.json`의 OBB 어노테이션이 정확한 3D 크기를 제공합니다. 각 OBB의 상단 면이 정밀한 표면 평면을 바로 제공하므로 깊이 맵이나 평면 피팅이 필요 없습니다.
 
-#### Mesh-based boundary refinement
-Instead of projecting the rectangular OBB face, the pipeline extracts actual mesh vertices belonging to the surface object and takes the convex hull of the topmost vertices. This correctly captures round tables, L-shaped counters, and other non-rectangular surfaces.
+#### 메쉬 기반 경계 정제
+직사각형 OBB 면을 투영하는 대신, 해당 물체에 속한 메쉬 꼭짓점을 추출하고 가장 높은 꼭짓점들의 볼록 껍질을 구합니다. 이를 통해 원형 테이블, L자형 카운터 등 비직사각형 표면을 올바르게 표현할 수 있습니다.
 
-#### Ray-casting visibility filter
-Before generating QA for a surface, the pipeline casts 25 rays from the camera toward sample points on the surface top face. If fewer than 20% of rays reach the surface unobstructed (blocked by walls, furniture, etc.), the surface is skipped. This prevents generating QA for surfaces that are hidden behind walls or completely occluded.
+#### 레이 캐스팅 가시성 필터
+표면에 대한 QA를 생성하기 전, 카메라에서 표면 상단 면의 샘플 포인트를 향해 25개의 광선을 쏩니다. 20% 미만의 광선만 표면에 도달하면(벽, 가구 등에 가려진 경우) 해당 표면은 건너뜁니다. 이를 통해 벽 뒤에 숨거나 완전히 가려진 표면에 대한 잘못된 QA 생성을 방지합니다.
 
-#### Three-stage visibility check
-1. **Camera altitude** — camera must be above the surface (no QA for surfaces viewed from below)
-2. **Centroid projection** — surface centroid must project inside the image frame
-3. **Ray casting** — ≥20% of surface sample points must be directly visible
+#### 3단계 가시성 검사
+1. **카메라 높이** — 카메라가 표면보다 위에 있어야 함 (아래에서 올려다보는 경우 QA 생성 안 함)
+2. **중심점 투영** — 표면 중심점이 이미지 프레임 안에 투영되어야 함
+3. **레이 캐스팅** — 표면 샘플 포인트의 20% 이상이 직접 가시여야 함
 
-### Supported Surface Categories
+### 지원 표면 카테고리
 
 ```python
 SUPPORT_SURFACE_LABELS = {
-    'table', 'desk', 'kitchen counter', 'counter',
-    'coffee table', 'dining table', 'end table', 'side table',
-    'nightstand', 'tv stand', 'bench',
+    'table',          # 테이블
+    'desk',           # 책상
+    'kitchen counter', # 주방 조리대
+    'counter',        # 카운터
+    'coffee table',   # 커피 테이블
+    'dining table',   # 식탁
+    'end table',      # 사이드 테이블
+    'side table',     # 사이드 테이블
+    'nightstand',     # 협탁
+    'tv stand',       # TV 스탠드
+    'bench',          # 벤치
 }
 ```
 
-### Data Requirements
+### 필요 데이터
 
-[ScanNet++](https://kaldir.vc.in.tum.de/scannetpp/) dataset with the following structure per scene:
+[ScanNet++](https://kaldir.vc.in.tum.de/scannetpp/) 데이터셋, 씬별 구조:
 
 ```
 {scene_id}/
   scans/
-    mesh_aligned_0.05.ply       # dense reconstruction mesh
-    segments.json               # vertex → segment ID mapping
-    segments_anno.json          # segment groups with OBB + label
+    mesh_aligned_0.05.ply       # 밀집 재구성 메쉬
+    segments.json               # 꼭짓점 → 세그먼트 ID 매핑
+    segments_anno.json          # OBB + 레이블이 포함된 세그먼트 그룹
   dslr/
     colmap/
-      cameras.txt               # OPENCV_FISHEYE camera model
-      images.txt                # per-image pose (quaternion + translation)
+      cameras.txt               # OPENCV_FISHEYE 카메라 모델
+      images.txt                # 이미지별 포즈 (쿼터니언 + 평행이동)
     resized_images/
-      {image_name}.JPG          # DSLR RGB frames
+      {image_name}.JPG          # DSLR RGB 프레임
 ```
 
-### Usage
+### 사용법
 
 ```bash
-# Single scene (with debug images)
+# 단일 씬 처리 (디버그 이미지 포함)
 python scripts/scannetpp_indoor_surface_qa.py \
     --data_root /path/to/ScanNetPP/data \
     --scenes 09c1414f1b \
@@ -150,7 +158,7 @@ python scripts/scannetpp_indoor_surface_qa.py \
     --out_json annotations/scannetpp/scannetpp_indoor_qa.json \
     --debug_dir debug/scannetpp_indoor_qa
 
-# All scenes, parallel
+# 전체 씬 병렬 처리
 python scripts/scannetpp_indoor_surface_qa.py \
     --data_root /path/to/ScanNetPP/data \
     --out_json annotations/scannetpp/scannetpp_indoor_qa.json \
@@ -158,14 +166,14 @@ python scripts/scannetpp_indoor_surface_qa.py \
     --max_frames 15 \
     --workers 4
 
-# Fast mode (skip mesh refinement, OBB top face only)
+# 빠른 모드 (메쉬 정제 생략, OBB 상단 면만 사용)
 python scripts/scannetpp_indoor_surface_qa.py \
     --data_root /path/to/ScanNetPP/data \
     --out_json annotations/scannetpp/scannetpp_indoor_qa.json \
     --no_mesh_refine
 ```
 
-### Output QA format
+### 출력 QA 형식
 
 ```json
 {
@@ -187,48 +195,48 @@ python scripts/scannetpp_indoor_surface_qa.py \
 }
 ```
 
-QA types produced:
-- `surface_layout` — visible surface boundary polygon and pixel area
-- `objects_on_surface` — objects physically placed on the surface
+생성되는 QA 유형:
+- `surface_layout` — 보이는 표면 경계 폴리곤 및 픽셀 면적
+- `objects_on_surface` — 표면 위에 실제로 놓인 물체 목록
 
 ---
 
-## Dependencies
+## 의존성 패키지
 
 ```bash
 pip install open3d opencv-python numpy shapely scipy tqdm
 ```
 
-| Package | Usage |
+| 패키지 | 용도 |
 |---|---|
-| `open3d` | Mesh loading, ray casting (`o3d.t.geometry.RaycastingScene`) |
-| `opencv-python` | Image I/O, fisheye projection (`cv2.fisheye.projectPoints`) |
-| `shapely` | 2D polygon operations (intersection, difference, convex hull) |
-| `scipy` | 3D convex hull for mesh boundary extraction |
-| `tqdm` | Progress bars |
+| `open3d` | 메쉬 로딩, 레이 캐스팅 (`o3d.t.geometry.RaycastingScene`) |
+| `opencv-python` | 이미지 입출력, 어안렌즈 투영 (`cv2.fisheye.projectPoints`) |
+| `shapely` | 2D 폴리곤 연산 (교집합, 차집합, 볼록 껍질) |
+| `scipy` | 메쉬 경계 추출을 위한 3D 볼록 껍질 |
+| `tqdm` | 진행 표시줄 |
 
 ---
 
-## QA Coordinate System
+## QA 좌표 체계
 
-All polygon coordinates are normalised to **[0, 1000]** scale regardless of image resolution:
+모든 폴리곤 좌표는 이미지 해상도에 관계없이 **[0, 1000]** 스케일로 정규화됩니다:
 
 ```
 pixel_x_norm = int(pixel_x / image_width  * 1000)
 pixel_y_norm = int(pixel_y / image_height * 1000)
 ```
 
-This makes QA answers resolution-independent and directly usable for fine-tuning VLMs that output normalised coordinates (e.g. Qwen2-VL, InternVL).
+이를 통해 QA 답변이 해상도 독립적이 되며, 정규화된 좌표를 출력하는 VLM(Qwen2-VL, InternVL 등) 파인튜닝에 바로 사용할 수 있습니다.
 
 ---
 
-## Dataset Statistics (ScanNet++ 50 scenes, 15 frames/scene)
+## 데이터셋 통계 (ScanNet++ 50개 씬, 씬당 최대 15프레임)
 
-| Metric | Value |
+| 항목 | 수치 |
 |---|---|
-| Scenes processed | 50 |
-| Scenes with support surfaces | ~37 |
-| Frames with visible surfaces | 271 |
-| Total QA pairs | 1,004 |
-| QA pairs per frame (avg) | ~3.7 |
-| Surface types detected | table, desk, kitchen counter, coffee table, dining table, nightstand |
+| 처리된 씬 수 | 50개 |
+| 지지 표면이 있는 씬 수 | 약 37개 |
+| 표면이 보이는 프레임 수 | 271개 |
+| 총 QA 쌍 수 | 1,004개 |
+| 프레임당 평균 QA 수 | 약 3.7개 |
+| 감지된 표면 유형 | table, desk, kitchen counter, coffee table, dining table, nightstand |
