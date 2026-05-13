@@ -194,6 +194,48 @@ ns-train splatfacto \
 > [!WARNING]
 > RTAB-Map odometry가 자주 실패한 DB는 camera pose 자체가 불안정할 수 있다. 이 경우 `sparse_pc.ply`가 먼저 휘거나 겹쳐 보이고, `splatfacto` 결과도 흐리게 나온다. Gaussian 학습 전에 point cloud와 camera trajectory를 먼저 확인하는 것이 좋다.
 
+## 1.7. Gaussian label을 4D hash grid field로 학습하기
+
+VLM/Grounded-SAM 등으로 얻은 2D segmentation mask를 여러 view에서 Gaussian으로 누적하면, 각 Gaussian 또는 point에 semantic label supervision을 만들 수 있다. 이 supervision을 discrete Gaussian attribute로만 저장하지 않고 `(x, y, z, t)`를 입력으로 받는 4D multi-scale hash grid field로 학습할 수 있다.
+
+이 방향은 LEGS(Language-Embedded Gaussian Splats)의 language-embedded Gaussian representation과 잘 맞는다. LEGS는 mobile robot으로 room-scale Gaussian splat을 incremental하게 만들고, language feature를 Gaussian map에 결합한다. 여기서는 우선 VLM mask에서 얻은 Gaussian/point label을 4D hash grid로 distill하는 lightweight prototype으로 시작한다.
+
+입력 supervision 파일 형식:
+
+```text
+semantic_points.npz
+  xyz: float32 [N, 3]
+  labels: int64 [N]
+  time: float32 [N]              # optional
+  weights: float32 [N]           # optional
+  class_names: str [C]           # optional
+```
+
+학습:
+
+```bash
+cd ~/catkin_ws
+
+python3 scripts/train_4d_hash_grid_field.py \
+  --samples /home/harudev/semantic_points.npz \
+  --output outputs/hash_grid/semantic_hash_grid.pt \
+  --preview-ply outputs/hash_grid/semantic_preview.ply \
+  --steps 2000 \
+  --batch-size 8192
+```
+
+출력:
+
+```text
+outputs/hash_grid/semantic_hash_grid.pt
+outputs/hash_grid/semantic_preview.ply
+```
+
+`semantic_hash_grid.pt`는 4D hash grid + MLP head checkpoint다. `semantic_preview.ply`는 학습된 field가 각 supervision point에 예측한 semantic label을 색으로 칠한 point cloud라 Open3D/MeshLab/CloudCompare로 확인할 수 있다.
+
+> [!NOTE]
+> 현재 구현은 `tiny-cuda-nn` 없이 PyTorch만 사용하는 research prototype이다. 느리지만 구조를 직접 바꾸기 쉽다. 최적화가 필요해지면 같은 API를 유지하고 backend만 fused CUDA/tiny-cuda-nn으로 교체하면 된다.
+
 ## 2. Online GS 등록 실행
 
 Ubuntu 20.04의 기본 Python은 3.8이므로 최신 PyTorch/typing-extensions가 안 맞을 수 있다. 아래처럼 Python 3.8 호환 버전을 설치한다.
