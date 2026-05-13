@@ -45,21 +45,26 @@ def train_hash_grid(
     if n == 0:
         raise ValueError("Cannot train hash grid with zero samples")
 
-    for step in range(1, train_config.steps + 1):
-        batch = torch.randint(0, n, (min(train_config.batch_size, n),), device=device)
-        logits = model(supervision.xyz[batch], supervision.time[batch])
-        per_sample_loss = F.cross_entropy(logits, supervision.labels[batch], reduction="none")
-        loss = (per_sample_loss * supervision.weights[batch]).mean()
+    last_step = 0
+    try:
+        for step in range(1, train_config.steps + 1):
+            last_step = step
+            batch = torch.randint(0, n, (min(train_config.batch_size, n),), device=device)
+            logits = model(supervision.xyz[batch], supervision.time[batch])
+            per_sample_loss = F.cross_entropy(logits, supervision.labels[batch], reduction="none")
+            loss = (per_sample_loss * supervision.weights[batch]).mean()
 
-        optimizer.zero_grad(set_to_none=True)
-        loss.backward()
-        optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
 
-        if step == 1 or step % train_config.log_every == 0 or step == train_config.steps:
-            with torch.no_grad():
-                pred = logits.argmax(dim=-1)
-                acc = (pred == supervision.labels[batch]).float().mean().item()
-            print(f"step={step:05d} loss={loss.item():.5f} batch_acc={acc:.3f}")
+            if step == 1 or step % train_config.log_every == 0 or step == train_config.steps:
+                with torch.no_grad():
+                    pred = logits.argmax(dim=-1)
+                    acc = (pred == supervision.labels[batch]).float().mean().item()
+                print(f"step={step:05d} loss={loss.item():.5f} batch_acc={acc:.3f}")
+    except KeyboardInterrupt:
+        print(f"Interrupted at step={last_step:05d}. Saving current checkpoint.")
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -67,6 +72,7 @@ def train_hash_grid(
         {
             "model_config": asdict(model_config),
             "train_config": asdict(train_config),
+            "last_step": last_step,
             "state_dict": model.state_dict(),
             "class_names": supervision.class_names,
         },

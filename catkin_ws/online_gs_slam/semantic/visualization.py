@@ -33,9 +33,10 @@ def label_colors(labels: torch.Tensor | np.ndarray) -> np.ndarray:
 def write_labeled_ply(path: str | Path, xyz: torch.Tensor | np.ndarray, labels: torch.Tensor | np.ndarray) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
     xyz_np = xyz.detach().cpu().numpy() if isinstance(xyz, torch.Tensor) else np.asarray(xyz)
     colors = label_colors(labels)
-    with open(path, "w") as f:
+    with open(tmp_path, "w") as f:
         f.write("ply\n")
         f.write("format ascii 1.0\n")
         f.write(f"element vertex {len(xyz_np)}\n")
@@ -51,3 +52,4 @@ def write_labeled_ply(path: str | Path, xyz: torch.Tensor | np.ndarray, labels: 
                 f"{point[0]:.6f} {point[1]:.6f} {point[2]:.6f} "
                 f"{int(color[0])} {int(color[1])} {int(color[2])}\n"
             )
+    tmp_path.replace(path)
