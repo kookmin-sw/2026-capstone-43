@@ -139,6 +139,61 @@ python3 scripts/depth_pose_to_sfm_points.py \
 
 이 `points3D.txt`는 COLMAP text 형식과 비슷한 debug/export 파일이다. 실제 Nerfstudio `splatfacto` 초기화에는 `sparse_pc.ply`와 `transforms.json`의 `ply_file_path`를 쓰는 흐름이 더 직접적이다.
 
+## 1.6. RTAB-Map DB에서 Nerfstudio dataset 만들기
+
+RTAB-Map을 사용해 RGB-D SLAM을 돌린 경우, 저장된 database에서 image, camera pose, assembled point cloud를 바로 export할 수 있다. 이 흐름은 COLMAP을 다시 돌리지 않고 RTAB-Map의 optimized camera trajectory와 depth 기반 point cloud를 `splatfacto` 초기값으로 쓰기 위한 것이다.
+
+RTAB-Map 실행 후 DB는 기본적으로 아래에 저장된다.
+
+```text
+~/.ros/rtabmap.db
+```
+
+Nerfstudio dataset으로 변환:
+
+```bash
+cd ~/catkin_ws
+
+python3 scripts/export_rtabmap_db_to_nerfstudio.py \
+  ~/.ros/rtabmap.db \
+  --output-dir /home/harudev/rtabmap_nerfstudio_dataset_01
+```
+
+생성 파일:
+
+```text
+/home/harudev/rtabmap_nerfstudio_dataset_01/
+  transforms.json
+  images/
+  sparse_pc.ply
+```
+
+`transforms.json`에는 RTAB-Map camera pose가 Nerfstudio/OpenGL camera convention으로 변환되어 저장된다. `sparse_pc.ply`는 RTAB-Map이 depth image와 optimized poses로 조립한 initial point cloud다.
+
+point cloud를 먼저 확인:
+
+```bash
+python3 scripts/view_depth_point_cloud.py \
+  /home/harudev/rtabmap_nerfstudio_dataset_01/sparse_pc.ply
+```
+
+Nerfstudio `splatfacto` 실행:
+
+```bash
+source ~/miniconda3/bin/activate ns310
+
+ns-train splatfacto \
+  --data /home/harudev/rtabmap_nerfstudio_dataset_01 \
+  --viewer.websocket-host 0.0.0.0 \
+  --viewer.make-share-url True \
+  --pipeline.datamanager.camera-res-scale-factor 0.35 \
+  --pipeline.datamanager.images-on-gpu False \
+  --pipeline.datamanager.cache-images cpu
+```
+
+> [!WARNING]
+> RTAB-Map odometry가 자주 실패한 DB는 camera pose 자체가 불안정할 수 있다. 이 경우 `sparse_pc.ply`가 먼저 휘거나 겹쳐 보이고, `splatfacto` 결과도 흐리게 나온다. Gaussian 학습 전에 point cloud와 camera trajectory를 먼저 확인하는 것이 좋다.
+
 ## 2. Online GS 등록 실행
 
 Ubuntu 20.04의 기본 Python은 3.8이므로 최신 PyTorch/typing-extensions가 안 맞을 수 있다. 아래처럼 Python 3.8 호환 버전을 설치한다.
