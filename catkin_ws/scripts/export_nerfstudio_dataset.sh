@@ -18,6 +18,7 @@ POINT_STRIDE="${POINT_STRIDE:-6}"
 MAX_POINTS_PER_FRAME="${MAX_POINTS_PER_FRAME:-12000}"
 MAX_TOTAL_POINTS="${MAX_TOTAL_POINTS:-1500000}"
 VOXEL_SIZE="${VOXEL_SIZE:-0.01}"
+POSE_TRANSLATION_SCALE="${POSE_TRANSLATION_SCALE:-1.0}"
 
 echo "[nerfstudio-export] data_dir=$DATA_DIR"
 echo "[nerfstudio-export] keep_every=$KEEP_EVERY"
@@ -27,6 +28,7 @@ echo "[nerfstudio-export] output=$OUTPUT"
 echo "[nerfstudio-export] include_depth=$INCLUDE_DEPTH"
 echo "[nerfstudio-export] generate_point_cloud=$GENERATE_POINT_CLOUD"
 echo "[nerfstudio-export] pointcloud_output=$POINTCLOUD_OUTPUT"
+echo "[nerfstudio-export] pose_translation_scale=$POSE_TRANSLATION_SCALE"
 
 args=(
   src/uni_navigation/scripts/rgb_pose_to_nerfstudio.py
@@ -34,6 +36,7 @@ args=(
   --keep-every "$KEEP_EVERY"
   --start-index "$START_INDEX"
   --output "$OUTPUT"
+  --pose-translation-scale "$POSE_TRANSLATION_SCALE"
 )
 
 if [ -n "$MAX_FRAMES" ]; then

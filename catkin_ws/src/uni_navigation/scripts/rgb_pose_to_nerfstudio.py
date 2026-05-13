@@ -35,6 +35,14 @@ def make_world_from_ros_optical(row):
     tx = float(row["tx"])
     ty = float(row["ty"])
     tz = float(row["tz"])
+    if origin is not None:
+        tx = origin[0] + translation_scale * (tx - origin[0])
+        ty = origin[1] + translation_scale * (ty - origin[1])
+        tz = origin[2] + translation_scale * (tz - origin[2])
+    else:
+        tx *= translation_scale
+        ty *= translation_scale
+        tz *= translation_scale
     qx = float(row["qx"])
     qy = float(row["qy"])
     qz = float(row["qz"])
@@ -51,10 +59,18 @@ def make_world_from_ros_optical(row):
     )
 
 
-def make_transform(row):
+def make_transform(row, origin=None, translation_scale=1.0):
     tx = float(row["tx"])
     ty = float(row["ty"])
     tz = float(row["tz"])
+    if origin is not None:
+        tx = origin[0] + translation_scale * (tx - origin[0])
+        ty = origin[1] + translation_scale * (ty - origin[1])
+        tz = origin[2] + translation_scale * (tz - origin[2])
+    else:
+        tx *= translation_scale
+        ty *= translation_scale
+        tz *= translation_scale
     qx = float(row["qx"])
     qy = float(row["qy"])
     qz = float(row["qz"])
@@ -152,6 +168,9 @@ def generate_point_cloud(dataset_dir, rows, intrinsics, args):
     all_points = []
     all_colors = []
     rng = random.Random(args.random_seed)
+    origin = None
+    if rows:
+        origin = np.array([float(rows[0]["tx"]), float(rows[0]["ty"]), float(rows[0]["tz"])], dtype=np.float64)
 
     for row in rows:
         depth_filename = row.get("depth_filename", "")
@@ -180,6 +199,10 @@ def generate_point_cloud(dataset_dir, rows, intrinsics, args):
             pixels = pixels[indices]
 
         world_from_camera = make_world_from_ros_optical(row)
+        if origin is not None:
+            world_from_camera[:3, 3] = origin + args.pose_translation_scale * (world_from_camera[:3, 3] - origin)
+        else:
+            world_from_camera[:3, 3] *= args.pose_translation_scale
         cam_h = np.concatenate([cam_points.astype(np.float64), np.ones((len(cam_points), 1))], axis=1)
         world_points = (world_from_camera @ cam_h.T).T[:, :3].astype(np.float32)
         rgb = rgb_bgr[pixels[:, 1], pixels[:, 0], ::-1]
@@ -215,6 +238,7 @@ def main():
     parser.add_argument("--generate-point-cloud", action="store_true")
     parser.add_argument("--pointcloud-output", type=Path, default=None)
     parser.add_argument("--depth-scale", type=float, default=0.001, help="Scale uint depth values to meters. RealSense z16 default is 0.001.")
+    parser.add_argument("--pose-translation-scale", type=float, default=1.0, help="Scale camera translations around the first exported pose.")
     parser.add_argument("--depth-min", type=float, default=0.15)
     parser.add_argument("--depth-max", type=float, default=5.0)
     parser.add_argument("--point-stride", type=int, default=6)
@@ -259,10 +283,14 @@ def main():
             transforms[name] = value
 
     rows = load_rows(poses_csv, args.start_index, args.keep_every, args.max_frames)
+    origin = None
+    if rows:
+        origin = [float(rows[0]["tx"]), float(rows[0]["ty"]), float(rows[0]["tz"])]
+
     for row in rows:
         frame = {
             "file_path": f"rgb/{row['filename']}",
-            "transform_matrix": make_transform(row),
+            "transform_matrix": make_transform(row, origin, args.pose_translation_scale),
         }
         depth_filename = row.get("depth_filename", "")
         if args.include_depth and depth_filename:
