@@ -31,8 +31,7 @@ from src.audio.preprocess import (
 )
 
 from src.condition.preprocess import (
-    ConditionPreprocessConfig,
-    preprocess_condition_for_train,
+    build_temp_contact_condition_for_train,
 )
 
 from src.models.model_sgmse import ScoreModel
@@ -65,51 +64,6 @@ def count_params(model):
     return sum(p.numel() for p in model.parameters())
 
 
-def get_aux_cond_scale(model):
-    if hasattr(model, "module"):
-        model = model.module
-    aux_encoder = getattr(model, "aux_input_add_encoder", None)
-    if aux_encoder is None:
-        return None
-    cond_scale = getattr(aux_encoder, "cond_scale", None)
-    if cond_scale is None:
-        return None
-    return float(cond_scale.detach().cpu().item())
-
-
-def get_aux_condition_monitor(model):
-    if hasattr(model, "module"):
-        model = model.module
-
-    aux_encoder = getattr(model, "aux_input_add_encoder", None)
-    if aux_encoder is None:
-        return {}
-
-    monitor = {}
-    cond_scale = getattr(aux_encoder, "cond_scale", None)
-    if cond_scale is not None:
-        monitor["cond_scale"] = float(cond_scale.detach().cpu().item())
-
-    cond_mlp = getattr(aux_encoder, "cond_mlp", None)
-    if cond_mlp is not None:
-        sq_norm = None
-        for param in cond_mlp.parameters():
-            value = param.detach().float().pow(2).sum()
-            sq_norm = value if sq_norm is None else sq_norm + value
-        if sq_norm is not None:
-            monitor["cond_mlp_norm"] = float(torch.sqrt(sq_norm).cpu().item())
-
-    stats = getattr(model, "_last_aux_input_stats", None)
-    if isinstance(stats, dict):
-        for key, value in stats.items():
-            if torch.is_tensor(value):
-                monitor[key] = float(value.detach().cpu().item())
-            else:
-                monitor[key] = float(value)
-
-    return monitor
-
-
 def autocast_context(device, enabled: bool):
     if not enabled:
         return nullcontext()
@@ -126,14 +80,6 @@ def build_preprocess_cfg(args):
         spec_factor=args.spec_factor,
         spec_abs_exponent=args.spec_abs_exponent,
         normalize=args.normalize,
-    )
-
-
-def build_condition_cfg(args):
-    return ConditionPreprocessConfig(
-        raw_force_scale=args.raw_force_scale,
-        d_force_scale=args.d_force_scale,
-        smooth_win=args.condition_smooth_win,
     )
 
 
@@ -179,15 +125,8 @@ def build_model(args):
         l1_weight=args.l1_weight,
         pesq_weight=args.pesq_weight,
         sr=args.target_sr,
-        use_aux_cond=args.use_aux_cond,
-        aux_encoder=args.aux_encoder,
-        aux_cond_dim=args.aux_cond_dim,
-        aux_hidden_dim=args.aux_hidden_dim,
-        aux_scale_init=args.aux_scale_init,
-        aux_time_scale=args.aux_time_scale,
-        aux_time_embed_dim=args.aux_time_embed_dim,
-        aux_time_max_period=args.aux_time_max_period,
-        aux_freq_bins=args.n_fft // 2 + 1,
+        use_temp_condition=args.use_temp_condition,
+        input_channels=8 if args.use_temp_condition else 4,
         nf=args.nf,
         ch_mult=ch_mult,
         num_res_blocks=args.num_res_blocks,
@@ -274,36 +213,8 @@ def load_checkpoint(path, model, optimizer=None, scaler=None, device="cpu"):
     return int(ckpt.get("step", 0)), float(ckpt.get("loss", 0.0))
 
 
-def infer_aux_encoder_from_checkpoint(path):
-    if not path:
-        return ""
-
-    ckpt = torch.load(path, map_location="cpu")
-    if isinstance(ckpt, dict) and isinstance(ckpt.get("model"), dict):
-        state_dict = ckpt["model"]
-    elif isinstance(ckpt, dict) and isinstance(ckpt.get("state_dict"), dict):
-        state_dict = ckpt["state_dict"]
-    elif isinstance(ckpt, dict) and ckpt and all(torch.is_tensor(v) for v in ckpt.values()):
-        state_dict = ckpt
-    else:
-        return ""
-
-    if any(str(k).startswith("aux_context_encoder.value_proj.") for k in state_dict):
-        return "mlp"
-
-    for key, value in state_dict.items():
-        if "ContextK.weight" in str(key) and torch.is_tensor(value) and value.dim() == 3:
-            in_channels = int(value.shape[1])
-            if in_channels == 8:
-                return "identity"
-            if in_channels == 128:
-                return "mlp"
-
-    return ""
-
-
 @torch.no_grad()
-def build_aux_cond_for_chunk(
+def build_temp_condition_for_chunk(
     run_dir,
     chunk_start_sample,
     noisy_spec,
@@ -312,77 +223,29 @@ def build_aux_cond_for_chunk(
 ):
     if run_dir is None or str(run_dir) == "":
         raise RuntimeError(
-            "use_aux_cond=True but run_dir is missing. "
+            "use_temp_condition=True but run_dir is missing. "
             "Dataset meta must contain run_dir or noisy_wav parent must contain anchors/lowstate."
         )
 
-    cond_cfg = build_condition_cfg(args)
-    cond_out = preprocess_condition_for_train(
+    temp_condition = build_temp_contact_condition_for_train(
         run_dir=str(run_dir),
         crop_start_sample=int(chunk_start_sample),
         num_frames=noisy_spec.shape[-1],
         hop_length=args.hop_length,
-        cfg=cond_cfg,
+        freq_bins=noisy_spec.shape[-2],
+        contact_threshold=args.temp_contact_threshold,
+        contact_lag_ms=args.temp_contact_lag_ms,
     )
-    return {
-        "aux_cond": cond_out["cond_8ch"].unsqueeze(0).to(device, non_blocking=True),
-        "aux_cond_times": cond_out["cond_times"].unsqueeze(0).to(device, non_blocking=True),
-        "aux_cond_mask": cond_out["cond_mask"].unsqueeze(0).to(device, non_blocking=True),
-        "aux_query_times": cond_out["query_mono_times"].unsqueeze(0).to(device, non_blocking=True),
-    }
+    return temp_condition.unsqueeze(0).to(device, non_blocking=True)
 
 
 @torch.no_grad()
-def apply_aux_cond_mode_for_sample(aux_payload, args, chunk_start_sample):
-    mode = str(getattr(args, "aux_cond_mode", "real")).strip().lower().replace("-", "_")
-    if mode in {"", "real"}:
-        return aux_payload
-
-    aux_cond = aux_payload["aux_cond"]
-    aux_cond_mask = aux_payload["aux_cond_mask"].bool()
-
-    if mode == "zero":
-        aux_payload["aux_cond"] = torch.zeros_like(aux_cond)
-        return aux_payload
-
-    if mode == "zero_padded":
-        aux_payload["aux_cond"] = torch.zeros_like(aux_cond)
-        aux_payload["aux_cond_mask"] = torch.zeros_like(aux_cond_mask, dtype=torch.bool)
-        return aux_payload
-
-    if mode == "random":
-        valid_mask = aux_cond_mask.unsqueeze(1).expand_as(aux_cond)
-        if valid_mask.any():
-            valid_values = aux_cond[valid_mask]
-        else:
-            valid_values = aux_cond.reshape(-1)
-
-        mean = valid_values.mean()
-        std = valid_values.std(unbiased=False).clamp_min(1e-6)
-        seed = int(getattr(args, "aux_cond_seed", 0)) + int(chunk_start_sample)
-        generator = torch.Generator()
-        generator.manual_seed(seed)
-        random_cond = torch.randn(
-            aux_cond.shape,
-            generator=generator,
-            dtype=aux_cond.dtype,
-        ).to(device=aux_cond.device)
-        random_cond = random_cond * std + mean
-        aux_payload["aux_cond"] = torch.where(
-            valid_mask,
-            random_cond,
-            torch.zeros_like(random_cond),
-        )
-        return aux_payload
-
-    raise ValueError(
-        f"Invalid aux_cond_mode={mode}. "
-        "Expected one of {'real', 'zero', 'zero_padded', 'random'}."
-    )
-
-
-@torch.no_grad()
-def build_sampler(model, y_spec, aux_cond, aux_cond_times, aux_cond_mask, aux_query_times, args):
+def build_sampler(
+    model,
+    y_spec,
+    temp_condition,
+    args,
+):
     N = args.sampling_N if args.sampling_N > 0 else model.sde.N
     sampler_type = args.sampler_type if args.sampler_type != "auto" else model.sde.sampler_type
 
@@ -398,19 +261,13 @@ def build_sampler(model, y_spec, aux_cond, aux_cond_times, aux_cond_mask, aux_qu
                 corrector_steps=args.corrector_steps,
                 snr=args.snr,
                 intermediate=False,
-                aux_cond=aux_cond,
-                aux_cond_times=aux_cond_times,
-                aux_cond_mask=aux_cond_mask,
-                aux_query_times=aux_query_times,
+                temp_condition=temp_condition,
             )
         if sampler_type == "ode":
             return model.get_ode_sampler(
                 y=y_spec,
                 N=N,
-                aux_cond=aux_cond,
-                aux_cond_times=aux_cond_times,
-                aux_cond_mask=aux_cond_mask,
-                aux_query_times=aux_query_times,
+                temp_condition=temp_condition,
             )
         raise ValueError(f"Invalid sampler_type={sampler_type} for OUVESDE")
 
@@ -420,10 +277,7 @@ def build_sampler(model, y_spec, aux_cond, aux_cond_times, aux_cond_mask, aux_qu
             y=y_spec,
             sampler_type=sampler_type,
             N=N,
-            aux_cond=aux_cond,
-            aux_cond_times=aux_cond_times,
-            aux_cond_mask=aux_cond_mask,
-            aux_query_times=aux_query_times,
+            temp_condition=temp_condition,
         )
 
     raise ValueError(f"Unsupported SDE type: {sde_name}")
@@ -467,8 +321,7 @@ def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
         f"hop={chunk_hop}, "
         f"chunks={len(starts)}, "
         f"normfac={normfac.item():.6f}, "
-        f"use_aux_cond={args.use_aux_cond}, "
-        f"aux_cond_mode={getattr(args, 'aux_cond_mode', 'real')}"
+        f"use_temp_condition={args.use_temp_condition}"
     )
 
     for ci, start in enumerate(starts):
@@ -481,43 +334,28 @@ def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
         orig_frames = y_spec.shape[-1]
         y_spec = pad_spec(y_spec).to(device)
 
-        aux_cond = None
-        aux_cond_times = None
-        aux_cond_mask = None
-        aux_query_times = None
-        if args.use_aux_cond:
-            aux_payload = build_aux_cond_for_chunk(
+        temp_condition = None
+        if args.use_temp_condition:
+            temp_condition = build_temp_condition_for_chunk(
                 run_dir=run_dir,
                 chunk_start_sample=start,
                 noisy_spec=y_spec.squeeze(0),
                 args=args,
                 device=device,
             )
-            aux_payload = apply_aux_cond_mode_for_sample(
-                aux_payload=aux_payload,
-                args=args,
-                chunk_start_sample=start,
-            )
-            aux_cond = aux_payload["aux_cond"]
-            aux_cond_times = aux_payload["aux_cond_times"]
-            aux_cond_mask = aux_payload["aux_cond_mask"]
-            aux_query_times = aux_payload["aux_query_times"]
 
         print(
             f"[sample chunk] "
             f"{ci + 1}/{len(starts)} "
             f"input={tuple(y_spec.shape)} "
-            f"aux={None if aux_cond is None else tuple(aux_cond.shape)} "
+            f"temp={None if temp_condition is None else tuple(temp_condition.shape)} "
             f"start={start}"
         )
 
         sampler = build_sampler(
             model=model,
             y_spec=y_spec,
-            aux_cond=aux_cond,
-            aux_cond_times=aux_cond_times,
-            aux_cond_mask=aux_cond_mask,
-            aux_query_times=aux_query_times,
+            temp_condition=temp_condition,
             args=args,
         )
         sample, _ = sampler()
@@ -539,14 +377,8 @@ def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
         del y_spec
         del enhanced_spec
         del enhanced_chunk_norm
-        if aux_cond is not None:
-            del aux_cond
-        if aux_cond_times is not None:
-            del aux_cond_times
-        if aux_cond_mask is not None:
-            del aux_cond_mask
-        if aux_query_times is not None:
-            del aux_query_times
+        if temp_condition is not None:
+            del temp_condition
         gc.collect()
         if device.type == "cuda":
             torch.cuda.empty_cache()
@@ -596,7 +428,7 @@ def save_sample_wavs(model, batch, args, device, step):
         run_dir = None
         if run_dirs is not None:
             run_dir = run_dirs[i]
-        elif args.use_aux_cond:
+        elif args.use_temp_condition:
             run_dir = str(Path(noisy_path).parent)
 
         noisy_wav, _ = load_mono_audio(noisy_path, target_sr=args.target_sr)
@@ -663,32 +495,20 @@ def evaluate_validation_loss(model, loader, args, device):
             batch["noisy_stft"].to(device, non_blocking=True)
         )
 
-        aux_cond = None
-        aux_cond_times = None
-        aux_cond_mask = None
-        aux_query_times = None
-        if args.use_aux_cond:
-            if "cond" not in batch:
-                raise RuntimeError("use_aux_cond=True but batch does not contain 'cond'")
-            if "cond_mask" not in batch:
-                raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_mask'")
-            aux_cond = batch["cond"].to(device, non_blocking=True)
-            aux_cond_mask = batch["cond_mask"].to(device, non_blocking=True)
-            if aux_cond.dim() != 3:
+        temp_condition = None
+        if args.use_temp_condition:
+            if "temp_condition" not in batch:
                 raise RuntimeError(
-                    f"Expected aux_cond shape [B, C, K], got {tuple(aux_cond.shape)}"
+                    "use_temp_condition=True but batch does not contain 'temp_condition'"
                 )
-            if aux_cond.size(1) != args.aux_cond_dim:
+            temp_condition = batch["temp_condition"].to(device, non_blocking=True)
+            if temp_condition.dim() != 4:
                 raise RuntimeError(
-                    f"Expected aux_cond channel={args.aux_cond_dim}, got {aux_cond.size(1)}"
+                    f"Expected temp_condition shape [B,4,F,T], got {tuple(temp_condition.shape)}"
                 )
-            if aux_cond_mask.dim() != 2:
+            if temp_condition.size(1) != 4:
                 raise RuntimeError(
-                    f"Expected aux_cond_mask shape [B, K], got {tuple(aux_cond_mask.shape)}"
-                )
-            if aux_cond_mask.size(1) != aux_cond.size(2):
-                raise RuntimeError(
-                    f"aux_cond_mask length mismatch: {aux_cond_mask.size(1)} vs {aux_cond.size(2)}"
+                    f"Expected temp_condition channel=4, got {temp_condition.size(1)}"
                 )
 
         with autocast_context(device, enabled=(args.amp and device.type == "cuda")):
@@ -696,10 +516,7 @@ def evaluate_validation_loss(model, loader, args, device):
                 {
                     "x": clean,
                     "y": noisy,
-                    "aux_cond": aux_cond,
-                    "aux_cond_times": aux_cond_times,
-                    "aux_cond_mask": aux_cond_mask,
-                    "aux_query_times": aux_query_times,
+                    "temp_condition": temp_condition,
                 },
                 batch_idx=0,
             )
@@ -765,34 +582,13 @@ def main():
     parser.add_argument("--l1-weight", type=float, default=0.001)
     parser.add_argument("--pesq-weight", type=float, default=0.0)
 
-    parser.add_argument("--use-aux-cond", action="store_true")
     parser.add_argument(
-        "--aux-encoder",
-        default="identity",
-        choices=["identity", "mlp"],
-        help="Deprecated compatibility flag. Current SGMSE aux path uses "
-             "input-level addition via an MLP, not cross-attention.",
+        "--use-temp-condition",
+        action="store_true",
+        help="Concat 4 per-foot contact-state channels to the SGMSE+ backbone input.",
     )
-    parser.add_argument("--aux-cond-dim", type=int, default=8)
-    parser.add_argument("--aux-hidden-dim", type=int, default=512)
-    parser.add_argument("--aux-scale-init", type=float, default=0.1)
-    parser.add_argument(
-        "--aux-time-scale",
-        type=float,
-        default=0.05,
-        help="Deprecated compatibility flag from the old cross-attention path. "
-             "Current input-add condition keeps aux time order by resizing tokens.",
-    )
-    parser.add_argument("--aux-time-embed-dim", type=int, default=128)
-    parser.add_argument("--aux-time-max-period", type=float, default=10000.0)
-    parser.add_argument("--raw-force-scale", type=float, default=220.0)
-    parser.add_argument(
-        "--d-force-scale",
-        type=float,
-        default=255.0,
-        help="Normalize foot-force derivative as clip(dFdt / d_force_scale, -1, 1).",
-    )
-    parser.add_argument("--condition-smooth-win", type=int, default=1)
+    parser.add_argument("--temp-contact-threshold", type=float, default=50.0)
+    parser.add_argument("--temp-contact-lag-ms", type=float, default=58.5)
 
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--val-batch-size", type=int, default=0)
@@ -881,25 +677,11 @@ def main():
             "train_sgmse.py currently supports loss_type in {'score_matching', 'denoiser'} only. "
             "data_prediction requires a dedicated data_module implementation."
         )
-    if args.use_aux_cond and args.aux_cond_dim != 8:
+    if args.use_temp_condition and args.backbone != "ncsnpp_v2":
         raise ValueError(
-            f"Input-add condition path expects 8ch foot-force condition. "
-            f"Set --aux-cond-dim 8 (got {args.aux_cond_dim})."
-        )
-    if args.use_aux_cond and args.backbone != "ncsnpp_v2":
-        raise ValueError(
-            "use_aux_cond=True is currently wired only for backbone='ncsnpp_v2'. "
+            "use_temp_condition=True is currently wired only for backbone='ncsnpp_v2'. "
             f"Got backbone={args.backbone}."
         )
-
-    if args.resume and args.use_aux_cond:
-        inferred_aux_encoder = infer_aux_encoder_from_checkpoint(args.resume)
-        if inferred_aux_encoder and inferred_aux_encoder != args.aux_encoder:
-            print(
-                f"[resume] checkpoint aux_encoder={inferred_aux_encoder}; "
-                f"overriding requested aux_encoder={args.aux_encoder} for compatibility."
-            )
-            args.aux_encoder = inferred_aux_encoder
 
     if args.win_length != args.n_fft:
         raise ValueError(
@@ -951,11 +733,10 @@ def main():
         random_crop=random_crop,
         valid_only=True,
         limit=dataset_limit,
-        use_condition=args.use_aux_cond,
-        condition_repr="8ch",
-        raw_force_scale=args.raw_force_scale,
-        d_force_scale=args.d_force_scale,
-        condition_smooth_win=args.condition_smooth_win,
+        use_condition=False,
+        use_temp_condition=args.use_temp_condition,
+        temp_contact_threshold=args.temp_contact_threshold,
+        temp_contact_lag_ms=args.temp_contact_lag_ms,
     )
 
     train_loader = DataLoader(
@@ -990,11 +771,10 @@ def main():
             random_crop=False,
             valid_only=True,
             limit=None,
-            use_condition=args.use_aux_cond,
-            condition_repr="8ch",
-            raw_force_scale=args.raw_force_scale,
-            d_force_scale=args.d_force_scale,
-            condition_smooth_win=args.condition_smooth_win,
+            use_condition=False,
+            use_temp_condition=args.use_temp_condition,
+            temp_contact_threshold=args.temp_contact_threshold,
+            temp_contact_lag_ms=args.temp_contact_lag_ms,
         )
 
         val_loader = DataLoader(
@@ -1119,22 +899,10 @@ def main():
     print(f"normalize          : {args.normalize}")
     print("--------------------------------------------------")
     print("[condition config]")
-    print(f"use_aux_cond       : {args.use_aux_cond}")
-    print("aux_injection      : input_add")
-    print(f"aux_freq_bins      : {args.n_fft // 2 + 1}")
-    print(
-        f"aux_mlp            : Linear({args.aux_cond_dim}, {args.aux_hidden_dim}) "
-        f"-> LeakyReLU(0.2) -> Linear({args.aux_hidden_dim}, {2 * (args.n_fft // 2 + 1)})"
-    )
-    print(f"aux_encoder        : {args.aux_encoder} (ignored)")
-    print(f"aux_cond_dim       : {args.aux_cond_dim}")
-    print(f"aux_hidden_dim     : {args.aux_hidden_dim}")
-    print(f"aux_scale_init     : {args.aux_scale_init} (fixed cond_scale)")
-    print(f"aux_time_scale     : {args.aux_time_scale} (ignored)")
-    print(f"aux_time_embed_dim : {args.aux_time_embed_dim} (ignored)")
-    print(f"aux_time_max_period: {args.aux_time_max_period} (ignored)")
-    print(f"raw_force_scale    : {args.raw_force_scale}")
-    print(f"d_force_scale      : {args.d_force_scale}")
+    print(f"use_temp_condition : {args.use_temp_condition}")
+    print(f"temp_threshold     : {args.temp_contact_threshold}")
+    print(f"temp_lag_ms        : {args.temp_contact_lag_ms}")
+    print(f"backbone_in_ch     : {8 if args.use_temp_condition else 4}")
     print("--------------------------------------------------")
     print("[model config]")
     print(f"backbone           : {args.backbone}")
@@ -1183,7 +951,6 @@ def main():
 
     for step in range(start_step + 1, total_steps + 1):
         total_loss = 0.0
-        aux_cond = None
         val_loss_at_epoch_end = None
 
         for _ in range(args.grad_accum):
@@ -1196,33 +963,20 @@ def main():
                 batch["noisy_stft"].to(device, non_blocking=True)
             )
 
-            aux_cond = None
-            aux_cond_times = None
-            aux_cond_mask = None
-            aux_query_times = None
-            if args.use_aux_cond:
-                if "cond" not in batch:
-                    raise RuntimeError("use_aux_cond=True but batch does not contain 'cond'")
-                if "cond_mask" not in batch:
-                    raise RuntimeError("use_aux_cond=True but batch does not contain 'cond_mask'")
-
-                aux_cond = batch["cond"].to(device, non_blocking=True)
-                aux_cond_mask = batch["cond_mask"].to(device, non_blocking=True)
-                if aux_cond.dim() != 3:
+            temp_condition = None
+            if args.use_temp_condition:
+                if "temp_condition" not in batch:
                     raise RuntimeError(
-                        f"Expected aux_cond shape [B, C, K], got {tuple(aux_cond.shape)}"
+                        "use_temp_condition=True but batch does not contain 'temp_condition'"
                     )
-                if aux_cond.size(1) != args.aux_cond_dim:
+                temp_condition = batch["temp_condition"].to(device, non_blocking=True)
+                if temp_condition.dim() != 4:
                     raise RuntimeError(
-                        f"Expected aux_cond channel={args.aux_cond_dim}, got {aux_cond.size(1)}"
+                        f"Expected temp_condition shape [B,4,F,T], got {tuple(temp_condition.shape)}"
                     )
-                if aux_cond_mask.dim() != 2:
+                if temp_condition.size(1) != 4:
                     raise RuntimeError(
-                        f"Expected aux_cond_mask shape [B, K], got {tuple(aux_cond_mask.shape)}"
-                    )
-                if aux_cond_mask.size(1) != aux_cond.size(2):
-                    raise RuntimeError(
-                        f"aux_cond_mask length mismatch: {aux_cond_mask.size(1)} vs {aux_cond.size(2)}"
+                        f"Expected temp_condition channel=4, got {temp_condition.size(1)}"
                     )
 
             with autocast_context(device, enabled=(args.amp and device.type == "cuda")):
@@ -1230,10 +984,7 @@ def main():
                     {
                         "x": clean,
                         "y": noisy,
-                        "aux_cond": aux_cond,
-                        "aux_cond_times": aux_cond_times,
-                        "aux_cond_mask": aux_cond_mask,
-                        "aux_query_times": aux_query_times,
+                        "temp_condition": temp_condition,
                     },
                     batch_idx=0,
                 )
@@ -1272,26 +1023,13 @@ def main():
             running_loss = 0.0
             running_count = 0
 
-            aux_shape = None if aux_cond is None else tuple(aux_cond.shape)
-            aux_monitor = get_aux_condition_monitor(model)
-            aux_cond_scale = aux_monitor.get("cond_scale", None)
-            aux_cond_scale_str = "None" if aux_cond_scale is None else f"{aux_cond_scale:.6f}"
-            aux_mlp_norm = aux_monitor.get("cond_mlp_norm", None)
-            aux_mlp_norm_str = "None" if aux_mlp_norm is None else f"{aux_mlp_norm:.6f}"
-            aux_to_x = aux_monitor.get("cond_bias_to_x_rms", None)
-            aux_to_x_str = "None" if aux_to_x is None else f"{aux_to_x:.6f}"
-            aux_to_y = aux_monitor.get("cond_bias_to_y_rms", None)
-            aux_to_y_str = "None" if aux_to_y is None else f"{aux_to_y:.6f}"
+            temp_shape = None if temp_condition is None else tuple(temp_condition.shape)
             print(
                 f"[step {step:07d}/{total_steps:07d}] "
                 f"epoch~{step / updates_per_epoch:.2f} "
                 f"loss={avg_loss:.8f} "
                 f"mean_loss={mean_loss:.8f} "
-                f"aux={aux_shape} "
-                f"cond_scale={aux_cond_scale_str} "
-                f"cond_mlp_norm={aux_mlp_norm_str} "
-                f"cond/x={aux_to_x_str} "
-                f"cond/y={aux_to_y_str} "
+                f"temp={temp_shape} "
                 f"time={elapsed:.2f}s"
             )
 
@@ -1322,13 +1060,6 @@ def main():
             )
             if val_loss is not None:
                 epoch_log += f" val_loss={val_loss:.8f}"
-            aux_monitor = get_aux_condition_monitor(model)
-            aux_cond_scale = aux_monitor.get("cond_scale", None)
-            if aux_cond_scale is not None:
-                epoch_log += f" cond_scale={aux_cond_scale:.6f}"
-            aux_mlp_norm = aux_monitor.get("cond_mlp_norm", None)
-            if aux_mlp_norm is not None:
-                epoch_log += f" cond_mlp_norm={aux_mlp_norm:.6f}"
             print(epoch_log)
 
             if epoch_loss_csv_path is not None:

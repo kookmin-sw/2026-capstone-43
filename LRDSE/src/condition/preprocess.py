@@ -429,6 +429,123 @@ def load_condition_source_cached(
     return t_low, force_norm, deriv_on_low, anchor_sample_idx, anchor_mono_sec
 
 
+@lru_cache(maxsize=2048)
+def load_temp_contact_source_cached(
+    run_dir: str,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    run_dir = str(Path(run_dir).expanduser().resolve())
+    lowstate_path = find_lowstate_file(run_dir)
+    anchor_path = find_anchor_file(run_dir)
+
+    t_low, foot_force = load_lowstate_time_and_force(lowstate_path)
+    anchor_sample_idx, anchor_mono_sec = load_anchor_sample_to_time(anchor_path)
+    return t_low, foot_force, anchor_sample_idx, anchor_mono_sec
+
+
+def build_frame_time_edges(frame_times: np.ndarray, eps: float = 1e-8) -> np.ndarray:
+    frame_times = np.asarray(frame_times, dtype=np.float64)
+    if frame_times.ndim != 1:
+        raise ValueError(f"Expected frame_times [T], got {frame_times.shape}")
+    if frame_times.size <= 0:
+        raise ValueError("frame_times must be non-empty")
+
+    if frame_times.size == 1:
+        half_step = 0.5 * eps
+        return np.asarray(
+            [frame_times[0] - half_step, frame_times[0] + half_step],
+            dtype=np.float64,
+        )
+
+    mids = 0.5 * (frame_times[:-1] + frame_times[1:])
+    first_step = max(float(frame_times[1] - frame_times[0]), eps)
+    last_step = max(float(frame_times[-1] - frame_times[-2]), eps)
+
+    edges = np.empty((frame_times.size + 1,), dtype=np.float64)
+    edges[1:-1] = mids
+    edges[0] = frame_times[0] - 0.5 * first_step
+    edges[-1] = frame_times[-1] + 0.5 * last_step
+    return edges
+
+
+def build_temp_contact_frames(
+    run_dir: str,
+    crop_start_sample: int,
+    num_frames: int,
+    hop_length: int,
+    contact_threshold: float = 50.0,
+    contact_lag_ms: float = 58.5,
+    eps: float = 1e-8,
+) -> torch.Tensor:
+    """
+    Build per-foot frame-wise contact-state channels aligned to audio STFT frames.
+
+    foot_force timestamps are shifted later by contact_lag_ms before alignment.
+    Output shape is [4, T]. A foot channel is 1 when any shifted lowstate sample
+    inside that audio frame's monotonic-time window has force > contact_threshold.
+    """
+    if num_frames <= 0:
+        raise ValueError(f"num_frames must be positive, got {num_frames}")
+    if hop_length <= 0:
+        raise ValueError(f"hop_length must be positive, got {hop_length}")
+
+    t_low, foot_force, anchor_sample_idx, anchor_mono_sec = (
+        load_temp_contact_source_cached(str(Path(run_dir).expanduser().resolve()))
+    )
+
+    frame_samples = int(crop_start_sample) + (
+        np.arange(int(num_frames), dtype=np.float64) * float(hop_length)
+    )
+    frame_times = np.interp(frame_samples, anchor_sample_idx, anchor_mono_sec)
+    frame_edges = build_frame_time_edges(frame_times, eps=float(eps))
+
+    shifted_times = t_low + (float(contact_lag_ms) / 1000.0)
+    contact = foot_force > float(contact_threshold)
+    out = np.zeros((4, int(num_frames)), dtype=np.float32)
+    if shifted_times.size == 0:
+        return torch.from_numpy(out)
+
+    for frame_idx in range(int(num_frames)):
+        if frame_idx == int(num_frames) - 1:
+            in_frame = (
+                (shifted_times >= frame_edges[frame_idx])
+                & (shifted_times <= frame_edges[frame_idx + 1])
+            )
+        else:
+            in_frame = (
+                (shifted_times >= frame_edges[frame_idx])
+                & (shifted_times < frame_edges[frame_idx + 1])
+            )
+        if np.any(in_frame):
+            out[:, frame_idx] = np.any(contact[in_frame], axis=0).astype(np.float32)
+
+    return torch.from_numpy(out)
+
+
+def build_temp_contact_condition_for_train(
+    run_dir: str,
+    crop_start_sample: int,
+    num_frames: int,
+    hop_length: int,
+    freq_bins: int,
+    contact_threshold: float = 50.0,
+    contact_lag_ms: float = 58.5,
+    eps: float = 1e-8,
+) -> torch.Tensor:
+    if freq_bins <= 0:
+        raise ValueError(f"freq_bins must be positive, got {freq_bins}")
+
+    frames = build_temp_contact_frames(
+        run_dir=run_dir,
+        crop_start_sample=crop_start_sample,
+        num_frames=num_frames,
+        hop_length=hop_length,
+        contact_threshold=contact_threshold,
+        contact_lag_ms=contact_lag_ms,
+        eps=eps,
+    ).float()
+    return frames.view(4, 1, int(num_frames)).expand(4, int(freq_bins), int(num_frames)).contiguous()
+
+
 def build_condition_tokens_from_crop_window(
     t_low: np.ndarray,
     force_norm: np.ndarray,

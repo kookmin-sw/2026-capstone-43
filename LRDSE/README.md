@@ -137,41 +137,23 @@ python3 train_sgmse.py \
 
 `--sample-every` 또는 `--sample-every-epochs`를 켜면 `--val-manifest`가 필요합니다.
 
-## Aux Condition 학습
+## Temp Contact Condition 학습
 
-Foot force condition을 쓰려면 `--use-aux-cond`를 추가합니다. 현재 SGMSE aux path는 `backbone=ncsnpp_v2`, `aux_cond_dim=8` 조합을 전제로 합니다.
-기본 `--aux-encoder identity`는 정규화된 foot force 8ch를 별도 Linear projection 없이 그대로 attention context로 사용합니다. Monotonic timestamp는 audio/lowstate 정렬에 사용한 뒤 crop 시작 시간을 뺀 상대 초 단위로 time embedding에 넣으며, 기본 time scale은 50 ms입니다.
+Foot force contact channel을 쓰려면 `--use-temp-condition`을 추가합니다. 현재 SGMSE path는 `backbone=ncsnpp_v2` 입력을 `[x.real, x.imag, y.real, y.imag, foot0, foot1, foot2, foot3]` 8채널로 구성합니다.
+각 foot channel은 audio frame의 `CLOCK_MONOTONIC` time window 안에서 해당 foot force가 `50`을 넘으면 `1`, 아니면 `0`입니다. 기본값은 foot force timestamp를 `+58.5ms` 늦춘 뒤 정렬합니다.
 
 ```bash
 python3 train_sgmse.py \
   --manifest ./data/manifest_train.csv \
   --val-manifest ./data/manifest_val.csv \
-  --save-dir ./checkpoints/sgmse_aux \
+  --save-dir ./checkpoints/sgmse_temp_contact \
   --device cuda \
   --batch-size 4 \
   --max-epochs 300 \
-  --use-aux-cond
+  --use-temp-condition
 ```
 
-기존 8ch→128ch Linear projection 방식으로 학습/재개하려면 `--aux-encoder mlp`를 사용합니다. 오래된 aux checkpoint를 denoise/resume할 때는 checkpoint weight shape을 보고 `mlp`로 자동 호환 처리합니다.
-
-Condition preprocessing은 `lowstate`에서 4ch raw foot force와 4ch derivative를 만들고, crop 구간에 맞춰 `[8, 1024]` token으로 패딩합니다.
-
-## Aux Condition Loss 점검
-
-Aux condition checkpoint에서 실제 condition 대신 zero/random condition을 넣었을 때 loss가 망가지는지 확인하려면:
-
-```bash
-python3 -m src.check.check_sgmse_condition_loss \
-  --checkpoint ./checkpoints/sgmse_aux/latest.pt \
-  --manifest ./data/manifest_val.csv \
-  --device cuda \
-  --batch-size 2 \
-  --num-batches 8 \
-  --repeats 3
-```
-
-기본 비교 mode는 `real`, `zero`, `zero_padded`, `random`, `shuffle`, `no_condition`입니다. 같은 batch/repeat에서는 diffusion timestep/noise seed를 고정하므로 condition 변화의 영향만 비교하기 쉽습니다.
+threshold와 lag는 `--temp-contact-threshold`, `--temp-contact-lag-ms`로 조정할 수 있습니다.
 
 ## Step 1: Condition Encoder
 

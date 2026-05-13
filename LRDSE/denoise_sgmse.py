@@ -58,17 +58,9 @@ DEFAULT_TRAIN_ARGS: Dict[str, Any] = {
     "sigma_data": 0.1,
     "l1_weight": 0.001,
     "pesq_weight": 0.0,
-    "use_aux_cond": False,
-    "aux_encoder": "identity",
-    "aux_cond_dim": 8,
-    "aux_hidden_dim": 512,
-    "aux_scale_init": 0.1,
-    "aux_time_scale": 0.05,
-    "aux_time_embed_dim": 128,
-    "aux_time_max_period": 10000.0,
-    "raw_force_scale": 220.0,
-    "d_force_scale": 255.0,
-    "condition_smooth_win": 1,
+    "use_temp_condition": False,
+    "temp_contact_threshold": 50.0,
+    "temp_contact_lag_ms": 58.5,
     "batch_size": 4,
     "val_batch_size": 0,
     "num_workers": 2,
@@ -120,35 +112,6 @@ def read_json(path: Path) -> Dict[str, Any]:
     return payload
 
 
-def infer_aux_encoder_from_checkpoint(checkpoint: Any) -> str:
-    if not isinstance(checkpoint, dict):
-        return ""
-
-    state_dict = None
-    if isinstance(checkpoint.get("model"), dict):
-        state_dict = checkpoint["model"]
-    elif isinstance(checkpoint.get("state_dict"), dict):
-        state_dict = checkpoint["state_dict"]
-    elif checkpoint and all(torch.is_tensor(v) for v in checkpoint.values()):
-        state_dict = checkpoint
-
-    if not state_dict:
-        return ""
-
-    if any(str(k).startswith("aux_context_encoder.value_proj.") for k in state_dict):
-        return "mlp"
-
-    for key, value in state_dict.items():
-        if "ContextK.weight" in str(key) and torch.is_tensor(value) and value.dim() == 3:
-            in_channels = int(value.shape[1])
-            if in_channels == 8:
-                return "identity"
-            if in_channels == 128:
-                return "mlp"
-
-    return ""
-
-
 def load_training_args(
     checkpoint_path: Path,
     checkpoint: Any,
@@ -161,17 +124,10 @@ def load_training_args(
         args_dict.update(read_json(adjacent_args_json))
 
     if isinstance(checkpoint, dict) and isinstance(checkpoint.get("args"), dict):
-        checkpoint_args = checkpoint["args"]
         args_dict.update(checkpoint["args"])
-    else:
-        checkpoint_args = {}
 
     if explicit_args_json:
         args_dict.update(read_json(Path(explicit_args_json)))
-    elif "aux_encoder" not in checkpoint_args:
-        inferred_aux_encoder = infer_aux_encoder_from_checkpoint(checkpoint)
-        if inferred_aux_encoder:
-            args_dict["aux_encoder"] = inferred_aux_encoder
 
     return Namespace(**args_dict)
 
@@ -180,8 +136,6 @@ def apply_cli_overrides(args: Namespace, cli: argparse.Namespace) -> None:
     args.device = cli.device
     args.seed = cli.seed
     args.use_ema = not cli.no_ema
-    args.aux_cond_mode = cli.aux_cond_mode
-    args.aux_cond_seed = cli.aux_cond_seed
 
     if cli.sampling_N is not None:
         args.sampling_N = int(cli.sampling_N)
@@ -215,14 +169,9 @@ def validate_args(args: Namespace) -> None:
             f"expected {expected_target_length}"
         )
 
-    if args.use_aux_cond and args.aux_cond_dim != 8:
+    if args.use_temp_condition and args.backbone != "ncsnpp_v2":
         raise ValueError(
-            f"aux_cond_dim must be 8 for the current aux path. got {args.aux_cond_dim}"
-        )
-
-    if args.use_aux_cond and args.backbone != "ncsnpp_v2":
-        raise ValueError(
-            f"use_aux_cond=True currently requires backbone='ncsnpp_v2'. "
+            f"use_temp_condition=True currently requires backbone='ncsnpp_v2'. "
             f"got {args.backbone}"
         )
 
@@ -447,7 +396,7 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Optional training args JSON. Overrides checkpoint/adjacent args.json values.",
     )
-    parser.add_argument("--run-dir", default="", help="Aux condition run_dir override.")
+    parser.add_argument("--run-dir", default="", help="Temp condition run_dir override.")
     parser.add_argument(
         "--clean-wav",
         default=[],
@@ -465,18 +414,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-ema", action="store_true")
     parser.add_argument("--no-clamp", action="store_true")
     parser.add_argument("--non-strict", action="store_true")
-    parser.add_argument(
-        "--aux-cond-mode",
-        default="real",
-        choices=["real", "zero", "zero_padded", "random"],
-        help="Inference-only aux condition override for ablation tests.",
-    )
-    parser.add_argument(
-        "--aux-cond-seed",
-        type=int,
-        default=1234,
-        help="Seed used when --aux-cond-mode random.",
-    )
 
     parser.add_argument("--sampling-N", type=int, default=None)
     parser.add_argument("--sampler-type", choices=["auto", "pc", "ode", "sde"], default=None)
@@ -543,9 +480,9 @@ def main() -> None:
     print(f"sde                : {args.sde}")
     print(f"sampler_type       : {args.sampler_type}")
     print(f"sampling_N         : {args.sampling_N}")
-    print(f"use_aux_cond       : {args.use_aux_cond}")
-    print(f"aux_encoder        : {args.aux_encoder}")
-    print(f"aux_cond_mode      : {args.aux_cond_mode}")
+    print(f"use_temp_condition : {args.use_temp_condition}")
+    print(f"temp_threshold     : {args.temp_contact_threshold}")
+    print(f"temp_lag_ms        : {args.temp_contact_lag_ms}")
     if cli.non_strict:
         print(f"missing_keys       : {len(incompatible.missing_keys)}")
         print(f"unexpected_keys    : {len(incompatible.unexpected_keys)}")
@@ -568,7 +505,7 @@ def main() -> None:
             raise ValueError(f"No audio samples left after trimming: {noisy_path}")
 
         run_dir = None
-        if args.use_aux_cond:
+        if args.use_temp_condition:
             run_dir = str(Path(cli.run_dir).expanduser().resolve()) if cli.run_dir else str(noisy_path.parent)
 
         print(

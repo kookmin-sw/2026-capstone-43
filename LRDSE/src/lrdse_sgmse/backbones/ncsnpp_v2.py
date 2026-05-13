@@ -43,10 +43,7 @@ class NCSNpp_v2(nn.Module):
         parser.add_argument("--ch_mult",type=int, nargs='+', default=[1,1,2,2,2,2,2])
         parser.add_argument("--num_res_blocks", type=int, default=2)
         parser.add_argument("--attn_resolutions", type=int, nargs='+', default=[16])
-        parser.add_argument("--aux_context_dim", type=int, default=None)
-        parser.add_argument("--aux_time_scale", type=float, default=0.05)
-        parser.add_argument("--aux_time_embed_dim", type=int, default=128)
-        parser.add_argument("--aux_time_max_period", type=float, default=10000.0)
+        parser.add_argument("--input_channels", type=int, default=4)
         return parser
 
     def __init__(self,
@@ -68,10 +65,7 @@ class NCSNpp_v2(nn.Module):
         image_size = 256,
         embedding_type = 'fourier',
         dropout = .0,
-        aux_context_dim = None,
-        aux_time_scale = 0.05,
-        aux_time_embed_dim = 128,
-        aux_time_max_period = 10000.0,
+        input_channels = 4,
         **unused_kwargs
     ):
         super().__init__()
@@ -95,7 +89,10 @@ class NCSNpp_v2(nn.Module):
         combine_method = progressive_combine.lower()
         combiner = functools.partial(Combine, method=combine_method)
 
-        in_channels = 4   # x.real, x.imag, y.real, y.imag
+        in_channels = int(input_channels)   # x.real, x.imag, y.real, y.imag, optional temp_condition channels
+        if in_channels < 4:
+            raise ValueError(f"input_channels must be >= 4, got {input_channels}")
+        self.input_channels = in_channels
         out_channels = 2  # score.real, score.imag
         self.output_layer = nn.Conv2d(in_channels, out_channels, 1)
 
@@ -123,10 +120,6 @@ class NCSNpp_v2(nn.Module):
             layerspp.AttnBlockpp,
             init_scale=init_scale,
             skip_rescale=skip_rescale,
-            context_dim=aux_context_dim,
-            aux_time_scale=aux_time_scale,
-            aux_time_embed_dim=aux_time_embed_dim,
-            aux_time_max_period=aux_time_max_period,
         )
 
         Upsample = functools.partial(layerspp.Upsample,
@@ -258,17 +251,41 @@ class NCSNpp_v2(nn.Module):
         x,
         y,
         t,
-        aux_context=None,
-        aux_cond_times=None,
-        aux_query_times=None,
-        aux_cond_mask=None,
+        temp_condition=None,
     ):
         # timestep/noise_level embedding; only for continuous training
         modules = self.all_modules
         m_idx = 0
 
-        # Convert real and imaginary parts of (x,y) into four channel dimensions
+        # Convert real and imaginary parts of (x,y) into channel dimensions.
         x = torch.cat((x.real, x.imag, y.real, y.imag), dim=1)
+        if temp_condition is not None:
+            if temp_condition.dim() == 3:
+                temp_condition = temp_condition.unsqueeze(1)
+            if temp_condition.dim() != 4:
+                raise ValueError(
+                    f"Expected temp_condition [B,C,F,T] or [B,F,T], got {tuple(temp_condition.shape)}"
+                )
+            if temp_condition.size(0) != x.size(0):
+                raise ValueError(
+                    f"temp_condition batch mismatch: {temp_condition.size(0)} vs {x.size(0)}"
+                )
+            expected_temp_channels = self.input_channels - 4
+            if temp_condition.size(1) != expected_temp_channels:
+                raise ValueError(
+                    f"Expected temp_condition channel={expected_temp_channels}, got {temp_condition.size(1)}"
+                )
+            if temp_condition.shape[-2:] != x.shape[-2:]:
+                raise ValueError(
+                    f"temp_condition spatial mismatch: {tuple(temp_condition.shape[-2:])} vs {tuple(x.shape[-2:])}"
+                )
+            temp_condition = temp_condition.to(device=x.device, dtype=x.real.dtype)
+            x = torch.cat((x, temp_condition), dim=1)
+
+        if x.size(1) != self.input_channels:
+            raise ValueError(
+                f"Expected backbone input channel={self.input_channels}, got {x.size(1)}"
+            )
 
         if self.embedding_type == 'fourier':
             # Gaussian Fourier features embeddings.
@@ -295,7 +312,7 @@ class NCSNpp_v2(nn.Module):
         if self.progressive_input != 'none':
             input_pyramid = x
 
-        # Input layer: Conv2d: 4ch -> 128ch
+        # Input layer.
         hs = [modules[m_idx](x)]
         m_idx += 1
 
@@ -307,13 +324,7 @@ class NCSNpp_v2(nn.Module):
                 m_idx += 1
                 # Attention layer (optional)
                 if h.shape[-2] in self.attn_resolutions: # edit: check H dim (-2) not W dim (-1)
-                    h = modules[m_idx](
-                        h,
-                        context=aux_context,
-                        context_times=aux_cond_times,
-                        query_times=aux_query_times,
-                        context_mask=aux_cond_mask,
-                    )
+                    h = modules[m_idx](h)
                     m_idx += 1
                 hs.append(h)
 
@@ -344,13 +355,7 @@ class NCSNpp_v2(nn.Module):
         h = hs[-1] # actualy equal to: h = h
         h = modules[m_idx](h, temb)  # ResNet block
         m_idx += 1
-        h = modules[m_idx](
-            h,
-            context=aux_context,
-            context_times=aux_cond_times,
-            query_times=aux_query_times,
-            context_mask=aux_cond_mask,
-        )  # Attention block
+        h = modules[m_idx](h)  # Attention block
         m_idx += 1
         h = modules[m_idx](h, temb)  # ResNet block
         m_idx += 1
@@ -365,13 +370,7 @@ class NCSNpp_v2(nn.Module):
 
             # edit: from -1 to -2
             if h.shape[-2] in self.attn_resolutions:
-                h = modules[m_idx](
-                    h,
-                    context=aux_context,
-                    context_times=aux_cond_times,
-                    query_times=aux_query_times,
-                    context_mask=aux_cond_mask,
-                )
+                h = modules[m_idx](h)
                 m_idx += 1
 
             if self.progressive != 'none':

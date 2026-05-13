@@ -13,6 +13,7 @@ from src.audio.preprocess import (
 
 from src.condition.preprocess import (
     ConditionPreprocessConfig,
+    build_temp_contact_condition_for_train,
     preprocess_condition_for_train,
 )
 
@@ -152,10 +153,16 @@ class SpeechEnhancementDataset(Dataset):
         raw_force_scale=220.0,
         d_force_scale=255.0,
         condition_smooth_win=1,
+        use_temp_condition=False,
+        temp_contact_threshold=50.0,
+        temp_contact_lag_ms=58.5,
     ):
         self.manifest_path = Path(manifest_path)
         self.random_crop = random_crop
         self.use_condition = use_condition
+        self.use_temp_condition = bool(use_temp_condition)
+        self.temp_contact_threshold = float(temp_contact_threshold)
+        self.temp_contact_lag_ms = float(temp_contact_lag_ms)
         self.condition_repr = str(condition_repr).strip().lower()
 
         if self.condition_repr not in {"10ch", "8ch"}:
@@ -299,5 +306,16 @@ class SpeechEnhancementDataset(Dataset):
             sample["query_mono_times"] = cond_out["query_mono_times"]  # [K_audio], float64 crop-relative sec
             sample["cond_mask"] = cond_out["cond_mask"].bool()     # [1024]
             sample["real_token_count"] = cond_out["real_token_count"]
+
+        if self.use_temp_condition:
+            sample["temp_condition"] = build_temp_contact_condition_for_train(
+                run_dir=run_dir,
+                crop_start_sample=int(out["start"].item()),
+                num_frames=noisy_stft.shape[-1],
+                hop_length=self.cfg.hop_length,
+                freq_bins=noisy_stft.shape[-2],
+                contact_threshold=self.temp_contact_threshold,
+                contact_lag_ms=self.temp_contact_lag_ms,
+            ).float()
 
         return sample
