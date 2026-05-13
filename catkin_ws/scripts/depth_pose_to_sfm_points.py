@@ -30,11 +30,16 @@ def quat_to_rot(qx, qy, qz, qw):
     )
 
 
-def world_from_camera(row):
+def world_from_camera(row, origin=None, translation_scale=1.0):
     rot = quat_to_rot(float(row["qx"]), float(row["qy"]), float(row["qz"]), float(row["qw"]))
     mat = np.eye(4, dtype=np.float64)
     mat[:3, :3] = rot
-    mat[:3, 3] = [float(row["tx"]), float(row["ty"]), float(row["tz"])]
+    t = np.array([float(row["tx"]), float(row["ty"]), float(row["tz"])], dtype=np.float64)
+    if origin is not None:
+        t = origin + translation_scale * (t - origin)
+    else:
+        t = translation_scale * t
+    mat[:3, 3] = t
     return mat
 
 
@@ -129,6 +134,9 @@ def build_points(args):
     rng = random.Random(args.random_seed)
     all_points = []
     all_colors = []
+    origin = None
+    if rows:
+        origin = np.array([float(rows[0]["tx"]), float(rows[0]["ty"]), float(rows[0]["tz"])], dtype=np.float64)
 
     for row in rows:
         depth_name = row.get("depth_filename", "")
@@ -160,7 +168,7 @@ def build_points(args):
             pixels = pixels[selected]
 
         cam_points_h = np.concatenate([cam_points.astype(np.float64), np.ones((len(cam_points), 1))], axis=1)
-        world_points = (world_from_camera(row) @ cam_points_h.T).T[:, :3].astype(np.float32)
+        world_points = (world_from_camera(row, origin, args.pose_translation_scale) @ cam_points_h.T).T[:, :3].astype(np.float32)
         rgb = rgb_bgr[pixels[:, 1], pixels[:, 0], ::-1].astype(np.uint8)
 
         all_points.append(world_points)
@@ -192,6 +200,7 @@ def main():
     parser.add_argument("--start-index", type=int, default=0)
     parser.add_argument("--max-frames", type=int, default=None)
     parser.add_argument("--depth-scale", type=float, default=0.001)
+    parser.add_argument("--pose-translation-scale", type=float, default=1.0, help="Scale camera translations around the first pose. Use 2.0 if pose motion is half the real metric motion.")
     parser.add_argument("--depth-min", type=float, default=0.15)
     parser.add_argument("--depth-max", type=float, default=5.0)
     parser.add_argument("--point-stride", type=int, default=6)
