@@ -23,10 +23,28 @@ def from_flattened_numpy(x, shape):
     return torch.from_numpy(x.reshape(shape))
 
 
+def call_state_callback(state_callback, label, step, t, x_t, y):
+    if state_callback is None:
+        return
+
+    if torch.is_tensor(t):
+        t_value = float(t.detach().cpu().reshape(-1)[0].item())
+    else:
+        t_value = float(t)
+
+    state_callback(
+        label=label,
+        step=int(step),
+        t=t_value,
+        x_t=x_t,
+        y=y,
+    )
+
+
 def get_pc_sampler(
     predictor_name, corrector_name, sde, score_fn, y,
     denoise=True, eps=3e-2, snr=0.1, corrector_steps=1, probability_flow: bool = False,
-    intermediate=False, **kwargs
+    intermediate=False, state_callback=None, **kwargs
 ):
     """Create a Predictor-Corrector (PC) sampler.
 
@@ -53,6 +71,7 @@ def get_pc_sampler(
         """The PC sampler function."""
         with torch.no_grad():
             xt = sde.prior_sampling(y.shape, y).to(y.device)
+            call_state_callback(state_callback, "initial", 0, sde.T, xt, y)
             timesteps = torch.linspace(sde.T, eps, sde.N, device=y.device)
             for i in range(sde.N):
                 t = timesteps[i]
@@ -73,7 +92,7 @@ def get_pc_sampler(
 def get_ode_sampler(
     sde, score_fn, y, inverse_scaler=None,
     denoise=True, rtol=1e-5, atol=1e-5,
-    method='RK45', eps=3e-2, device='cuda', **kwargs
+    method='RK45', eps=3e-2, device='cuda', state_callback=None, **kwargs
 ):
     """Probability flow ODE sampler with the black-box ODE solver.
 
@@ -117,6 +136,7 @@ def get_ode_sampler(
         with torch.no_grad():
             # If not represent, sample the latent code from the prior distibution of the SDE.
             x = sde.prior_sampling(y.shape, y).to(device)
+            call_state_callback(state_callback, "initial", 0, sde.T, x, y)
 
             def ode_func(t, x):
                 x = from_flattened_numpy(x, y.shape).to(device).type(torch.complex64)
@@ -142,12 +162,22 @@ def get_ode_sampler(
 
     return ode_sampler
 
-def get_sb_sampler(sde, model, y, eps=1e-4, n_steps=50, sampler_type="ode", **kwargs):
+def get_sb_sampler(
+    sde,
+    model,
+    y,
+    eps=1e-4,
+    n_steps=50,
+    sampler_type="ode",
+    state_callback=None,
+    **kwargs,
+):
     # adapted from https://github.com/NVIDIA/NeMo/blob/78357ae99ff2cf9f179f53fbcb02c88a5a67defb/nemo/collections/audio/parts/submodules/schroedinger_bridge.py#L382
     def sde_sampler():
         """The SB-SDE sampler function."""
         with torch.no_grad():
             xt = y[:, [0], :, :] # special case for storm_2ch
+            call_state_callback(state_callback, "initial", 0, sde.T, xt, y)
             time_steps = torch.linspace(sde.T, eps, sde.N + 1, device=y.device)
 
             # Initial values
@@ -196,6 +226,7 @@ def get_sb_sampler(sde, model, y, eps=1e-4, n_steps=50, sampler_type="ode", **kw
         """The SB-ODE sampler function."""
         with torch.no_grad():
             xt = y
+            call_state_callback(state_callback, "initial", 0, sde.T, xt, y)
             time_steps = torch.linspace(sde.T, eps, sde.N + 1, device=y.device)
 
             # Initial values

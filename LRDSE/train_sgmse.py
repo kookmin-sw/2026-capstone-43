@@ -245,6 +245,7 @@ def build_sampler(
     y_spec,
     temp_condition,
     args,
+    state_callback=None,
 ):
     N = args.sampling_N if args.sampling_N > 0 else model.sde.N
     sampler_type = args.sampler_type if args.sampler_type != "auto" else model.sde.sampler_type
@@ -262,12 +263,15 @@ def build_sampler(
                 snr=args.snr,
                 intermediate=False,
                 temp_condition=temp_condition,
+                state_callback=state_callback,
             )
         if sampler_type == "ode":
             return model.get_ode_sampler(
                 y=y_spec,
                 N=N,
                 temp_condition=temp_condition,
+                device=y_spec.device,
+                state_callback=state_callback,
             )
         raise ValueError(f"Invalid sampler_type={sampler_type} for OUVESDE")
 
@@ -278,13 +282,14 @@ def build_sampler(
             sampler_type=sampler_type,
             N=N,
             temp_condition=temp_condition,
+            state_callback=state_callback,
         )
 
     raise ValueError(f"Unsupported SDE type: {sde_name}")
 
 
 @torch.no_grad()
-def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
+def enhance_full_wav(model, noisy_wav, args, device, run_dir=None, state_callback=None):
     was_training = model.training
     model.eval(no_ema=(not args.use_ema))
 
@@ -352,11 +357,22 @@ def enhance_full_wav(model, noisy_wav, args, device, run_dir=None):
             f"start={start}"
         )
 
+        chunk_state_callback = None
+        if state_callback is not None:
+            def chunk_state_callback(**state):
+                state_callback(
+                    chunk_index=ci,
+                    chunk_start_sample=start,
+                    orig_frames=orig_frames,
+                    **state,
+                )
+
         sampler = build_sampler(
             model=model,
             y_spec=y_spec,
             temp_condition=temp_condition,
             args=args,
+            state_callback=chunk_state_callback,
         )
         sample, _ = sampler()
 

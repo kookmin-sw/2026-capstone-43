@@ -373,6 +373,150 @@ def stft_data_loss(
     }
 
 
+def first_stft_plane(spec: torch.Tensor, orig_frames: int = 0) -> torch.Tensor:
+    if spec.dim() == 4:
+        spec = spec[0, 0]
+    elif spec.dim() == 3:
+        spec = spec[0]
+    elif spec.dim() != 2:
+        raise ValueError(
+            f"Expected STFT shape [B,C,F,T], [C,F,T], or [F,T], "
+            f"got {tuple(spec.shape)}"
+        )
+
+    if orig_frames > 0:
+        spec = spec[..., :orig_frames]
+    return spec
+
+
+def resize_2d_image(values: np.ndarray, image_size: int) -> np.ndarray:
+    if values.shape == (image_size, image_size):
+        return values.astype(np.float32, copy=False)
+
+    tensor = torch.from_numpy(values.astype(np.float32, copy=False))[None, None]
+    resized = torch.nn.functional.interpolate(
+        tensor,
+        size=(image_size, image_size),
+        mode="bilinear",
+        align_corners=False,
+    )
+    return resized.squeeze(0).squeeze(0).numpy()
+
+
+def stft_magnitude_db_image(
+    spec: torch.Tensor,
+    image_size: int,
+    orig_frames: int = 0,
+) -> np.ndarray:
+    plane = first_stft_plane(spec.detach().cpu(), orig_frames=orig_frames)
+    magnitude = plane.abs().float().clamp_min(1e-8)
+    values = (20.0 * torch.log10(magnitude)).numpy()
+    values = resize_2d_image(values, image_size=image_size)
+    return np.flipud(values).copy()
+
+
+def normalize_image_pair(
+    x_values: np.ndarray,
+    y_values: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    merged = np.concatenate([x_values.reshape(-1), y_values.reshape(-1)])
+    finite = merged[np.isfinite(merged)]
+    if finite.size == 0:
+        zeros = np.zeros_like(x_values, dtype=np.float32)
+        return zeros, np.zeros_like(y_values, dtype=np.float32)
+
+    vmin, vmax = np.percentile(finite, [1.0, 99.0])
+    if not np.isfinite(vmin) or not np.isfinite(vmax) or vmax <= vmin:
+        vmin = float(np.min(finite))
+        vmax = float(np.max(finite))
+    if vmax <= vmin:
+        vmax = vmin + 1e-6
+
+    def normalize(values: np.ndarray) -> np.ndarray:
+        values = np.nan_to_num(values, nan=vmin, neginf=vmin, posinf=vmax)
+        return np.clip((values - vmin) / (vmax - vmin), 0.0, 1.0).astype(np.float32)
+
+    return normalize(x_values), normalize(y_values)
+
+
+def save_grayscale_png(path: Path, image: np.ndarray) -> None:
+    from PIL import Image
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pixels = np.rint(np.clip(image, 0.0, 1.0) * 255.0).astype(np.uint8)
+    Image.fromarray(pixels).save(str(path))
+
+
+class StftImageSaver:
+    def __init__(
+        self,
+        output_path: Path,
+        enhanced_suffix: str,
+        image_dir: str,
+        image_size: int,
+        max_chunks: int,
+    ) -> None:
+        self.base_stem = comparison_stem(output_path, enhanced_suffix)
+        self.image_dir = (
+            Path(image_dir).expanduser().resolve()
+            if image_dir
+            else output_path.with_name(f"{self.base_stem}_stft")
+        )
+        self.image_size = int(image_size)
+        self.max_chunks = int(max_chunks)
+        self.saved_chunks = set()
+        self.saved_paths = []
+
+    def __call__(
+        self,
+        *,
+        label: str,
+        step: int,
+        t: float,
+        x_t: torch.Tensor,
+        y: torch.Tensor,
+        chunk_index: int,
+        chunk_start_sample: int,
+        orig_frames: int,
+    ) -> None:
+        if label != "initial" or chunk_index in self.saved_chunks:
+            return
+        if self.max_chunks > 0 and chunk_index >= self.max_chunks:
+            return
+
+        x_values = stft_magnitude_db_image(
+            x_t,
+            image_size=self.image_size,
+            orig_frames=int(orig_frames),
+        )
+        y_values = stft_magnitude_db_image(
+            y,
+            image_size=self.image_size,
+            orig_frames=int(orig_frames),
+        )
+        x_image, y_image = normalize_image_pair(x_values, y_values)
+
+        prefix = (
+            f"{self.base_stem}_chunk{chunk_index:03d}_"
+            f"start{int(chunk_start_sample):08d}_t{t:.4f}"
+        )
+        x_path = self.image_dir / f"{prefix}_x_t.png"
+        y_path = self.image_dir / f"{prefix}_y.png"
+        save_grayscale_png(x_path, x_image)
+        save_grayscale_png(y_path, y_image)
+
+        self.saved_chunks.add(chunk_index)
+        self.saved_paths.extend([x_path, y_path])
+        print(
+            f"[saved stft] chunk={chunk_index} step={step} "
+            f"size={self.image_size}x{self.image_size} x_t={x_path}"
+        )
+        print(
+            f"[saved stft] chunk={chunk_index} step={step} "
+            f"size={self.image_size}x{self.image_size} y={y_path}"
+        )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Denoise noisy wav files with a trained LRDSE SGMSE checkpoint."
@@ -423,11 +567,34 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--snr", type=float, default=None)
     parser.add_argument("--sample-chunk-hop", type=int, default=None)
     parser.add_argument("--sample-max-rms-ratio", type=float, default=None)
+    parser.add_argument(
+        "--save-stft-images",
+        action="store_true",
+        help="Save 256x256 grayscale STFT magnitude PNGs for initial sampler x_t and noisy y.",
+    )
+    parser.add_argument(
+        "--stft-image-dir",
+        default="",
+        help="Directory for STFT images. Defaults to <output_stem>_stft next to each output wav.",
+    )
+    parser.add_argument("--stft-image-size", type=int, default=256)
+    parser.add_argument(
+        "--stft-image-max-chunks",
+        type=int,
+        default=1,
+        help="Maximum chunks to save STFT images for. Use 0 to save all chunks.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     cli = parse_args()
+    if cli.save_stft_images:
+        if cli.stft_image_size <= 0:
+            raise ValueError("--stft-image-size must be positive")
+        if cli.stft_image_max_chunks < 0:
+            raise ValueError("--stft-image-max-chunks must be >= 0")
+
     checkpoint_path = Path(cli.checkpoint).expanduser().resolve()
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint_path}")
@@ -516,12 +683,23 @@ def main() -> None:
             f"run_dir={run_dir}"
         )
 
+        stft_image_saver = None
+        if cli.save_stft_images:
+            stft_image_saver = StftImageSaver(
+                output_path=output_path,
+                enhanced_suffix=cli.suffix,
+                image_dir=cli.stft_image_dir,
+                image_size=cli.stft_image_size,
+                max_chunks=cli.stft_image_max_chunks,
+            )
+
         enhanced_wav = enhance_full_wav(
             model=model,
             noisy_wav=noisy_wav,
             args=args,
             device=device,
             run_dir=run_dir,
+            state_callback=stft_image_saver,
         )
         if not cli.no_clamp:
             enhanced_wav = torch.clamp(enhanced_wav, min=-1.0, max=1.0)
