@@ -1,0 +1,55 @@
+{
+  "num_selected": 16,
+  "condition_counts": {
+    "gLOS": 8,
+    "gNLOS": 8
+  },
+  "direction_counts": {
+    "front": 2,
+    "front-left": 2,
+    "left": 2,
+    "back-left": 2,
+    "back": 2,
+    "back-right": 2,
+    "right": 2,
+    "front-right": 2
+  },
+  "scene_ids": [
+    "00006-HkseAnWCgqk",
+    "00009-vLpv2VX547B",
+    "00016-qk9eeNeR4vw",
+    "00017-oEPjPNSPmzL",
+    "00020-XYyR54sxe6b",
+    "00022-gmuS7Wgsbrx",
+    "00023-zepmXAdrpjR",
+    "00025-ixTj1aTMup2",
+    "00031-Wo6kuutE9i7",
+    "00033-oPj9qMxrDEa",
+    "00034-6imZUJGRUq4",
+    "00043-Jfyvj3xn2aJ",
+    "00057-1UnKg1rAb8A",
+    "00059-kJxT5qssH4H",
+    "00081-5biL7VEkByM",
+    "00099-226REUyJh2K"
+  ],
+  "unique_scene_count": 16,
+  "selected_manifest": "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_selected_20260515/manifests/train.jsonl",
+  "selected_metadata_paths_in_pool": [
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00006-HkseAnWCgqk/samples/00006-HkseAnWCgqk__mic0005__src0001__dry_a6c3f408/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00009-vLpv2VX547B/samples/00009-vLpv2VX547B__mic0005__src0008__dry_2637d87d/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00016-qk9eeNeR4vw/samples/00016-qk9eeNeR4vw__mic0000__src0002__dry_cf144ad3/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00017-oEPjPNSPmzL/samples/00017-oEPjPNSPmzL__mic0000__src0006__dry_e491efe8/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00020-XYyR54sxe6b/samples/00020-XYyR54sxe6b__mic0009__src0002__dry_51a94dce/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00022-gmuS7Wgsbrx/samples/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00023-zepmXAdrpjR/samples/00023-zepmXAdrpjR__mic0000__src0004__dry_bb65cbd7/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00025-ixTj1aTMup2/samples/00025-ixTj1aTMup2__mic0000__src0001__dry_78dace8a/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00031-Wo6kuutE9i7/samples/00031-Wo6kuutE9i7__mic0002__src0006__dry_eef93265/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00033-oPj9qMxrDEa/samples/00033-oPj9qMxrDEa__mic0006__src0003__dry_02d3b6af/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00034-6imZUJGRUq4/samples/00034-6imZUJGRUq4__mic0008__src0001__dry_1efed874/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00043-Jfyvj3xn2aJ/samples/00043-Jfyvj3xn2aJ__mic0001__src0006__dry_7067826c/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00057-1UnKg1rAb8A/samples/00057-1UnKg1rAb8A__mic0008__src0001__dry_2112a8bc/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00059-kJxT5qssH4H/samples/00059-kJxT5qssH4H__mic0005__src0001__dry_97e49f03/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00081-5biL7VEkByM/samples/00081-5biL7VEkByM__mic0008__src0003__dry_8da425dd/metadata/sample.json",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_pool_20260515/scenes/00099-226REUyJh2K/samples/00099-226REUyJh2K__mic0008__src0015__dry_69badfef/metadata/sample.json"
+  ]
+}

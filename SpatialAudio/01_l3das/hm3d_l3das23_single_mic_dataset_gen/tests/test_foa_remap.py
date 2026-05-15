@@ -34,6 +34,14 @@ def test_rlr_world_n3d_remaps_to_mic_local_ambix_sn3d_wyzx_for_multiple_yaws() -
             _synthetic_rlr_world_n3d(right),
             yaw_rad,
         )
+        left_foa = remap_rir_world_n3d_to_mic_ambix_sn3d_wyzx(
+            _synthetic_rlr_world_n3d(-right),
+            yaw_rad,
+        )
+        back_foa = remap_rir_world_n3d_to_mic_ambix_sn3d_wyzx(
+            _synthetic_rlr_world_n3d(-front),
+            yaw_rad,
+        )
         up_foa = remap_rir_world_n3d_to_mic_ambix_sn3d_wyzx(
             _synthetic_rlr_world_n3d(up),
             yaw_rad,
@@ -41,4 +49,6 @@ def test_rlr_world_n3d_remaps_to_mic_local_ambix_sn3d_wyzx_for_multiple_yaws() -
 
         np.testing.assert_allclose(front_foa[:, 0], [1.0, 0.0, 0.0, 1.0], atol=1.0e-6)
         np.testing.assert_allclose(right_foa[:, 0], [1.0, -1.0, 0.0, 0.0], atol=1.0e-6)
+        np.testing.assert_allclose(left_foa[:, 0], [1.0, 1.0, 0.0, 0.0], atol=1.0e-6)
+        np.testing.assert_allclose(back_foa[:, 0], [1.0, 0.0, 0.0, -1.0], atol=1.0e-6)
         np.testing.assert_allclose(up_foa[:, 0], [1.0, 0.0, 1.0, 0.0], atol=1.0e-6)

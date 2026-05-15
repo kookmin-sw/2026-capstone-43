@@ -12,13 +12,19 @@ from scipy.io import wavfile
 from hm3d_l3das23_single_mic.foa_doa_iv_analysis import (
     AnalysisItem,
     AnalysisOptions,
+    ChannelMapping,
+    _aggregate_frame_vectors,
+    _beam_scan_frame_vectors,
     _prepare_item,
+    _stft_matrix,
     all_channel_mappings,
+    angular_error_deg,
     build_tf_mask,
     local_vector_to_angles,
     run_analysis,
     select_best_channel_mapping,
 )
+from hm3d_l3das23_single_mic.geometry import world_to_local
 from hm3d_l3das23_single_mic.manifest_io import append_manifest_row
 
 
@@ -103,6 +109,24 @@ def _synthetic_foa_waveform(
     return (0.8 * waveform / peak).astype(np.float32)
 
 
+def _synthetic_stored_wyzx_waveform(local_rfu: np.ndarray, *, sample_rate: int = 48000) -> np.ndarray:
+    num_samples = sample_rate // 2
+    time_axis = np.linspace(0.0, 0.5, num_samples, endpoint=False, dtype=np.float64)
+    dry = (
+        np.sin(2.0 * np.pi * 523.25 * time_axis)
+        + 0.4 * np.sin(2.0 * np.pi * 1174.66 * time_axis)
+        + 0.2 * np.sin(2.0 * np.pi * 2217.46 * time_axis)
+    ).astype(np.float32)
+    local = np.asarray(local_rfu, dtype=np.float32)
+    local = local / max(float(np.linalg.norm(local)), 1.0e-8)
+    y_left = -local[0] * dry
+    z_up = local[2] * dry
+    x_front = local[1] * dry
+    waveform = np.stack([dry, y_left, z_up, x_front], axis=0)
+    peak = float(np.max(np.abs(waveform)))
+    return (0.8 * waveform / peak).astype(np.float32)
+
+
 def _write_manifest_row(dataset_root: Path, audio_relpath: str, *, sample_id: str = "sample_a") -> None:
     append_manifest_row(
         dataset_root,
@@ -139,6 +163,63 @@ class FoaDoaIvAnalysisTests(unittest.TestCase):
         self.assertEqual(local_vector_to_angles([1.0, 0.0, 0.0]), (-90.0, 0.0))
         _, elevation_deg = local_vector_to_angles([0.0, 0.0, 1.0])
         self.assertAlmostEqual(elevation_deg, 90.0, places=6)
+
+    def test_origin_identity_final_sanity_axes_match_iv_and_beam(self) -> None:
+        listener_world = [0.0, 0.0, 0.0]
+        yaw_rad = 0.0
+        distance = 1.0
+        cases = {
+            "front": [0.0, 0.0, -distance],
+            "right": [distance, 0.0, 0.0],
+            "left": [-distance, 0.0, 0.0],
+            "back": [0.0, 0.0, distance],
+            "up": [0.0, distance, 0.0],
+        }
+        expected_audio_xyz = {
+            "front": np.array([1.0, 0.0, 0.0], dtype=np.float64),
+            "right": np.array([0.0, -1.0, 0.0], dtype=np.float64),
+            "left": np.array([0.0, 1.0, 0.0], dtype=np.float64),
+            "back": np.array([-1.0, 0.0, 0.0], dtype=np.float64),
+            "up": np.array([0.0, 0.0, 1.0], dtype=np.float64),
+        }
+        wyzx_to_local_rfu = ChannelMapping((0, 2, 1), (-1, 1, 1))
+
+        for label, source_world in cases.items():
+            local_rfu = world_to_local(listener_world, yaw_rad, source_world)
+            local_unit = local_rfu / np.linalg.norm(local_rfu)
+            stored_gains_yzx = np.array(
+                [-local_unit[0], local_unit[2], local_unit[1]],
+                dtype=np.float64,
+            )
+            audio_xyz = np.array(
+                [stored_gains_yzx[2], stored_gains_yzx[0], stored_gains_yzx[1]],
+                dtype=np.float64,
+            )
+            np.testing.assert_allclose(audio_xyz, expected_audio_xyz[label], atol=1.0e-6)
+
+            waveform = _synthetic_stored_wyzx_waveform(local_unit)
+            _, _, stft_matrix = _stft_matrix(waveform, 48000, win=512, hop=256, nfft=512)
+            selection = build_tf_mask(
+                stft_matrix,
+                wyzx_to_local_rfu,
+                energy_db_below_peak=80.0,
+                diffuseness_max=1.0,
+            )
+            iv_vectors, iv_valid = _aggregate_frame_vectors(selection["raw_iv"], selection["tf_mask"])
+            self.assertTrue(np.any(iv_valid), label)
+            iv_mean = np.mean(iv_vectors[iv_valid], axis=0)
+            self.assertLess(angular_error_deg(iv_mean, local_unit), 1.0e-6, label)
+
+            beam_vectors, beam_valid = _beam_scan_frame_vectors(
+                stft_matrix,
+                wyzx_to_local_rfu,
+                selection["tf_mask"],
+                azimuth_step_deg=5.0,
+                elevation_step_deg=5.0,
+            )
+            self.assertTrue(np.any(beam_valid), label)
+            beam_mean = np.mean(beam_vectors[beam_valid], axis=0)
+            self.assertLess(angular_error_deg(beam_mean, local_unit), 1.0e-6, label)
 
     def test_select_best_channel_mapping_recovers_permuted_directional_channels(self) -> None:
         waveform = _synthetic_foa_waveform(azimuth_deg=35.0, elevation_deg=15.0)

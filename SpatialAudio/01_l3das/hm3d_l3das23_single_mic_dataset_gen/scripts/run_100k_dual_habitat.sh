@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ROOT="/home/yu/Project_git/SpatialAudio/01_l3das/hm3d_l3das23_single_mic_dataset_gen"
+PROJECT_ROOT="/home/yu/Project_git/02_l3das/hm3d_l3das23_single_mic_dataset_gen"
 SRC_ROOT="$PROJECT_ROOT/src"
 LOG_DIR="$PROJECT_ROOT/logs"
 MERGED_ROOT="/home/yu/Project_git/01_dataset/hm3d/hm3d-train-semantic-habitat-v0.2"

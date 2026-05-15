@@ -1,0 +1,972 @@
+{
+  "sample_id": "00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1",
+  "sample_dir": "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_selected_20260515/scenes/00022-gmuS7Wgsbrx/samples/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1",
+  "metadata_path": "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_selected_20260515/scenes/00022-gmuS7Wgsbrx/samples/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/metadata/sample.json",
+  "rgb_path": "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_selected_20260515/scenes/00022-gmuS7Wgsbrx/samples/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/image/rgb_front.png",
+  "audio_path": "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_selected_20260515/scenes/00022-gmuS7Wgsbrx/samples/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/audio/foa.wav",
+  "audio_info": {
+    "path": "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_selected_20260515/scenes/00022-gmuS7Wgsbrx/samples/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/audio/foa.wav",
+    "samplerate": 48000,
+    "channels": 4,
+    "frames": 1212458,
+    "duration_sec": 25.259541666666667,
+    "format": "WAV",
+    "subtype": "FLOAT"
+  },
+  "depth_source": "sample:/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_selected_20260515/scenes/00022-gmuS7Wgsbrx/samples/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/optional/depth.npy",
+  "depth_stats": {
+    "min": 0.8428276181221008,
+    "max": 4.9889631271362305,
+    "shape": [
+      512,
+      512
+    ],
+    "mean": 2.9999747276306152
+  },
+  "intrinsics": [
+    [
+      256.0,
+      0.0,
+      255.5
+    ],
+    [
+      0.0,
+      256.0,
+      255.5
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "mic_to_camera_rotation": [
+    [
+      0.0,
+      -1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    [
+      1.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "metadata": {
+    "geometry_los": "gLOS",
+    "in_fov": false,
+    "azimuth_deg": -135.0,
+    "elevation_deg": -21.801409,
+    "source_distance": 2.154066,
+    "projected_pixel_xy": null
+  },
+  "gt_annotation": {
+    "camera_point": [
+      1.414214015007019,
+      0.800000011920929,
+      -1.414214015007019
+    ],
+    "direction_camera": [
+      0.6565321683883667,
+      0.37139058113098145,
+      -0.6565321683883667
+    ],
+    "pixel_xy": null,
+    "in_view": false,
+    "out_of_view_reason": "behind_camera"
+  },
+  "pointcloud": {
+    "num_points": 65243,
+    "points_stats": {
+      "shape": [
+        65243,
+        3
+      ],
+      "min": -4.387657165527344,
+      "max": 5.414330005645752,
+      "mean": 0.9288891553878784
+    },
+    "depth_stats": {
+      "shape": [
+        512,
+        512
+      ],
+      "min": 0.0,
+      "max": 5.421328067779541,
+      "mean": 2.9999747276306152
+    }
+  },
+  "directional_peaks": {
+    "intensity": {
+      "azimuth_deg": -171.0497283935547,
+      "elevation_deg": -29.670330047607422
+    },
+    "beam": {
+      "azimuth_deg": -161.10498046875,
+      "elevation_deg": -29.670330047607422
+    }
+  },
+  "outputs": {
+    "01_rgb": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/01_rgb.png",
+    "02_depth": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/02_depth.png",
+    "03_raw_pointcloud_image": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/03_raw_pointcloud.png",
+    "03_raw_pointcloud_ply": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/03_raw_pointcloud.ply",
+    "03_raw_pointcloud_npz": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/03_raw_pointcloud.npz",
+    "04_depth_colored_overlay": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/04_raw_pointcloud_overlay.png",
+    "05_intensity_vector_direction_map": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/05_intensity_vector_direction_map.png",
+    "06_beam_power_direction_map": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/06_beam_power_direction_map.png",
+    "12_beam_filtered_overlay": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/12_beam_filtered_overlay.png",
+    "14_overview": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/14_overview.png",
+    "15_windowed_beam": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam"
+  },
+  "overlay_stats": {
+    "12_beam_filtered_overlay": {
+      "threshold": 0.7236763834953308,
+      "kept_count": 11747,
+      "score_stats": {
+        "max": 1.0,
+        "mean": 0.5814119577407837
+      }
+    }
+  },
+  "output15": {
+    "sequence_root": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam",
+    "beam_maps_dir": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps",
+    "beam_overlays_dir": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays",
+    "num_windows": 32,
+    "window_sec": 0.5,
+    "hop_sec": 0.25,
+    "gif_fps": 8.0,
+    "min_presence_score": 0.1,
+    "maps_gif_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/15_beam_power_maps.gif",
+    "overlays_gif_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/15_beam_filtered_overlays.gif",
+    "map_paths": [
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/000_t000.02_000.52__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/001_t000.27_000.77__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/002_t000.52_001.02__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/003_t000.77_001.27__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/004_t001.02_001.52__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/005_t001.27_001.77__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/006_t001.52_002.02__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/007_t001.77_002.27__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/008_t002.02_002.52__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/009_t002.27_002.77__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/010_t002.52_003.02__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/011_t002.77_003.27__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/012_t003.02_003.52__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/013_t003.27_003.77__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/014_t003.52_004.02__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/015_t003.77_004.27__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/016_t004.02_004.52__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/017_t004.27_004.77__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/018_t004.52_005.02__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/019_t004.77_005.27__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/020_t005.02_005.52__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/021_t005.27_005.77__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/022_t005.52_006.02__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/023_t005.77_006.27__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/024_t006.02_006.52__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/025_t006.27_006.77__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/026_t006.52_007.02__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/027_t006.77_007.27__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/028_t007.02_007.52__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/029_t007.27_007.77__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/030_t007.52_008.02__beam_power_map.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/031_t007.77_008.27__beam_power_map.png"
+    ],
+    "overlay_paths": [
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/000_t000.02_000.52__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/001_t000.27_000.77__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/002_t000.52_001.02__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/003_t000.77_001.27__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/004_t001.02_001.52__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/005_t001.27_001.77__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/006_t001.52_002.02__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/007_t001.77_002.27__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/008_t002.02_002.52__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/009_t002.27_002.77__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/010_t002.52_003.02__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/011_t002.77_003.27__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/012_t003.02_003.52__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/013_t003.27_003.77__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/014_t003.52_004.02__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/015_t003.77_004.27__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/016_t004.02_004.52__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/017_t004.27_004.77__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/018_t004.52_005.02__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/019_t004.77_005.27__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/020_t005.02_005.52__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/021_t005.27_005.77__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/022_t005.52_006.02__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/023_t005.77_006.27__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/024_t006.02_006.52__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/025_t006.27_006.77__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/026_t006.52_007.02__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/027_t006.77_007.27__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/028_t007.02_007.52__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/029_t007.27_007.77__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/030_t007.52_008.02__beam_filtered_overlay.png",
+      "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/031_t007.77_008.27__beam_filtered_overlay.png"
+    ],
+    "windows": [
+      {
+        "index": 0,
+        "window_start_sec": 0.02133333310484886,
+        "window_end_sec": 0.5213333331048489,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -163.0939178466797,
+        "peak_elevation_deg": -29.670330047607422,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/000_t000.02_000.52__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/000_t000.02_000.52__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7244157195091248,
+          "percentile_threshold": 0.7244157195091248,
+          "min_presence_score": 0.1,
+          "kept_count": 11757,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5745605230331421
+          }
+        }
+      },
+      {
+        "index": 1,
+        "window_start_sec": 0.27133333310484886,
+        "window_end_sec": 0.7713333331048489,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -155.13812255859375,
+        "peak_elevation_deg": -31.648351669311523,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/001_t000.27_000.77__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/001_t000.27_000.77__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.686757504940033,
+          "percentile_threshold": 0.686757504940033,
+          "min_presence_score": 0.1,
+          "kept_count": 11752,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5436182022094727
+          }
+        }
+      },
+      {
+        "index": 2,
+        "window_start_sec": 0.5213333331048489,
+        "window_end_sec": 1.0213333331048489,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -159.11602783203125,
+        "peak_elevation_deg": -31.648351669311523,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/002_t000.52_001.02__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/002_t000.52_001.02__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7204720973968506,
+          "percentile_threshold": 0.7204720973968506,
+          "min_presence_score": 0.1,
+          "kept_count": 11748,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5883236527442932
+          }
+        }
+      },
+      {
+        "index": 3,
+        "window_start_sec": 0.7713333331048489,
+        "window_end_sec": 1.2713333331048489,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -163.0939178466797,
+        "peak_elevation_deg": -31.648351669311523,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/003_t000.77_001.27__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/003_t000.77_001.27__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7312953472137451,
+          "percentile_threshold": 0.7312953472137451,
+          "min_presence_score": 0.1,
+          "kept_count": 11753,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5839099884033203
+          }
+        }
+      },
+      {
+        "index": 4,
+        "window_start_sec": 1.0213333331048489,
+        "window_end_sec": 1.5213333331048489,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -163.0939178466797,
+        "peak_elevation_deg": -31.648351669311523,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/004_t001.02_001.52__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/004_t001.02_001.52__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7214478254318237,
+          "percentile_threshold": 0.7214478254318237,
+          "min_presence_score": 0.1,
+          "kept_count": 11783,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5716365575790405
+          }
+        }
+      },
+      {
+        "index": 5,
+        "window_start_sec": 1.2713333331048489,
+        "window_end_sec": 1.7713333331048489,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -151.16021728515625,
+        "peak_elevation_deg": -25.71428680419922,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/005_t001.27_001.77__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/005_t001.27_001.77__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7198811769485474,
+          "percentile_threshold": 0.7198811769485474,
+          "min_presence_score": 0.1,
+          "kept_count": 11759,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6272255182266235
+          }
+        }
+      },
+      {
+        "index": 6,
+        "window_start_sec": 1.5213333331048489,
+        "window_end_sec": 2.021333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -151.16021728515625,
+        "peak_elevation_deg": -23.736263275146484,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/006_t001.52_002.02__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/006_t001.52_002.02__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7531300783157349,
+          "percentile_threshold": 0.7531300783157349,
+          "min_presence_score": 0.1,
+          "kept_count": 11788,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6609020233154297
+          }
+        }
+      },
+      {
+        "index": 7,
+        "window_start_sec": 1.7713333331048489,
+        "window_end_sec": 2.271333333104849,
+        "num_frames": 46,
+        "selected_frames": 7080,
+        "peak_azimuth_deg": -149.1712646484375,
+        "peak_elevation_deg": -27.692306518554688,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/007_t001.77_002.27__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/007_t001.77_002.27__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.739030122756958,
+          "percentile_threshold": 0.739030122756958,
+          "min_presence_score": 0.1,
+          "kept_count": 11787,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6500299572944641
+          }
+        }
+      },
+      {
+        "index": 8,
+        "window_start_sec": 2.021333333104849,
+        "window_end_sec": 2.521333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -157.1270751953125,
+        "peak_elevation_deg": -27.692306518554688,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/008_t002.02_002.52__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/008_t002.02_002.52__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7395293712615967,
+          "percentile_threshold": 0.7395293712615967,
+          "min_presence_score": 0.1,
+          "kept_count": 11760,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6324155926704407
+          }
+        }
+      },
+      {
+        "index": 9,
+        "window_start_sec": 2.271333333104849,
+        "window_end_sec": 2.771333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -159.11602783203125,
+        "peak_elevation_deg": -25.71428680419922,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/009_t002.27_002.77__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/009_t002.27_002.77__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7360990643501282,
+          "percentile_threshold": 0.7360990643501282,
+          "min_presence_score": 0.1,
+          "kept_count": 11766,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6143491268157959
+          }
+        }
+      },
+      {
+        "index": 10,
+        "window_start_sec": 2.521333333104849,
+        "window_end_sec": 3.021333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -167.0718231201172,
+        "peak_elevation_deg": -33.626373291015625,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/010_t002.52_003.02__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/010_t002.52_003.02__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.734487771987915,
+          "percentile_threshold": 0.734487771987915,
+          "min_presence_score": 0.1,
+          "kept_count": 11752,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5734730362892151
+          }
+        }
+      },
+      {
+        "index": 11,
+        "window_start_sec": 2.771333333104849,
+        "window_end_sec": 3.271333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -165.08287048339844,
+        "peak_elevation_deg": -31.648351669311523,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/011_t002.77_003.27__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/011_t002.77_003.27__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7342758178710938,
+          "percentile_threshold": 0.7342758178710938,
+          "min_presence_score": 0.1,
+          "kept_count": 11757,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5802028179168701
+          }
+        }
+      },
+      {
+        "index": 12,
+        "window_start_sec": 3.021333333104849,
+        "window_end_sec": 3.521333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -159.11602783203125,
+        "peak_elevation_deg": -29.670330047607422,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/012_t003.02_003.52__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/012_t003.02_003.52__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7500157356262207,
+          "percentile_threshold": 0.7500157356262207,
+          "min_presence_score": 0.1,
+          "kept_count": 11768,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6303339004516602
+          }
+        }
+      },
+      {
+        "index": 13,
+        "window_start_sec": 3.271333333104849,
+        "window_end_sec": 3.771333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -163.0939178466797,
+        "peak_elevation_deg": -27.692306518554688,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/013_t003.27_003.77__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/013_t003.27_003.77__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7635087370872498,
+          "percentile_threshold": 0.7635087370872498,
+          "min_presence_score": 0.1,
+          "kept_count": 11785,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6352459192276001
+          }
+        }
+      },
+      {
+        "index": 14,
+        "window_start_sec": 3.521333333104849,
+        "window_end_sec": 4.021333333104849,
+        "num_frames": 46,
+        "selected_frames": 7080,
+        "peak_azimuth_deg": -163.0939178466797,
+        "peak_elevation_deg": -31.648351669311523,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/014_t003.52_004.02__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/014_t003.52_004.02__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7375128865242004,
+          "percentile_threshold": 0.7375128865242004,
+          "min_presence_score": 0.1,
+          "kept_count": 11765,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5785659551620483
+          }
+        }
+      },
+      {
+        "index": 15,
+        "window_start_sec": 3.771333333104849,
+        "window_end_sec": 4.271333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -165.08287048339844,
+        "peak_elevation_deg": -29.670330047607422,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/015_t003.77_004.27__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/015_t003.77_004.27__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7387549877166748,
+          "percentile_threshold": 0.7387549877166748,
+          "min_presence_score": 0.1,
+          "kept_count": 11754,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5958489775657654
+          }
+        }
+      },
+      {
+        "index": 16,
+        "window_start_sec": 4.021333333104849,
+        "window_end_sec": 4.521333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -165.08287048339844,
+        "peak_elevation_deg": -27.692306518554688,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/016_t004.02_004.52__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/016_t004.02_004.52__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7515869140625,
+          "percentile_threshold": 0.7515869140625,
+          "min_presence_score": 0.1,
+          "kept_count": 11770,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6450613141059875
+          }
+        }
+      },
+      {
+        "index": 17,
+        "window_start_sec": 4.271333333104849,
+        "window_end_sec": 4.771333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -167.0718231201172,
+        "peak_elevation_deg": -27.692306518554688,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/017_t004.27_004.77__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/017_t004.27_004.77__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7838727235794067,
+          "percentile_threshold": 0.7838727235794067,
+          "min_presence_score": 0.1,
+          "kept_count": 11769,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6576396226882935
+          }
+        }
+      },
+      {
+        "index": 18,
+        "window_start_sec": 4.521333333104849,
+        "window_end_sec": 5.021333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -163.0939178466797,
+        "peak_elevation_deg": -27.692306518554688,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/018_t004.52_005.02__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/018_t004.52_005.02__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7448241710662842,
+          "percentile_threshold": 0.7448241710662842,
+          "min_presence_score": 0.1,
+          "kept_count": 11761,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6130825877189636
+          }
+        }
+      },
+      {
+        "index": 19,
+        "window_start_sec": 4.771333333104849,
+        "window_end_sec": 5.271333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -165.08287048339844,
+        "peak_elevation_deg": -27.692306518554688,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/019_t004.77_005.27__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/019_t004.77_005.27__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7414075136184692,
+          "percentile_threshold": 0.7414075136184692,
+          "min_presence_score": 0.1,
+          "kept_count": 11758,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6030634641647339
+          }
+        }
+      },
+      {
+        "index": 20,
+        "window_start_sec": 5.021333333104849,
+        "window_end_sec": 5.521333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -165.08287048339844,
+        "peak_elevation_deg": -27.692306518554688,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/020_t005.02_005.52__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/020_t005.02_005.52__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7437170147895813,
+          "percentile_threshold": 0.7437170147895813,
+          "min_presence_score": 0.1,
+          "kept_count": 11750,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6113791465759277
+          }
+        }
+      },
+      {
+        "index": 21,
+        "window_start_sec": 5.271333333104849,
+        "window_end_sec": 5.771333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -145.19337463378906,
+        "peak_elevation_deg": -17.802196502685547,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/021_t005.27_005.77__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/021_t005.27_005.77__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.6603829264640808,
+          "percentile_threshold": 0.6603829264640808,
+          "min_presence_score": 0.1,
+          "kept_count": 11744,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5411863923072815
+          }
+        }
+      },
+      {
+        "index": 22,
+        "window_start_sec": 5.521333333104849,
+        "window_end_sec": 6.021333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -145.19337463378906,
+        "peak_elevation_deg": -19.78022003173828,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/022_t005.52_006.02__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/022_t005.52_006.02__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.6497144103050232,
+          "percentile_threshold": 0.6497144103050232,
+          "min_presence_score": 0.1,
+          "kept_count": 11784,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5349706411361694
+          }
+        }
+      },
+      {
+        "index": 23,
+        "window_start_sec": 5.771333333104849,
+        "window_end_sec": 6.271333333104849,
+        "num_frames": 46,
+        "selected_frames": 7080,
+        "peak_azimuth_deg": -147.18231201171875,
+        "peak_elevation_deg": -21.758241653442383,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/023_t005.77_006.27__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/023_t005.77_006.27__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.6932373046875,
+          "percentile_threshold": 0.6932373046875,
+          "min_presence_score": 0.1,
+          "kept_count": 11754,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5915323495864868
+          }
+        }
+      },
+      {
+        "index": 24,
+        "window_start_sec": 6.021333333104849,
+        "window_end_sec": 6.521333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -159.11602783203125,
+        "peak_elevation_deg": -37.582420349121094,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/024_t006.02_006.52__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/024_t006.02_006.52__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.6897560954093933,
+          "percentile_threshold": 0.6897560954093933,
+          "min_presence_score": 0.1,
+          "kept_count": 11792,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5119954347610474
+          }
+        }
+      },
+      {
+        "index": 25,
+        "window_start_sec": 6.271333333104849,
+        "window_end_sec": 6.771333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -163.0939178466797,
+        "peak_elevation_deg": -33.626373291015625,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/025_t006.27_006.77__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/025_t006.27_006.77__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.6985760927200317,
+          "percentile_threshold": 0.6985760927200317,
+          "min_presence_score": 0.1,
+          "kept_count": 11790,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.5299860835075378
+          }
+        }
+      },
+      {
+        "index": 26,
+        "window_start_sec": 6.521333333104849,
+        "window_end_sec": 7.021333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -167.0718231201172,
+        "peak_elevation_deg": -17.802196502685547,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/026_t006.52_007.02__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/026_t006.52_007.02__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7900775671005249,
+          "percentile_threshold": 0.7900775671005249,
+          "min_presence_score": 0.1,
+          "kept_count": 11790,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.7012519836425781
+          }
+        }
+      },
+      {
+        "index": 27,
+        "window_start_sec": 6.771333333104849,
+        "window_end_sec": 7.271333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -149.1712646484375,
+        "peak_elevation_deg": -21.758241653442383,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/027_t006.77_007.27__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/027_t006.77_007.27__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.752776026725769,
+          "percentile_threshold": 0.752776026725769,
+          "min_presence_score": 0.1,
+          "kept_count": 11779,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6616458296775818
+          }
+        }
+      },
+      {
+        "index": 28,
+        "window_start_sec": 7.021333333104849,
+        "window_end_sec": 7.521333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -157.1270751953125,
+        "peak_elevation_deg": -25.71428680419922,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/028_t007.02_007.52__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/028_t007.02_007.52__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7466439008712769,
+          "percentile_threshold": 0.7466439008712769,
+          "min_presence_score": 0.1,
+          "kept_count": 11751,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6429254412651062
+          }
+        }
+      },
+      {
+        "index": 29,
+        "window_start_sec": 7.271333333104849,
+        "window_end_sec": 7.771333333104849,
+        "num_frames": 47,
+        "selected_frames": 7234,
+        "peak_azimuth_deg": -163.0939178466797,
+        "peak_elevation_deg": -27.692306518554688,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/029_t007.27_007.77__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/029_t007.27_007.77__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7506877779960632,
+          "percentile_threshold": 0.7506877779960632,
+          "min_presence_score": 0.1,
+          "kept_count": 11746,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.6228017210960388
+          }
+        }
+      },
+      {
+        "index": 30,
+        "window_start_sec": 7.521333333104849,
+        "window_end_sec": 8.021333333104849,
+        "num_frames": 43,
+        "selected_frames": 6618,
+        "peak_azimuth_deg": -167.0718231201172,
+        "peak_elevation_deg": -29.670330047607422,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/030_t007.52_008.02__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/030_t007.52_008.02__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7473154664039612,
+          "percentile_threshold": 0.7473154664039612,
+          "min_presence_score": 0.1,
+          "kept_count": 11779,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.600732684135437
+          }
+        }
+      },
+      {
+        "index": 31,
+        "window_start_sec": 7.771333333104849,
+        "window_end_sec": 8.271333333104849,
+        "num_frames": 20,
+        "selected_frames": 3078,
+        "peak_azimuth_deg": -169.06077575683594,
+        "peak_elevation_deg": -29.670330047607422,
+        "map_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_maps/031_t007.77_008.27__beam_power_map.png",
+        "overlay_path": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/beam_power_overlays/031_t007.77_008.27__beam_filtered_overlay.png",
+        "overlay_stats": {
+          "threshold": 0.7502298951148987,
+          "percentile_threshold": 0.7502298951148987,
+          "min_presence_score": 0.1,
+          "kept_count": 11755,
+          "score_stats": {
+            "max": 1.0,
+            "mean": 0.597350001335144
+          }
+        }
+      }
+    ]
+  },
+  "runtime_sec": 17.312904596328735,
+  "config": {
+    "camera": {
+      "hfov_deg": 90.0,
+      "fx": null,
+      "fy": null,
+      "cx": null,
+      "cy": null,
+      "near_depth": 0.05,
+      "far_depth": 20.0
+    },
+    "foa": {
+      "channel_order": "WYZX",
+      "flip_x": false,
+      "flip_y": false,
+      "flip_z": false
+    },
+    "audio": {
+      "target_sample_rate": 24000,
+      "start_sec": 0.0,
+      "duration_sec": 8.0,
+      "n_fft": 1024,
+      "hop_length": 256,
+      "win_length": 1024,
+      "energy_percentile": 70.0,
+      "azimuth_bins": 181,
+      "elevation_bins": 91,
+      "map_gaussian_sigma_deg": 14.0,
+      "beam_smoothing_sigma": 1.0
+    },
+    "point_filter": {
+      "point_stride": 2,
+      "raw_point_size": 1.6,
+      "raw_alpha": 0.3,
+      "filtered_point_size": 4.8,
+      "overlay_score_percentile": 82.0,
+      "overlay_gamma": 0.85,
+      "overlay_min_alpha": 0.06,
+      "overlay_max_alpha": 0.95
+    },
+    "runtime": {
+      "spatialvla_root": "/home/yu/Project_git/SpatialVLA",
+      "output_root": "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515",
+      "zoe_model_path": null,
+      "device": "cpu",
+      "overview_columns": 4,
+      "log_level": "INFO"
+    }
+  },
+  "output_files": [
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/01_rgb.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/02_depth.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/03_raw_pointcloud.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/03_raw_pointcloud.ply",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/03_raw_pointcloud.npz",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/04_raw_pointcloud_overlay.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/05_intensity_vector_direction_map.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/06_beam_power_direction_map.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/12_beam_filtered_overlay.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/14_overview.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/15_beam_power_maps.gif",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/15_windowed_beam/15_beam_filtered_overlays.gif"
+  ],
+  "overview_inputs": [
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/01_rgb.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/02_depth.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/03_raw_pointcloud.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/04_raw_pointcloud_overlay.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/05_intensity_vector_direction_map.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/06_beam_power_direction_map.png",
+    "/home/yu/Project_git/03_pipeline/outputs/example_hm3d_losnlos_8way_20260515/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/12_beam_filtered_overlay.png",
+    "/home/yu/Project_git/02_l3das/hm3d_rendered_losnlos_8way_selected_20260515/scenes/00022-gmuS7Wgsbrx/samples/00022-gmuS7Wgsbrx__mic0004__src0007__dry_e7987cc1/optional/topdown_debug.png"
+  ],
+  "output15_config": {
+    "enabled": true,
+    "window_sec": 0.5,
+    "hop_sec": 0.25,
+    "max_windows": null,
+    "gif_fps": 8.0,
+    "min_presence_score": 0.1
+  }
+}
