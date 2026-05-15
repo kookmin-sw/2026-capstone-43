@@ -1,0 +1,1 @@
+from skills import Explore <robot><object>, GoToObject <robot><object>, PickupObject <robot><object>, PutObject <robot><object><receptacleObject>

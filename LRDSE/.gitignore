@@ -1,0 +1,41 @@
+# Python cache / build artifacts
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Test / lint cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Training outputs
+checkpoints/*
+outputs/
+
+# Model and large binary artifacts
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Local dataset artifacts
+data/**
+!data/**/*.py

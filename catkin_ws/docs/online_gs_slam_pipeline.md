@@ -7,9 +7,11 @@
 ```text
 ROS collector
   /camera/color/image_raw
+  /camera/aligned_depth_to_color/image_raw
   /camera/color/camera_info
   /robot/odom + base_link -> camera TF
     -> rgb/*.png
+    -> depth/*.png
     -> poses.csv
     -> camera_info.json
 
@@ -22,7 +24,7 @@ online_gs_slam
     -> GaussianMap checkpoint
 ```
 
-## 1. 3Hz RGB + Pose 수집 시작
+## 1. 3Hz RGB-D + Pose 수집 시작
 
 권장 방식은 로봇에서 image topic을 3Hz로 throttle하고, 노트북에서 collector를 실행하는 것이다.
 
@@ -30,7 +32,7 @@ online_gs_slam
 
 ```bash
 cd ~/catkin_ws
-./scripts/start_robot_image_throttle.sh
+THROTTLE_DEPTH=True ./scripts/start_robot_image_throttle.sh
 ```
 
 노트북 `192.168.0.100`에서:
@@ -38,6 +40,7 @@ cd ~/catkin_ws
 ```bash
 cd ~/catkin_ws
 OUTPUT_DIR=/home/harudev/rgb_pose_dataset_01 \
+SAVE_DEPTH=True \
 ./scripts/start_laptop_rgb_pose_collection.sh
 ```
 
@@ -66,6 +69,8 @@ unset ROS_HOSTNAME
 
 roslaunch uni_navigation collect_rgb_pose.launch \
   image_topic:=/camera/color/image_raw_3hz \
+  depth_topic:=/camera/aligned_depth_to_color/image_raw_3hz \
+  save_depth:=true \
   output_dir:=/home/harudev/rgb_pose_dataset_01
 ```
 
@@ -78,6 +83,197 @@ min_rotation: 0.0
 ```
 
 즉 약 1초에 3장을 저장한다.
+
+## 1.5. COLMAP 없이 Depth 기반 sparse point cloud 만들기
+
+RealSense aligned depth가 있으면 COLMAP/SfM을 돌리지 않고도 Gaussian Splatting 초기 point cloud를 만들 수 있다.
+
+```bash
+cd ~/catkin_ws
+DATA_DIR=/home/harudev/rgb_pose_dataset_01 \
+KEEP_EVERY=3 \
+INCLUDE_DEPTH=True \
+GENERATE_POINT_CLOUD=True \
+POINT_STRIDE=6 \
+MAX_POINTS_PER_FRAME=12000 \
+MAX_TOTAL_POINTS=1500000 \
+VOXEL_SIZE=0.01 \
+./scripts/export_nerfstudio_dataset.sh
+```
+
+생성 파일:
+
+```text
+/home/harudev/rgb_pose_dataset_01/transforms.json
+/home/harudev/rgb_pose_dataset_01/sparse_pc.ply
+```
+
+동작:
+
+```text
+1. aligned depth pixel을 camera intrinsics로 3D back-projection
+2. poses.csv의 camera pose로 world frame에 변환
+3. RGB image에서 같은 pixel color를 가져와 point color로 저장
+4. voxel downsample 후 sparse_pc.ply 생성
+5. transforms.json에 ply_file_path를 기록해서 Nerfstudio splatfacto 초기점으로 사용
+```
+
+시각화:
+
+```bash
+python3 scripts/view_depth_point_cloud.py \
+  /home/harudev/rgb_pose_dataset_01/sparse_pc.ply
+```
+
+standalone으로 SfM-style point만 만들고 싶으면:
+
+```bash
+python3 scripts/depth_pose_to_sfm_points.py \
+  /home/harudev/rgb_pose_dataset_01 \
+  --keep-every 3 \
+  --point-stride 6 \
+  --voxel-size 0.01 \
+  --output /home/harudev/rgb_pose_dataset_01/sparse_pc.ply \
+  --colmap-points3d-output /home/harudev/rgb_pose_dataset_01/points3D.txt
+```
+
+이 `points3D.txt`는 COLMAP text 형식과 비슷한 debug/export 파일이다. 실제 Nerfstudio `splatfacto` 초기화에는 `sparse_pc.ply`와 `transforms.json`의 `ply_file_path`를 쓰는 흐름이 더 직접적이다.
+
+## 1.6. RTAB-Map DB에서 Nerfstudio dataset 만들기
+
+RTAB-Map을 사용해 RGB-D SLAM을 돌린 경우, 저장된 database에서 image, camera pose, assembled point cloud를 바로 export할 수 있다. 이 흐름은 COLMAP을 다시 돌리지 않고 RTAB-Map의 optimized camera trajectory와 depth 기반 point cloud를 `splatfacto` 초기값으로 쓰기 위한 것이다.
+
+RTAB-Map 실행 후 DB는 기본적으로 아래에 저장된다.
+
+```text
+~/.ros/rtabmap.db
+```
+
+Nerfstudio dataset으로 변환:
+
+```bash
+cd ~/catkin_ws
+
+python3 scripts/export_rtabmap_db_to_nerfstudio.py \
+  ~/.ros/rtabmap.db \
+  --output-dir /home/harudev/rtabmap_nerfstudio_dataset_01
+```
+
+생성 파일:
+
+```text
+/home/harudev/rtabmap_nerfstudio_dataset_01/
+  transforms.json
+  images/
+  sparse_pc.ply
+```
+
+`transforms.json`에는 RTAB-Map camera pose가 Nerfstudio/OpenGL camera convention으로 변환되어 저장된다. `sparse_pc.ply`는 RTAB-Map이 depth image와 optimized poses로 조립한 initial point cloud다.
+
+point cloud를 먼저 확인:
+
+```bash
+python3 scripts/view_depth_point_cloud.py \
+  /home/harudev/rtabmap_nerfstudio_dataset_01/sparse_pc.ply
+```
+
+Nerfstudio `splatfacto` 실행:
+
+```bash
+source ~/miniconda3/bin/activate ns310
+
+ns-train splatfacto \
+  --data /home/harudev/rtabmap_nerfstudio_dataset_01 \
+  --viewer.websocket-host 0.0.0.0 \
+  --viewer.make-share-url True \
+  --pipeline.datamanager.camera-res-scale-factor 0.35 \
+  --pipeline.datamanager.images-on-gpu False \
+  --pipeline.datamanager.cache-images cpu
+```
+
+> [!WARNING]
+> RTAB-Map odometry가 자주 실패한 DB는 camera pose 자체가 불안정할 수 있다. 이 경우 `sparse_pc.ply`가 먼저 휘거나 겹쳐 보이고, `splatfacto` 결과도 흐리게 나온다. Gaussian 학습 전에 point cloud와 camera trajectory를 먼저 확인하는 것이 좋다.
+
+## 1.7. Gaussian label을 4D hash grid field로 학습하기
+
+VLM/Grounded-SAM 등으로 얻은 2D segmentation mask를 여러 view에서 Gaussian으로 누적하면, 각 Gaussian 또는 point에 semantic label supervision을 만들 수 있다. 이 supervision을 discrete Gaussian attribute로만 저장하지 않고 `(x, y, z, t)`를 입력으로 받는 4D multi-scale hash grid field로 학습할 수 있다.
+
+이 방향은 LEGS(Language-Embedded Gaussian Splats)의 language-embedded Gaussian representation과 잘 맞는다. LEGS는 mobile robot으로 room-scale Gaussian splat을 incremental하게 만들고, language feature를 Gaussian map에 결합한다. 여기서는 우선 VLM mask에서 얻은 Gaussian/point label을 4D hash grid로 distill하는 lightweight prototype으로 시작한다.
+
+### 1.7.1. splatfacto Gaussian을 VLM으로 labeling하기
+
+학습된 `splatfacto` checkpoint를 Gaussian PLY로 export한다.
+
+```bash
+source ~/miniconda3/bin/activate ns310
+cd ~/catkin_ws
+
+ns-export gaussian-splat \
+  --load-config outputs/rtabmap_nerfstudio_dataset_01/splatfacto/2026-05-13_163403/config.yml \
+  --output-dir outputs/rtabmap_nerfstudio_dataset_01/exported_gaussians \
+  --output-filename splat_rgb.ply \
+  --ply-color-mode rgb
+```
+
+CLIPSeg dependency를 설치한다.
+
+```bash
+python -m pip install transformers
+```
+
+Nerfstudio `transforms.json`의 camera views에 CLIPSeg mask를 만들고, Gaussian centers를 각 view에 project해서 label vote를 누적한다.
+
+```bash
+PYTHONPATH=catkin_ws python3 catkin_ws/scripts/label_gaussians_with_clipseg.py \
+  --gaussian-ply outputs/rtabmap_nerfstudio_dataset_01/exported_gaussians/splat_rgb.ply \
+  --transforms /home/harudev/rtabmap_nerfstudio_dataset_01/transforms.json \
+  --data-dir /home/harudev/rtabmap_nerfstudio_dataset_01 \
+  --prompts floor table chair wall robot \
+  --output outputs/hash_grid/semantic_points_clipseg.npz \
+  --preview-ply outputs/hash_grid/semantic_points_clipseg_preview.ply \
+  --max-gaussians 120000 \
+  --max-frames 24 \
+  --mask-threshold 0.45
+```
+
+> [!NOTE]
+> CLIPSeg는 Grounded-SAM보다 가볍고 설치가 쉽지만 mask 품질은 제한적이다. 이 스크립트의 출력 형식은 `semantic_points.npz`로 고정되어 있으므로, 이후 Grounded-SAM/LEGS-style language feature로 바꿔도 4D hash grid 학습 코드는 그대로 쓸 수 있다.
+
+입력 supervision 파일 형식:
+
+```text
+semantic_points.npz
+  xyz: float32 [N, 3]
+  labels: int64 [N]
+  time: float32 [N]              # optional
+  weights: float32 [N]           # optional
+  class_names: str [C]           # optional
+```
+
+학습:
+
+```bash
+cd ~/catkin_ws
+
+python3 scripts/train_4d_hash_grid_field.py \
+  --samples outputs/hash_grid/semantic_points_clipseg.npz \
+  --output outputs/hash_grid/semantic_hash_grid.pt \
+  --preview-ply outputs/hash_grid/semantic_preview.ply \
+  --steps 2000 \
+  --batch-size 8192
+```
+
+출력:
+
+```text
+outputs/hash_grid/semantic_hash_grid.pt
+outputs/hash_grid/semantic_preview.ply
+```
+
+`semantic_hash_grid.pt`는 4D hash grid + MLP head checkpoint다. `semantic_preview.ply`는 학습된 field가 각 supervision point에 예측한 semantic label을 색으로 칠한 point cloud라 Open3D/MeshLab/CloudCompare로 확인할 수 있다.
+
+> [!NOTE]
+> 현재 구현은 `tiny-cuda-nn` 없이 PyTorch만 사용하는 research prototype이다. 느리지만 구조를 직접 바꾸기 쉽다. 최적화가 필요해지면 같은 API를 유지하고 backend만 fused CUDA/tiny-cuda-nn으로 교체하면 된다.
 
 ## 2. Online GS 등록 실행
 
@@ -233,6 +429,8 @@ python3 scripts/view_gsplat_checkpoint.py \
 cd ~/catkin_ws
 DATA_DIR=/home/harudev/rgb_pose_dataset_01 \
 KEEP_EVERY=5 \
+INCLUDE_DEPTH=True \
+GENERATE_POINT_CLOUD=True \
 ./scripts/export_nerfstudio_dataset.sh
 ```
 
@@ -240,6 +438,7 @@ KEEP_EVERY=5 \
 
 ```text
 /home/harudev/rgb_pose_dataset_01/transforms.json
+/home/harudev/rgb_pose_dataset_01/sparse_pc.ply
 ```
 
 Nerfstudio 설치 후 학습:

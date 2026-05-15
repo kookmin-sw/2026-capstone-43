@@ -1,37 +1,251 @@
-## Welcome to GitHub Pages
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/948dfaa9-a3a2-4f47-8ae0-6376b43308b8" width="100%" alt="project banner" />
+</p>
 
-You can use the [editor on GitHub](https://github.com/kookmin-sw/cap-template/edit/master/index.md) to maintain and preview the content for your website in Markdown files.
+<div align="center">
+  <br><br>
+  <h1>로봇을 위한 실세계 강인한 멀티모달 시공간 인지 기반의 전역적 동적 환경 인식 원천기술 개발</h1>
+  <i>"시각, 청각, 촉각 및 계층적 기억을 융합한 로봇 지능 원천기술"</i>
+</div>
+<br>
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+> 본 프로젝트는 시각, 청각, 촉각 및 계층적 기억(Memory)을 융합하여 로봇이 복잡하고 동적인 실세계 환경을 전역적으로 이해하고, 이를 바탕으로 지능적인 행동을 수행하도록 돕는 인지 중심의 원천기술을 다룹니다.  
+> **💡 본 저장소는 단일 애플리케이션이 아니라, 로봇이 실제 환경에서 사람과 상호작용하고 공간을 이해하기 위한 여러 연구 모음(perception, mapping, planning 등)을 포함하는 통합 연구 저장소입니다.**
 
-### Markdown
+---
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## 📌 Project Overview Q&A
 
-```markdown
-Syntax highlighted code block
+<details>
+  <summary><b>🙋‍♂️ 1) 이 기술은 누가 사용하는 건가요?</b> (클릭해서 보기)</summary>
+  <div markdown="1">
+    <br>
+    자율주행 서비스 로봇 및 모바일 매니퓰레이터를 개발하는 로보틱스 엔지니어와 멀티모달 AI 연구자들이 사용합니다.
+  </div>
+</details>
 
-# Header 1
-## Header 2
-### Header 3
+<details>
+  <summary><b>⏱️ 2) 이 기술은 언제 사용하는 건가요?</b> (클릭해서 보기)</summary>
+  <div markdown="1">
+    <br>
+    로봇 자체 소음이 크거나, 물체가 실시간으로 이동하고, 가려진 공간이 존재하는 실제 가정 및 산업 현장에서 로봇의 안정적인 임무 수행이 필요할 때 사용합니다.
+  </div>
+</details>
 
-- Bulleted
-- List
+<details>
+  <summary><b>💡 3) 이 기술을 사용하면 무엇이 해결(개선)되나요?</b> (클릭해서 보기)</summary>
+  <div markdown="1">
+    <br>
+    <ul>
+      <li><b>소음 극복</b>: 사족보행 로봇의 구동 소음 속에서도 깨끗한 음성 명령을 추출합니다.</li>
+      <li><b>입체적 인지</b>: 단순히 보는 것을 넘어 소리의 위치와 공간의 기하학적 구조를 결합해 이해합니다.</li>
+      <li><b>기억의 고도화</b>: 한 번 본 환경을 계층적으로 저장하고, 변화하는 물체 상태를 실시간으로 씬그래프에 반영합니다.</li>
+      <li><b>안전한 행동</b>: '어디에 물건을 놓아야 가장 안전한지'와 같은 고차원적인 판단을 실시간 빈공간 분석을 통해 수행합니다.</li>
+    </ul>
+  </div>
+</details>
 
-1. Numbered
-2. List
+<details>
+  <summary><b>🚀 4) 이 기술이 되면 사람들이 사용할까요?</b> (클릭해서 보기)</summary>
+  <div markdown="1">
+    <br>
+    통제되지 않은 실환경(In-the-wild)에서 로봇의 자율성을 비약적으로 높여주기 때문에, 차세대 가전 및 물류 로봇 시장에서 핵심 솔루션으로 활용될 것입니다.
+  </div>
+</details>
 
-**Bold** and _Italic_ and `Code` text
+---
 
-[Link](url) and ![Image](src)
-```
+## 👥 Team Profiles
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+| 이름 | 역할 | 담당 컴포넌트 (폴더명) | 주요 기술 스택 |
+| :---: | :---: | :--- | :--- |
+| **류재우** | 팀장 | **Denoising**<br>(`LRDSE`) | <img src="https://img.shields.io/badge/SGMSE-000000?style=flat-square"/> <img src="https://img.shields.io/badge/Diffusion-4B32C3?style=flat-square"/> |
+| **이성빈** | 팀원 | **Task Execution**<br>(`sceneupdate`) | <img src="https://img.shields.io/badge/LLM-8E75B2?style=flat-square"/> <img src="https://img.shields.io/badge/Isaac_Sim-76B900?style=flat-square"/> |
+| **유동현** | 팀원 | **SpatialAudio**<br>(`SpatialAudio`) | <img src="https://img.shields.io/badge/FOA-FF6F00?style=flat-square"/> <img src="https://img.shields.io/badge/SpatialAST-0052CC?style=flat-square"/> |
+| **유채희** | 팀원 | **Memory**<br>(`hierarchy_...`) | <img src="https://img.shields.io/badge/Scene_Graph-FFB020?style=flat-square"/> <img src="https://img.shields.io/badge/Habitat_Sim-22314E?style=flat-square"/> |
+| **장근서** | 팀원 | **Tactile**<br>(`catkin_ws`) | <img src="https://img.shields.io/badge/Gaussian_Splatting-008080?style=flat-square"/> <img src="https://img.shields.io/badge/Online_SLAM-333333?style=flat-square"/> |
 
-### Jekyll Themes
+---
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/kookmin-sw/cap-template/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+# 🧩 Components Detail
 
-### Support or Contact
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #ff6f00; margin-bottom: 15px;">
+  <b>🎧 1. SpatialAudio (유동현)</b><br>
+  로봇 관점의 기하학적 맥락과 앰비소닉(Ambisonics) 오디오를 결합한 공간 음향 인지 시스템입니다.
+  <ul>
+    <li><b>주요 기능</b>: FOA 기반 음원 위치 추적 및 SpatialAST 모델을 통한 성능 고도화</li>
+    <li><b>차별점</b>: 시각 정보(<code>V_sphere</code>)와 오디오 정보(<code>A_sphere</code>)를 정합하여 비가시 영역의 소리까지 통합 인지</li>
+    <li><b>주요 참고 논문</b>:
+      <ul>
+        <li>ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning</li>
+        <li>REACT: Real-time Efficient Attribute Clustering and Transfer for Updatable 3D Scene Graph</li>
+        <li>SayPlan: Grounding Large Language Models using 3D Scene Graphs for Scalable Robot Task Planning</li>
+        <li>RoboSpatial: Teaching Spatial Understanding to 2D and 3D Vision-Language Models for Robotics</li>
+      </ul>
+    </li>
+  </ul>
+</div>
 
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #4b32c3; margin-bottom: 15px;">
+  <b>🔇 2. Denoising (류재우)</b><br>
+  로봇 구동 시 발생하는 강력한 하드웨어 노이즈를 제거하는 로봇 특화 음성 향상 기술입니다.
+  <ul>
+    <li><b>주요 기능</b>: SGMSE 및 RDDM 기반의 Diffusion 모델을 사용하여 깨끗한 음성 복원</li>
+    <li><b>차별점</b>: 다리 관절 힘(Foot force) 데이터를 보조 조건으로 입력받아 정밀한 소음 제거</li>
+    <li><b>주요 참고 논문</b>:
+    <ul>
+        <li>Speech Enhancement and Dereverberation with Diffusion-based Generative Models</li>
+        <li>Noise-aware Speech Enhancement using Diffusion Probabilistic Model</li>
+        <li>Residual Denoising Diffusion Models</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #ffb020; margin-bottom: 15px;">
+  <b>🧠 3. Memory (유채희)</b><br>
+  환경을 '건물-층-방-객체'로 구조화하여 관리하는 계층형 씬그래프 메모리 시스템입니다.
+  <ul>
+    <li><b>주요 기능</b>: ConceptGraph를 활용한 맵 생성 및 객체 변화를 실시간으로 씬그래프에 반영</li>
+    <li><b>차별점</b>: 장단기 메모리 구조를 통해 과거 경험 바탕으로 현재 작업(Rearrangement 등) 계획</li>
+    <li><b>주요 참고 논문</b>:
+      <ul>
+        <li>ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning</li>
+        <li>KARMA: Augmenting Embodied AI Agents with Long-and-short Term Memory Systems</li>
+        <li>Hierarchical Open-Vocabulary 3D Scene Graphs for Language-Grounded Robot Navigation</li>
+        <li>Dynamic Open-Vocabulary 3D Scene Graphs for Long-term Language-Guided Mobile Manipulation</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #008080; margin-bottom: 15px;">
+  <b>🤲 4. Tactile (장근서)</b><br>
+  시각 정보와 촉각/재질 정보를 융합하기 위한 3D Gaussian Splatting 기반 SLAM 시스템입니다.
+  <ul>
+    <li><b>주요 기능</b>: RGB-Pose 데이터를 바탕으로 3D 가우시안 맵 생성 및 업데이트</li>
+    <li><b>차별점</b>: 가우시안 맵에 재질(Material) 정보를 임베딩하여 시각적 형태 및 질감까지 이해</li>
+    <li><b>주요 참고 논문</b>:
+      <ul>
+        <li>3D Gaussian Splatting for Real-Time Radiance Field Rendering</li>
+        <li>CL-Splats: Continual Learning of Gaussian Splatting with Loal Optimization</li>
+        <li>LEGS: Incrementally Building Room-Scale Language-Embedded Gaussian Splats with a Mobile Robot</li>
+        <li>GaussianUpdate: Continual 3D Gaussian Splatting Update for Changing Environments</li>
+        <li>GS3LAM: Gaussian Semantic Splatting SLAM</li>
+        <li>Gaussian Grouping: Segment and Edit Anything in 3D Scenes</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border-left: 5px solid #76b900; margin-bottom: 15px;">
+  <b>🤖 5. Task Execution (이성빈)</b><br>
+  LLM과 실시간 씬그래프를 결합하여 복잡한 명령을 수행하는 로봇 작업 지능 모듈입니다.
+  <ul>
+    <li><b>주요 기능</b>: 동적 환경 그리고 빈공간에 대한 정보를 담은 씬그래프 구축 및 이를 활용한 task planning</li>
+    <li><b>차별점</b>: <b>빈공간 스코어링</b>으로 낙하/충돌 위험을 고려한 최적의 배치 지점(Sweet Spot) 실시간 계산 및 VLM이 빈공간 추론을 더 잘하기 위한 파인튜닝용 데이터 생성 파이프라인 구축</li>
+    <li><b>주요 참고 논문</b>:
+      <ul>
+        <li>ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning</li>
+        <li>REACT: Real-time Efficient Attribute Clustering and Transfer for Updatable 3D Scene Graph</li>
+        <li>SayPlan: Grounding Large Language Models using 3D Scene Graphs for Scalable Robot Task Planning</li>
+        <li>RoboSpatial: Teaching Spatial Understanding to 2D and 3D Vision-Language Models for Robotics</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+---
+
+## 🎬 DEMO (팀원별 결과 및 시각 자료)
+
+### 🎧 1. SpatialAudio
+> 앰비소닉(Ambisonics) 오디오와 기하학적 맥락을 결합한 시공간 음향 인지 결과입니다.
+* **오디오 인지 파이프라인 데모**
+  * (여기에 데모 영상 링크나 결과물 이미지를 추가해 주세요.)
+
+<br>
+
+### 🔇 2. Denoising
+> 사족보행 로봇의 구동 소음 환경에서 음성 명령만을 깨끗하게 추출한 결과입니다.
+* **음성 향상(Speech Enhancement) 전/후 비교**
+  * (여기에 오디오 샘플 링크나 디노이징 전후 스펙트로그램 이미지를 추가해 주세요.)
+
+<br>
+
+### 🧠 3. Memory
+> 계층형 씬그래프 구축 및 장단기 메모리를 활용한 로봇의 동적 환경 인지 결과입니다.
+> 
+> * #### 방 분리 결과 이미지
+> <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: center;">
+>   <img src="https://github.com/user-attachments/assets/7df81276-5b42-450e-80fd-db56d06c4672" style="width: 100%;">
+>   <img src="https://github.com/user-attachments/assets/fd9f7897-26d1-40f4-9ea7-f96aff4e29f4" style="width: 100%;">
+>   <img src="https://github.com/user-attachments/assets/4c4a1582-b464-4bd6-9245-c3db899da223" style="width: 100%;">
+>   <img src="https://github.com/user-attachments/assets/aee2a039-f5be-4c46-8c86-43087035b166" style="width: 100%;">
+>   <img src="https://github.com/user-attachments/assets/a05f5b52-b137-4c49-9282-a24b14fc4c00" style="width: 100%;">
+>   <img src="https://github.com/user-attachments/assets/7d870580-b98e-4b76-a55c-707be50fa546" style="width: 100%;">
+>   <img src="https://github.com/user-attachments/assets/0a615ba2-0ebe-43a9-80dc-ffe3f911b23b" style="width: 100%;">
+>   <img src="https://github.com/user-attachments/assets/72bc62a4-aeca-4b1d-badf-0bf826dbaf57" style="width: 100%;">
+> </div>
+> 
+> * #### 3D Scene Graph 동적 업데이트 예시
+> 로봇이 Rearrangement Task를 수행함에 따라 동적으로 Scene Graph가 갱신되는 시각화 결과입니다. 빨간색 원으로 표시된 타겟 객체(사과)가 주방(Kitchen)에서 거실(Living Room)의 커피 테이블로 이동한 것을 확인할 수 있습니다.
+> 
+> <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: center; margin-top: 15px;">
+>   <div>
+>     <strong>Before (주방에 위치한 사과)</strong>
+>     <img src="https://github.com/user-attachments/assets/727e31df-06f9-4609-99a0-d7ac6171fe73" style="width: 100%; border-radius: 8px; margin-top: 10px;">
+>   </div>
+>   <div>
+>     <strong>After (거실 커피 테이블로 이동한 사과)</strong>
+>     <img src="https://github.com/user-attachments/assets/ae3a147a-47c8-444e-9e0b-a397ee3e7da9" style="width: 100%; border-radius: 8px; margin-top: 10px;">
+>   </div>
+> </div>
+> 
+> * #### Task 수행 동영상
+> <iframe width="100%" height="450" src="https://www.youtube.com/embed/n9BuyLzmbgs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+### 🤲 4. Tactile
+> RGB-Pose 데이터를 바탕으로 실시간 3D 환경을 렌더링한 Continual Gaussian Splatting 매핑 결과입니다.
+* **TF를 이용한 실시간 카메라 Pose 추정 시각화 결과**
+  <img width="990" height="591" alt="image" src="https://github.com/user-attachments/assets/43d2e54d-18d9-470f-bba8-90725e4f5b54" />
+<br>
+
+### 🤖 5. Task Execution
+>
+> #### 📦 SceneUpdate — Isaac Sim 시뮬레이션 기반 빈공간 씬그래프 & Task Planning
+> Isaac Sim 환경에서 Depth 기반 실시간 빈공간 추정을 씬그래프에 통합하고, LLM planner로 pick-and-place 태스크를 수행합니다.
+>
+> * **freespace 씬그래프 시각화**<br>
+> <img src="./assets/sceneupdate/freespace_scenegraph.jpg" width="100%">
+>
+> * **isaacsim 에서의 빈공간 추론을 활용한 task execution**<br>
+> <video width="100%" controls>
+>   <source src="./assets/sceneupdate/task_execution.webm" type="video/webm">
+>   Your browser does not support the video tag.
+> </video>
+>
+> <br>
+>
+> #### 🧪 FreeSpace Pipeline — VLM 파인튜닝을 위한 빈공간 데이터 생성 파이프라인
+> SceneUpdate에서 확인한 Depth 기반 방식의 실환경 노이즈 한계를 극복하기 위해, VLM이 빈공간을 직접 추론하도록 파인튜닝하는 파이프라인입니다.<br>
+> RoboSpatial 논문을 참조하여 GraspNet / HOPE / SUN RGB-D 데이터셋으로부터 freespace QA를 자동 생성하고, Qwen2-VL-7B를 LoRA로 파인튜닝합니다.
+>
+> * **학습용 데이터셋 자동 생성 결과** — Depth Map 기반 테이블 표면 추출 및 물체 OBB 차감으로 빈 공간 폴리곤을 자동 라벨링한 예시입니다.<br>
+> <img src="./assets/freespacepipeline/dataset_pipeline.jpg" width="100%">
+>
+> * **Base Model vs Fine-Tuned Model 비교** — 파인튜닝 전(좌)에는 빈공간 폴리곤 출력이 불가능하고 환각(Hallucination)이 발생하지만, LoRA 파인튜닝 후(우)에는 정확한 좌표 폴리곤으로 빈공간을 추론합니다.<br>
+> <img src="./assets/freespacepipeline/compare_result.jpg" width="100%">
+
+---
+
+## 🚀 Getting Started (사용법)
+
+본 저장소의 각 하위 프로젝트는 서로 다른 연구 주제를 다루고 있어 독립적인 실행 환경과 dependency를 가집니다. 따라서 루트 디렉토리에서 한 번에 실행하지 않고, 필요한 하위 프로젝트 폴더로 이동하여 실행해야 합니다.
+
+---
+
+### 1️⃣ 저장소 Clone
+```bash
+git clone [https://github.com/kookmin-sw/2026-capstone-43.git](https://github.com/kookmin-sw/2026-capstone-43.git)
+cd 2026-capstone-43
