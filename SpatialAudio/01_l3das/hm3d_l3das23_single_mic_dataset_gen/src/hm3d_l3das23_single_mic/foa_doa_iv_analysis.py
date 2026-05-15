@@ -418,7 +418,7 @@ def _aggregate_frame_vectors(raw_iv: np.ndarray, tf_mask: np.ndarray) -> tuple[n
 
 def _beam_grid(azimuth_step_deg: float, elevation_step_deg: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     azimuths = np.arange(-180.0, 180.0 + 0.5 * float(azimuth_step_deg), float(azimuth_step_deg))
-    elevations = np.arange(-60.0, 60.0 + 0.5 * float(elevation_step_deg), float(elevation_step_deg))
+    elevations = np.arange(-90.0, 90.0 + 0.5 * float(elevation_step_deg), float(elevation_step_deg))
     grid_vectors = np.array(
         [
             unit_vector_from_angles(azimuth_deg, elevation_deg)
