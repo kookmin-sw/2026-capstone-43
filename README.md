@@ -14,7 +14,7 @@
 
 - 로봇 동작 중 발생하는 noise를 고려한 speech enhancement
 - 공간 음향 기반 로봇 인지
-- RGB image와 pose 기반 3D scene reconstruction
+- RGB image와 pose, tactile sensor information 기반 Material-aware 3D scene reconstruction
 - 계층형 Scene Graph 기반 환경 이해
 - LLM 기반 로봇 task planning 및 interaction
 - Isaac Sim 기반 모바일 매니퓰레이터 시뮬레이션
@@ -27,7 +27,7 @@
 | --- | --- | --- |
 | `LRDSE` | Robot Noise Speech Enhancement | 로봇 동작 중 발생하는 비정상적 noise를 제거하기 위한 speech enhancement 연구입니다. SGMSE/RDDM 기반 모델과 foot force condition을 활용합니다. |
 | `SpatialAudio` | Spatial Audio Perception | 로봇의 공간 음향 인지를 위한 audio feature, FOA/AmbiX, SpatialAST 기반 실험을 포함합니다. |
-| `catkin_ws` | RGB-Pose Collection & Gaussian Splatting | 로봇에서 RGB image와 pose를 수집하고, 이를 Gaussian Splatting 및 continual mapping 실험에 활용합니다. |
+| `catkin_ws` | RGB-Pose Collection & Gaussian Splatting | 로봇에서 RGB image와 pose를 수집하고, 로봇을 제어해 tactile sensor를 로봇이 contact해서 이를 Gaussian Splatting 및 continual mapping 실험에 활용합니다. |
 | `hierarchy_robot_interaction_scene_graph_submission` | Hierarchical Scene Graph | RGB-D/pose 기반 계층형 Scene Graph를 생성하고, LLM 기반 로봇 interaction에 활용합니다. |
 | `sceneupdate` | Isaac Sim Robot Interaction | Isaac Sim 환경에서 모바일 매니퓰레이터, Scene Graph, LLM planner, navigation, manipulation을 결합한 시뮬레이션 프로젝트입니다. |
 | `freespacepipeline` | Free Space-Aware Scene Graph VLM Fine-tuning | 씬그래프에 빈 공간(Free Space) 정보를 통합하기 위한 데이터 자동 생성 파이프라인 및 Qwen2-VL LoRA 파인튜닝 프로젝트입니다. |
@@ -50,7 +50,7 @@
 | 이성빈 | 팀원 | Scene Graph 기반 환경 인식, Free Space VLM 파인튜닝 파이프라인 구현 | `sceneupdate`, `freespacepipeline` |
 | 유동현 | 팀원 | Spatial Audio 기반 로봇 공간 음향 인지 연구 및 구현 | `SpatialAudio` |
 | 유채희 | 팀원 | Hierarchical Scene Graph 기반 로봇 상호작용 연구 및 구현 | `hierarchy_robot_interaction_scene_graph_submission` |
-| 장근서 | 팀원 | RGB-Pose 수집 및 Gaussian Splatting 기반 3D scene reconstruction 연구 | `catkin_ws` |
+| 장근서 | 팀원 | RGB image, Pose, tactile information 수집 및 Gaussian Splatting 기반 material-aware 3D scene reconstruction 연구 | `catkin_ws` |
 
 ---
 
