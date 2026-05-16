@@ -321,6 +321,22 @@ The intended next step is to move beyond staged Nerfstudio training and implemen
 - select high-uncertainty regions for robot exploration
 - integrate tactile feedback as material embeddings on nearby Gaussians
 
+## Related Work
+
+Language-Embedded Gaussian Splats (LEGS) is a close reference for this project:
+
+- Paper: "Language-Embedded Gaussian Splats (LEGS): Incrementally Building Room-Scale Representations with a Mobile Robot"
+- Code: https://github.com/uynitsuj/LEGS
+- Project: https://berkeleyautomation.github.io/LEGS/
+
+LEGS is useful here because it connects three ideas that match this repository's direction:
+
+- incremental room-scale Gaussian map construction with a mobile robot
+- language/semantic embedding attached to Gaussian representations
+- Nerfstudio-style custom method integration for training and visualization
+
+This project currently keeps the implementation lighter and more modular: RTAB-Map/Nerfstudio are used for practical data export and visualization, while `online_gs_slam` is the experimental backbone for continual RGB-D Gaussian insertion, uncertainty, and later tactile/material updates.
+
 Future work:
 
 - RGB-D depth backprojection insertion
@@ -331,4 +347,4 @@ Future work:
 - tactile encoder
 - material-aware Gaussian embedding
 - semantic/material Gaussian fields
-
+- LEGS-style language supervision projected from 2D masks onto Gaussian-level features

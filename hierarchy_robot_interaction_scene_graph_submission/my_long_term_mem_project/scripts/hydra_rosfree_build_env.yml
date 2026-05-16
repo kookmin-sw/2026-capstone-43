@@ -1,0 +1,17 @@
+name: hydra_rosfree_py310
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - cmake
+  - ninja
+  - pybind11
+  - empy
+  - eigen
+  - yaml-cpp
+  - gtsam
+  - opencv
+  - pcl
+  - numpy
+  - pip

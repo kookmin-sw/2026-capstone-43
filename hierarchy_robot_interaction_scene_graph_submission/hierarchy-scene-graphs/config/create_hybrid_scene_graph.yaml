@@ -1,0 +1,64 @@
+main:
+  device: cuda
+  dataset: replica
+  scene_id: "108736872_177263607"
+  dataset_path: /home/yuchaehee/long_term_memory_project/my_local_data/hssd/108736872_177263607
+  save_path: /home/yuchaehee/long_term_memory_project/my_local_data/hierarchy_scene_graphs
+
+conceptgraph:
+  mapping_path: /home/yuchaehee/long_term_memory_project/my_local_data/hssd/108736872_177263607/exps/r_mapping_stride5/pcd_r_mapping_stride5.pkl.gz
+  min_points: 100
+  min_detections: 1
+  include_background: false
+
+assignment:
+  room_overlap_radius: 0.2
+  floor_margin: 0.2
+
+room_naming:
+  method: gpt_label # GPT 사용하겠다는 뜻 (heuristic 버전은 heuristic_label)
+  fallback_method: none
+  default_room_types:
+    - bathroom
+    - bedroom
+    - dining room
+    - kitchen
+    - laundry room
+    - library
+    - living room
+    - corridor
+
+room_graph:
+  connect_adjacent_rooms: true
+  adjacency_dilation_kernel_size: 3
+  adjacency_dilation_iters: 2
+  adjacency_min_touch_pixels: 1
+  assign_room_instance_names: true
+
+models:
+  clip:
+    type: ViT-H-14
+    checkpoint: /home/yuchaehee/long_term_memory_project/HOV-SG/checkpoints/laion2b_s32b_b79k.bin
+
+pipeline:
+  voxel_size: 0.02
+  rgbd_filter_distance: 4.0
+  start_frame: 0
+  max_frames: -1
+  skip_frames: 5
+  step_through_full_pcd: false
+  reuse_existing_layout: false
+  grid_resolution: 0.05
+  merge_objects_graph: false
+  save_intermediate_results: false
+  compute_room_embeddings: false
+  debug_dir_name: tmp
+  registration:
+    enable_icp_refinement: false
+    voxel_size: 0.05
+    max_correspondence_distance: 0.08
+    min_fitness: 0.25
+    max_translation_correction: 0.15
+    max_rotation_correction_deg: 8.0
+    reference_window: 3
+    min_registration_points: 200

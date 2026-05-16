@@ -1,0 +1,431 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/BlackandBrassBowl_Small_A.png",
+            "source_hash": "adb1fda9951c123531f591db5742002d501e2ce1",
+            "target_url": "./SubUSDs/textures/BlackandBrassBowl_Small_A.png",
+            "target_hash": "87ad7a8a0fb837a0a7897c6abbe8c0d545542f30"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/BlackandBrassBowl_Small_M.png",
+            "source_hash": "a98b89d947140eb0791574de259d9da041ae0fff",
+            "target_url": "./SubUSDs/textures/BlackandBrassBowl_Small_M.png",
+            "target_hash": "6c5b259307ea2563efa58154488030bb41d8aa48"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/BlackandBrassBowl_Small_N.png",
+            "source_hash": "bb491b60e1a8826436ca5a2931ed07453431486a",
+            "target_url": "./SubUSDs/textures/BlackandBrassBowl_Small_N.png",
+            "target_hash": "02bfca4388b1b58cfa545eff4543b351990a7fe2"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/BlackandBrassBowl_Small_R.png",
+            "source_hash": "9e1da99ac210839bc87d20f98a1a9d4380cbee75",
+            "target_url": "./SubUSDs/textures/BlackandBrassBowl_Small_R.png",
+            "target_hash": "c13e9261ca98b1b91a235bf7dfde6fe6f03ccb38"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/materials/ABS_Soft_Leather.mdl",
+            "source_hash": "dbe31c8847ed38cc7246a82bffa096364574e93f",
+            "target_url": "./SubUSDs/materials/ABS_Soft_Leather.mdl",
+            "target_hash": "297722086116ad7f5c17904309ef0ccd98e391a7"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ABS_Soft_Leather/abs_soft_leather_multi_R_rough_G_height_B_ao.jpg",
+            "source_hash": "5cc42fb3b649055b194119f5323019edb70aa25a",
+            "target_url": "./SubUSDs/textures/ABS_Soft_Leather/abs_soft_leather_multi_R_rough_G_height_B_ao.jpg",
+            "target_hash": "155bce90dd58e1335e91770c9fdee3939a0c8107"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ABS_Soft_Leather/abs_soft_leather_norm.jpg",
+            "source_hash": "c0d7daa2faf6f910cb0d812bfc961c39de704cc5",
+            "target_url": "./SubUSDs/textures/ABS_Soft_Leather/abs_soft_leather_norm.jpg",
+            "target_hash": "93379903e9d2bcd858bc3b8da86a2e9dfdb05b82"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Cover_Casabook_Spelling.png",
+            "source_hash": "4e2a005022dfa2c093920f6d51d8411653b8be84",
+            "target_url": "./SubUSDs/textures/Cover_Casabook_Spelling.png",
+            "target_hash": "721006bcd34de2bc5a6e490de4139758221f9efe"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Cover_Full_ORM.png",
+            "source_hash": "59b02d53265a45d6c4492c8669a87bc9820064c6",
+            "target_url": "./SubUSDs/textures/Cover_Full_ORM.png",
+            "target_hash": "e7cbc7278cbfc53977b5e375dd3ab716211753f3"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Pages_BaseColor.png",
+            "source_hash": "c4fc9d64b7f1b05926bac9060ff4bff784f7a836",
+            "target_url": "./SubUSDs/textures/Pages_BaseColor.png",
+            "target_hash": "9dca9a3e23fc8b7f72a79b956c5723ae8a1a343b"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Pages_N.png",
+            "source_hash": "7db2ee7da468516bb547e54d77775f4991a99415",
+            "target_url": "./SubUSDs/textures/Pages_N.png",
+            "target_hash": "aa288317fa3d858e85fc2b34c177ff9e9606ccaf"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Pages_ORM.png",
+            "source_hash": "8a2c133b6f9b877875b2a3daa22763d201440c6c",
+            "target_url": "./SubUSDs/textures/Pages_ORM.png",
+            "target_hash": "a08becaf46f0a090eb9b76b797325a54993248ab"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/P_Glassware_Roughness.png",
+            "source_hash": "fd1c0a6ad77dd97fe510aafe4f922d0c0c7084f8",
+            "target_url": "./SubUSDs/textures/P_Glassware_Roughness.png",
+            "target_hash": "f4ffe61a54e7b13236870b2d71cc8dc96826d0f6"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Plastic__A.png",
+            "source_hash": "02de6c961e30889d202f1c5b77bbd39971f24dc2",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Plastic__A.png",
+            "target_hash": "c76ff13bd5fc618c0a30332dee081c3587422894"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Plastic__N.png",
+            "source_hash": "0a4a8909b7d80c903e10193231593356940a2ffa",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Plastic__N.png",
+            "target_hash": "9d2541fe5eff014626f7a94e359e139ccf7de69e"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Plastic__SG.png",
+            "source_hash": "e7901d6e4880d54a4b169f9d77b3aab199aac1a1",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Plastic__SG.png",
+            "target_hash": "52acc43a99522ba238ba95d9f00e06d6fd558df7"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Steel__A.png",
+            "source_hash": "efffe39c53770f58588c7d1ba675b8844ffc4ad2",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Steel__A.png",
+            "target_hash": "34905095a74c750141f62005daffef1cb22f8ffc"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Steel__M.png",
+            "source_hash": "bae17017d9977aa0cc06d5247ca6eab3e4b12940",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Steel__M.png",
+            "target_hash": "cd2f299c90e6839a057872a5b135c32fa371564f"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Steel__N.png",
+            "source_hash": "8195299cdbe4c10316b1429ae5885f094eacc1ea",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Steel__N.png",
+            "target_hash": "0fa9624190cebddc7dce1ef8e5b8c074d083a5e6"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Steel__SG.png",
+            "source_hash": "3965d47fdbfbb3d84fecb51e4f2d93284c733882",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Steel__SG.png",
+            "target_hash": "d3718d907758fd50c0342ea4bf9b01c0aaafb4e7"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Wood__A.png",
+            "source_hash": "713108b806866c360862f3cc910514d6701b22a9",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Wood__A.png",
+            "target_hash": "2d67c0dd4819cf0497d84bd4b172aa41cbe4a880"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Wood__N.png",
+            "source_hash": "b5650e8fa8f4d2084d79de4de02cc0f4cbb13140",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Wood__N.png",
+            "target_hash": "49d83b7d5707586ea7af6974e079553f8364bfaa"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/ContemporaryOfficeLockedStorage_Wood__SG.png",
+            "source_hash": "2a42ea1eac76a854c68b66e6f8a0ea024b80c2ab",
+            "target_url": "./SubUSDs/textures/ContemporaryOfficeLockedStorage_Wood__SG.png",
+            "target_hash": "345ee1d6ad9fbf0460da2fd7cb8f87cc01ba9ec9"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Pan_D_albedo.png",
+            "source_hash": "4a043f5fc0e3e1090575e08d9201160f11d5efb2",
+            "target_url": "./SubUSDs/textures/Pan_D_albedo.png",
+            "target_hash": "5dbce5eb90b68354ead1e547e18817f02e27a507"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Pan_D_metal.png",
+            "source_hash": "8026dde969135160f0d30a28d3f4631b5be86b60",
+            "target_url": "./SubUSDs/textures/Pan_D_metal.png",
+            "target_hash": "e680ad8db5b3f5e5dc3ccfe36c895665282d077f"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Pan_D_normal.png",
+            "source_hash": "19943c01ee33121e3645113b5153fcd357d2c222",
+            "target_url": "./SubUSDs/textures/Pan_D_normal.png",
+            "target_hash": "8a272686348c4436fe821ee17c1f9cfd0147ce91"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Pan_D_rough.png",
+            "source_hash": "cfe9ec215875dc877ab7ee84f5915fd70cdb2bee",
+            "target_url": "./SubUSDs/textures/Pan_D_rough.png",
+            "target_hash": "9cd113f4ab28a1b9649cb5245903e576337fc0ab"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Back_BaseColor.tga",
+            "source_hash": "9f97675045e5cca496c462cbe30a46d8a4ebba16",
+            "target_url": "./SubUSDs/textures/TV_Wall_Back_BaseColor.tga",
+            "target_hash": "76d31967dc729b12287a109c89dc0ba85681f15c"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Back_N.tga",
+            "source_hash": "79d81339430bd853ca4ca4a7c6469f91d1452700",
+            "target_url": "./SubUSDs/textures/TV_Wall_Back_N.tga",
+            "target_hash": "953ef40e16053a21d50e74f6af3f2c77f0696774"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Back_R.tga",
+            "source_hash": "86cb099bf2f7a72afdeec1b3c335527fb09cd6f3",
+            "target_url": "./SubUSDs/textures/TV_Wall_Back_R.tga",
+            "target_hash": "9b7bd125e15a13ed674845b4199bf2090fdaabc4"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Main_BaseColor.tga",
+            "source_hash": "5945d3794c818523e4e757464e28b10da659ff9c",
+            "target_url": "./SubUSDs/textures/TV_Wall_Main_BaseColor.tga",
+            "target_hash": "b55f09c0611f794838d7bd6d49d453fd02d0ca03"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Main_N.tga",
+            "source_hash": "8f91021b97d9b0032c61c8ad7dc4dd9ab6a6b38e",
+            "target_url": "./SubUSDs/textures/TV_Wall_Main_N.tga",
+            "target_hash": "2c911ec3c5d87418e6491969178ba3fc7d79780b"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Main_R.tga",
+            "source_hash": "88b3ae48eb94df455c85404bf4788e9c132a8c05",
+            "target_url": "./SubUSDs/textures/TV_Wall_Main_R.tga",
+            "target_hash": "0099f58061fbd2f2b6d48b45ec032cc475a1d9f2"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Screen_BaseColor.tga",
+            "source_hash": "d5fb4c2f38ccb015fb6522c7a500dc0e9faa4913",
+            "target_url": "./SubUSDs/textures/TV_Wall_Screen_BaseColor.tga",
+            "target_hash": "70c15c4396ce7385cf1fd6a8e66e562d4a58758f"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Screen_N.tga",
+            "source_hash": "56035e701951bd273e195afda1838985ebae8945",
+            "target_url": "./SubUSDs/textures/TV_Wall_Screen_N.tga",
+            "target_hash": "707d81eacaec43058519eb36e8aaa0ccb49e753e"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Screen_R.tga",
+            "source_hash": "1d6eab8490130c06aa9d5c8061107898d7fb076e",
+            "target_url": "./SubUSDs/textures/TV_Wall_Screen_R.tga",
+            "target_hash": "7ec3dc97823b077ed98bcad93b30f70d1929956b"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Back_BaseColor_1.tga",
+            "source_hash": "39479424321c2d8e332c1b50b52d73c04ef5c1c0",
+            "target_url": "./SubUSDs/textures/TV_Wall_Back_BaseColor_1.tga",
+            "target_hash": "669e692685911a9da1ce11174347e683595b9ab5"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Back_N_1.tga",
+            "source_hash": "1de71e588146d18c119f625c9c4f1eba2894073b",
+            "target_url": "./SubUSDs/textures/TV_Wall_Back_N_1.tga",
+            "target_hash": "43c4a5a4c3cb896ab634d5f0302886da7bb45b33"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Back_R_1.tga",
+            "source_hash": "c54caef4290d3093e270e6f815eb64a6aea8514d",
+            "target_url": "./SubUSDs/textures/TV_Wall_Back_R_1.tga",
+            "target_hash": "7d62a5c486bc5405e539e543c7b202f67698c0e1"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Main_BaseColor_1.tga",
+            "source_hash": "b117df78d7f91c2d6a9b7fce4f53f23f2ab5b950",
+            "target_url": "./SubUSDs/textures/TV_Wall_Main_BaseColor_1.tga",
+            "target_hash": "b0175beaa3562a89da6a19eb6b54366ab8d7f575"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Main_N_1.tga",
+            "source_hash": "7be8b480c7c5645eef343a3b34d51182dfe0e128",
+            "target_url": "./SubUSDs/textures/TV_Wall_Main_N_1.tga",
+            "target_hash": "8310d536740728d457863a07606a112cfc863b81"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Main_R_1.tga",
+            "source_hash": "2d346a58584a5a9f680b813934dda60375204551",
+            "target_url": "./SubUSDs/textures/TV_Wall_Main_R_1.tga",
+            "target_hash": "0b8ef3699af0800481cddc548b9b96f199ceed38"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Screen_BaseColor_1.tga",
+            "source_hash": "d0e1494905237e86fac9181f59384efddef50171",
+            "target_url": "./SubUSDs/textures/TV_Wall_Screen_BaseColor_1.tga",
+            "target_hash": "4e2802208c3bac6263d011b5dff3a70d4fbc6241"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Screen_N_1.tga",
+            "source_hash": "d6c8e9df978d6150b7198a7d9430455330ee9bda",
+            "target_url": "./SubUSDs/textures/TV_Wall_Screen_N_1.tga",
+            "target_hash": "c04fc36722ab1f1e10c2cfcb83dc6c0b26a0a9d6"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/TV_Wall_Screen_R_1.tga",
+            "source_hash": "5af3f5100a62142fdbb2008719991a10e2559e9b",
+            "target_url": "./SubUSDs/textures/TV_Wall_Screen_R_1.tga",
+            "target_hash": "45d7e739d5eb060b243a9d51f188d8a74b400695"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/materials/Plastic_Thick_Translucent.mdl",
+            "source_hash": "3cb1dc8cb1607399401fd093ffcfbfbcd9ece366",
+            "target_url": "./SubUSDs/materials/Plastic_Thick_Translucent.mdl",
+            "target_hash": "f1ec7c53e6853905a73570374f4ed04be4ceafdf"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Chair_Wire_Seatback_BaseColor.png",
+            "source_hash": "38954b1de5a693ee9c798f875f57fd5a18a77fd3",
+            "target_url": "./SubUSDs/textures/Chair_Wire_Seatback_BaseColor.png",
+            "target_hash": "7f298e4a480e73ce530f4dc77d33074ccb4aef05"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Chair_Wire_Seatback_ORM.png",
+            "source_hash": "bbbd0b8ec3402993541b3cfcfc768a45e1470533",
+            "target_url": "./SubUSDs/textures/Chair_Wire_Seatback_ORM.png",
+            "target_hash": "de3b9b5a401c3232f2cbd681cfad6ac5522eb084"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Chair_Wire_Seatbck_Normal.png",
+            "source_hash": "7d74655007d60a4ba9f455b9d141a1c18626c085",
+            "target_url": "./SubUSDs/textures/Chair_Wire_Seatbck_Normal.png",
+            "target_hash": "045200fad6790e78d5281c0fd06f3adc80a3305e"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Chair_Wire_SmallParts_BaseColor.png",
+            "source_hash": "fa14bf64728618c83c90c04558adfdacaa07c2fc",
+            "target_url": "./SubUSDs/textures/Chair_Wire_SmallParts_BaseColor.png",
+            "target_hash": "6824fffc5dd74338fc8d19c07ea2afdb79497973"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Chair_Wire_SmallParts_ORM.png",
+            "source_hash": "6fcd9c3918bb0fa83d7390e60ff9d2471f595aa6",
+            "target_url": "./SubUSDs/textures/Chair_Wire_SmallParts_ORM.png",
+            "target_hash": "b4a3653ced31c1105075140eb6126c8117bbc149"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Chair_Wire_Small_Parts_Normal.png",
+            "source_hash": "cd31d0db042bc015cf33f8e7326d39274398400c",
+            "target_url": "./SubUSDs/textures/Chair_Wire_Small_Parts_Normal.png",
+            "target_hash": "ba5a0f5c74d154b8d5f85fd4e5bf532b81b30e99"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/PumpkinLarge_WoodPainted_A.png",
+            "source_hash": "8c699c78ab298f52f01e125fedd5e1e467c1aa9e",
+            "target_url": "./SubUSDs/textures/PumpkinLarge_WoodPainted_A.png",
+            "target_hash": "98491b44909ed6371476b1ea479d5386ba033577"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/PumpkinLarge_WoodPainted_N.png",
+            "source_hash": "c2559dbed1d6363074cef90b0022cc5cc375476d",
+            "target_url": "./SubUSDs/textures/PumpkinLarge_WoodPainted_N.png",
+            "target_hash": "3be318ca747b247aedb97ddcd52fc6b502846428"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/PumpkinLarge_WoodPainted_R.png",
+            "source_hash": "57027b1234a2760b9db0923992b1df58babf0218",
+            "target_url": "./SubUSDs/textures/PumpkinLarge_WoodPainted_R.png",
+            "target_hash": "a89e5f86e29444be6dc03e6c9c86ea6b2e1f115a"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/apple_albedo.png",
+            "source_hash": "7cdca9c5aa6419de65a28eb8261d7cff125daa36",
+            "target_url": "./SubUSDs/textures/apple_albedo.png",
+            "target_hash": "9f897c31c4042a1077eb21fd8578bd2ef5c4edfd"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/apple_metal.png",
+            "source_hash": "7cfdfc157258e9489cdb49ba843af0066fa620b7",
+            "target_url": "./SubUSDs/textures/apple_metal.png",
+            "target_hash": "a491f92f59478f7ea6c14cbc05c45921e9ab5097"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/apple_normal.png",
+            "source_hash": "d1739efce3bfb9ddc809fdc6a4da666f116862da",
+            "target_url": "./SubUSDs/textures/apple_normal.png",
+            "target_hash": "5d5cfd4a3cc88a6549e2bc7b4a746b7274051914"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/apple_rough.png",
+            "source_hash": "b0ef318a3ca0ba606e21a5aff47c3e4d8bbd0370",
+            "target_url": "./SubUSDs/textures/apple_rough.png",
+            "target_hash": "f4d6935cc755b788736752aa8fb60137a06356d9"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Plates_Large_BaseColor.png",
+            "source_hash": "56346592c1988ce62bcb7374a3d3c6dad8f815e9",
+            "target_url": "./SubUSDs/textures/Plates_Large_BaseColor.png",
+            "target_hash": "c70f99b048770bceb0c955ffbb1d063cb6e66dda"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Plates_Large_Metallic.png",
+            "source_hash": "82fa4b20e9152adf04521ac280cf86e668ed24de",
+            "target_url": "./SubUSDs/textures/Plates_Large_Metallic.png",
+            "target_hash": "34f6c873857d1ade923817735800023a5ed16eac"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Plates_Large_Normal.png",
+            "source_hash": "1454e4beb301424b6d0a5b9095a95e8e270ada66",
+            "target_url": "./SubUSDs/textures/Plates_Large_Normal.png",
+            "target_hash": "7e8c16cb882ff3ca5aa6bd384828bd04de32113c"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Plates_Large_Roughness.png",
+            "source_hash": "e1ee83c6264b525b2abc8e4fe0bc4725550128cf",
+            "target_url": "./SubUSDs/textures/Plates_Large_Roughness.png",
+            "target_hash": "5c6c3b1dd16fb187ebff5611324aa81157b97de3"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Knife_BaseColor.png",
+            "source_hash": "633c2187d746fcd5f056c706919f3646907e0ecf",
+            "target_url": "./SubUSDs/textures/Knife_BaseColor.png",
+            "target_hash": "f3313af0e94af10f3221bdacf868019b28f95373"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Knife_Metallic.png",
+            "source_hash": "04bdeab00b5be68951de477473015dd59d0c45e6",
+            "target_url": "./SubUSDs/textures/Knife_Metallic.png",
+            "target_hash": "92fb0f974c07ead732d218d200a4518da806ca09"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Knife_Normal.png",
+            "source_hash": "84fb1f20f63fd926ee39a843d04ed37630339edb",
+            "target_url": "./SubUSDs/textures/Knife_Normal.png",
+            "target_hash": "a9571b53c0b8a6ff3751b7e18a845d88fad183c0"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Knife_Roughness.png",
+            "source_hash": "6eb6185635af99343df8eddcf661db56d69e727f",
+            "target_url": "./SubUSDs/textures/Knife_Roughness.png",
+            "target_hash": "b57cc0c8e5633b6a2234b619e2f35df453f81fe0"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Spoon_Big_BaseColor.png",
+            "source_hash": "8ce118a26ee3b1cb84627589d5c059f42f198963",
+            "target_url": "./SubUSDs/textures/Spoon_Big_BaseColor.png",
+            "target_hash": "1c3120962a6ca4244bf7397380d3b4ddf1b6980a"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Spoon_Big_Metallic.png",
+            "source_hash": "8ef5c941d3f4a184735d3489fbda9118ee31a35a",
+            "target_url": "./SubUSDs/textures/Spoon_Big_Metallic.png",
+            "target_hash": "b79a00098b3a7e0c8de29777ce6b2dbdda213e8f"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Spoon_Big_Normal.png",
+            "source_hash": "79f8a0421eb424ffeadb421fe9595d56e7f56861",
+            "target_url": "./SubUSDs/textures/Spoon_Big_Normal.png",
+            "target_hash": "b43e923f64f448a0eee00f67dd9616182be3dce9"
+        },
+        {
+            "source_url": "/home/sungbin/isaac/sg/scene/kit/SubUSDs/textures/Spoon_Big_Roughness.png",
+            "source_hash": "454a7efa2954259e3014ae1a24f07e318455e9ca",
+            "target_url": "./SubUSDs/textures/Spoon_Big_Roughness.png",
+            "target_hash": "166c78ccc03fd110370bcebc14af86c76ecd3d5a"
+        }
+    ]
+}

@@ -1,0 +1,1 @@
+Please help me decompose the following tasks: Pick up the apple in kitchen on floor 1 and put it on the coffee table in living room on floor 1. Please output only the generated code.

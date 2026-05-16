@@ -1,0 +1,2 @@
+[console_scripts]
+hm3d-l3das23-generate = hm3d_l3das23_single_mic.main_generate:main

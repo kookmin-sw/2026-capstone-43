@@ -66,6 +66,8 @@ python3 train_sgmse.py \
   --save-dir ./checkpoints/sgmse_temp_contact \
   --device cuda \
   --batch-size 4 \
+  --num-workers 2 \
+  --lr 1e-4 \
   --max-epochs 300 \
   --use-temp-condition
 ```

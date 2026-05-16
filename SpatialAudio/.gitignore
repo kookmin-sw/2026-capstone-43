@@ -1,0 +1,46 @@
+# Generated Python/cache files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Experiment outputs and logs
+outputs/
+outputs_*/
+outputs_stage*/
+logs/
+logs_*/
+tmp/
+manifests_stage*/
+_tmp_*
+*.log
+*.csv
+*.zip
+*.png
+!15_model_architectures/*.png
+*.jpg
+*.jpeg
+*.gif
+*.wav
+*.ply
+
+# Large model/checkpoint/data artifacts
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.h5
+*.hdf5
+*.pkl
+*.npy
+*.npz
+*.jsonl
+*_metrics.json
+*_summary.json
+run_summary.json
+sample_stats.json
+
+# Local editor/system files
+.DS_Store
+.vscode/
