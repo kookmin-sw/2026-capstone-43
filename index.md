@@ -214,7 +214,7 @@
 <br>
 
 ### 🤖 5. Task Execution
-> ![성빈](https://github.com/user-attachments/assets/58378522-1e78-4607-88d3-adad2ca5c9d4)
+> ![성빈](https://github.com/user-attachments/assets/9315955d-bc2e-41a4-a06e-0b66b41df4f9)
 > #### 📦 SceneUpdate — Isaac Sim 시뮬레이션 기반 빈공간 씬그래프 & Task Planning
 > Isaac Sim 환경에서 Depth 기반 실시간 빈공간 추정을 씬그래프에 통합하고, LLM planner로 pick-and-place 태스크를 수행합니다.
 >
