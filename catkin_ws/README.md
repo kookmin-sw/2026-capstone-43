@@ -1,12 +1,17 @@
-# Piper RGB-Pose 수집 및 Continual Gaussian Splatting 프로토타입
+# 로봇의 High-level Spatial Information Understanding을 위한 Tactile Sensor 기반 Material-aware 3D Gaussian Splatting 파이프라인 구축
 
-> Piper 로봇에서 RGB 이미지와 카메라/로봇 pose를 수집하고, 이를 Nerfstudio 및 자체 `online_gs_slam` 코드로 학습해 Continual Gaussian Splatting 기반 3D 맵핑을 실험하는 연구 프로토타입입니다.
+> Piper 로봇에서 RGB 이미지와 카메라/로봇 pose를 수집하고, 이를 Nerfstudio 및 자체 `online_gs_slam` 코드로 학습해 Continual Gaussian Splatting 기반 3D 맵핑하는 연구입니다.
+> 그 다음, 로봇의 High-level Spatial Information Understanding을 위해 Tactile Sensor를 이용해서 로봇이 직접 contact를 수행하고, 이 Sensor Information을 기반으로 Tactile Sensor 기반 Material-aware 3D Gaussian Splatting을 수행하는 것을 목표로 합니다.
+<p align="center">
+  <img src="./assets/overview.png" width="900" alt="overview">
+</p>
+<p align="center"><b>Overview</b></p>
+
 
 ## 1. 소개
 
-본 프로젝트는 로봇이 이동하면서 관측한 RGB 이미지와 pose 정보를 이용해 3D Gaussian Splatting 맵을 구성하는 것을 목표로 합니다. 로봇에서 직접 모든 연산을 수행하기에는 GPU 자원이 부족하므로, 로봇은 ROS topic을 통해 이미지와 pose를 발행하고, 노트북에서 데이터 수집, 변환, 학습, 시각화를 수행하는 구조로 설계했습니다.
-
-장기적인 연구 목표는 단순한 offline reconstruction이 아니라, 로봇이 새로운 프레임을 순차적으로 받아들이며 Gaussian map을 갱신하는 incremental / continual 3D Gaussian Splatting SLAM 프레임워크입니다.
+본 프로젝트는 로봇의 High-level Spatial Information Understanding을 위해 Tactile Sensor를 이용해서 로봇이 직접 contact를 수행하고, 이 Sensor Information을 기반으로 Tactile Sensor 기반 Material-aware 3D Gaussian Splatting을 수행하는 것을 목표로 합니다. 
+로봇에서 직접 모든 연산을 수행하기에는 GPU 자원이 부족하므로, 로봇은 ROS topic을 통해 이미지와 pose를 발행하고, 노트북에서 데이터 수집, 변환, 학습, 시각화를 수행하는 구조로 설계했습니다.
 
 주요 목표는 다음과 같습니다.
 
@@ -15,7 +20,7 @@
 - Gaussian map update 및 신규 Gaussian insertion
 - local optimization
 - uncertainty-aware exploration
-- 향후 tactile / material-aware Gaussian representation 확장
+- tactile / material-aware Gaussian representation 확장
 
 > [!WARNING]
 > 이 저장소는 production SLAM 시스템이 아니라 연구용 프로토타입입니다. Nerfstudio 기반 경로는 시각화와 offline/staged 실험에 유용하며, 실제 continual Gaussian SLAM 구조는 `online_gs_slam` 패키지에서 개발하는 것을 목표로 합니다.
