@@ -1,5 +1,4 @@
   <img src="https://github.com/user-attachments/assets/948dfaa9-a3a2-4f47-8ae0-6376b43308b8" width="100%" alt="project banner" />
-</p>
 
 <div align="center">
   <br><br>
