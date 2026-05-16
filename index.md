@@ -174,6 +174,7 @@
 <br>
 
 ### 🧠 3. Memory
+> <img width="5572" height="2956" alt="Untitled" src="https://github.com/user-attachments/assets/24f3bdb5-0ab1-48eb-a2cf-3f1c36da9ba9" />
 > 계층형 씬그래프 구축 및 장단기 메모리를 활용한 로봇의 동적 환경 인지 결과입니다.
 > 
 > * #### 방 분리 결과 이미지
