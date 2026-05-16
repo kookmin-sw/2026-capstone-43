@@ -151,7 +151,7 @@ SGMSE-based Speech Enhancement
 1. `lowstate_segment.jsonl`에서 네 발의 `foot_force` 값을 읽습니다.
 2. `anchor_segment.json`과 `segment_meta.json`을 사용해 robot log의 `CLOCK_MONOTONIC` 시간축을 audio sample 시간축과 맞춥니다.
 3. Audio frame 구간마다 각 발의 force 값을 확인합니다.
-4. 현재 기본 설정에서는 foot force가 threshold를 넘으면 contact `1`, 넘지 않으면 `0`으로 변환합니다.
+4. Foot force distribution을 분석해 contact 여부를 판단할 기준을 정합니다.
 5. 변환된 4개 foot contact channel을 SGMSE 입력에 auxiliary condition으로 붙입니다.
 
 기본 audio preprocess 설정은 16 kHz mono 기준입니다. 학습에서는 waveform을 고정 길이로 crop/pad하고, 같은 crop 구간에 맞춰 robot condition도 함께 잘라 정렬합니다.
@@ -163,7 +163,7 @@ SGMSE-based Speech Enhancement
 - `num_frames=256`
 - `target_length=(num_frames - 1) * hop_length = 32640`
 
-현재 기본 contact condition은 각 audio frame의 시간 구간 안에서 foot force가 `50`을 넘는지 여부를 사용합니다. 기본적으로 foot force timestamp를 `+58.5ms` 보정한 뒤 audio frame에 정렬합니다.
+아래 그림은 foot force 값의 distribution을 확인한 결과입니다. 0에 가까운 값들이 만드는 큰 peak는 로봇의 발이 공중에 떠 있어 지면 압력이 거의 없는 구간이라고 가정했습니다. 따라서 이 peak가 끝나는 값을 기준으로 발이 지면에 닿았는지 여부를 나누고, 이를 contact condition으로 변환했습니다.
 
 <p align="center">
   <img src="./assets/readme/distribution_overview.png" width="900" alt="Robot condition preprocessing distribution">
@@ -187,23 +187,10 @@ SGMSE-based Speech Enhancement
 
 ### Audio Samples
 
-<p>
-  <b>Noisy input</b><br>
-  <audio controls src="./assets/readme/audio/sample_noisy.wav">
-    Your browser does not support the audio element.
-  </audio>
-</p>
+아래 sample은 약 17초 길이의 같은 utterance에 대해 noisy input, condition 기반 enhanced output, clean reference를 비교한 것입니다. GitHub README에서는 audio player가 직접 렌더링되지 않을 수 있으므로, wav 파일 링크를 클릭해 재생하거나 다운로드해서 비교합니다.
 
-<p>
-  <b>Enhanced output</b><br>
-  <audio controls src="./assets/readme/audio/sample_enhanced_condition.wav">
-    Your browser does not support the audio element.
-  </audio>
-</p>
-
-<p>
-  <b>Clean reference</b><br>
-  <audio controls src="./assets/readme/audio/sample_clean.wav">
-    Your browser does not support the audio element.
-  </audio>
-</p>
+| Type | Audio |
+|---|---|
+| Noisy input | [sample_noisy.wav](./assets/readme/audio/sample_noisy.wav) |
+| Enhanced output | [sample_enhanced_condition.wav](./assets/readme/audio/sample_enhanced_condition.wav) |
+| Clean reference | [sample_clean.wav](./assets/readme/audio/sample_clean.wav) |
