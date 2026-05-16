@@ -280,7 +280,7 @@ pip install open3d opencv-python numpy shapely scipy tqdm
 
 ## 관련 연구
 
-- [SceneUpdate](https://github.com/LEESB17/sceneupdate/tree/sungbin) — 이 프로젝트의 전신. 씬그래프 + Depth 기반 빈 공간 통합 (Isaac Sim)
+- [SceneUpdate](https://github.com/kookmin-sw/2026-capstone-43/tree/master/sceneupdate) — 이 프로젝트의 전신. 씬그래프 + Depth 기반 빈 공간 통합 (Isaac Sim)
 - [RoboSpatial](https://arxiv.org/abs/2411.11537) — 로봇 조작 환경 VLM 공간 이해 (데이터 파이프라인 참조)
 - [ConceptGraph](https://github.com/concept-graphs/concept-graphs) — Open-vocabulary 3D 씬그래프
 - [SayPlan](https://sayplan.github.io/) — 씬그래프 기반 LLM 태스크 플래닝
