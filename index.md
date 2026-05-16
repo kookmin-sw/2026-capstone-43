@@ -175,47 +175,15 @@
 | **NLOS + FOV**<br>시야 안에 있지만 차폐·반사 영향을 받는 음원<br>`00031-Wo6kuutE9i7` | <img src="./SpatialAudio/02_pipeline/example_outputs/00031-Wo6kuutE9i7__mic0002__src0006__dry_eef93265/14_overview.png" width="320" alt="NLOS FOV overview"> | <img src="./SpatialAudio/02_pipeline/example_outputs/00031-Wo6kuutE9i7__mic0002__src0006__dry_eef93265/15_windowed_beam/15_beam_filtered_overlays.gif" width="320" alt="NLOS FOV windowed beam overlay GIF"> |
 | **NLOS + OOF**<br>화면 밖에서 차폐된 상태로 들어오는 음원<br>`00081-5biL7VEkByM` | <img src="./SpatialAudio/02_pipeline/example_outputs/00081-5biL7VEkByM__mic0008__src0003__dry_8da425dd/14_overview.png" width="320" alt="NLOS OOF overview"> | <img src="./SpatialAudio/02_pipeline/example_outputs/00081-5biL7VEkByM__mic0008__src0003__dry_8da425dd/15_windowed_beam/15_beam_filtered_overlays.gif" width="320" alt="NLOS OOF windowed beam overlay GIF"> |
 
-#### 실행 예시
+#### 결과 그래프
 
-파이프라인 전체 시각화:
+SpatialAST-FOA 실험에서는 활동 유형별 공간음향 추정 성능을 비교했고, Audio Encoder MAE 실험에서는 오디오 인코더 구성에 따른 평균 절대 오차(MAE)를 정리했습니다.
 
-```bash
-cd SpatialAudio/02_pipeline
+<img src="./assets/spatialaudio/spatialast_foa_multi_activity_stack_ready.png" width="100%" alt="SpatialAST-FOA multi activity result graph">
 
-python run_pipeline.py \
-  --dataset-root /path/to/dataset_root \
-  --manifest val \
-  --limit 10 \
-  --output-root /path/to/output_dir \
-  --foa-channel-order WYZX \
-  --enable-output15
-```
+<br>
 
-FOA wav를 구면 오디오 표현(`A_sphere`)으로 변환:
-
-```bash
-cd SpatialAudio/10_spherical_audio
-pip install -r requirements.txt
-
-python run_audio_mvp.py \
-  --input /path/to/foa.wav \
-  --output_dir outputs/demo \
-  --channel_order WYZX \
-  --num_az_bins 24 \
-  --num_el_bins 8 \
-  --aggregation both
-```
-
-SpatialAST-FOA 모델 smoke test:
-
-```bash
-cd SpatialAudio/03_spatialast_FOA
-pip install -r requirements.txt
-
-python tools/forward_test.py
-python tools/train_smoke_test.py
-python tools/check_no_timm_import.py
-```
+<img src="./assets/spatialaudio/audio_encoder_mae_full_stack_ready.png" width="100%" alt="Audio encoder MAE result graph">
 
 <br>
 
