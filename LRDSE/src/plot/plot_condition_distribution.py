@@ -292,19 +292,10 @@ def print_distribution_summary(name, x):
 
 def plot_main_distributions(
     raw,
-    raw_abs_deriv,
-    preproc_diff,
-    preproc_info,
-    legacy_tanh_diff,
-    legacy_tanh_info,
-    raw_plot_upper_percentile,
-    raw_plot_abs_min,
     out_path: Path,
 ):
-    fig, axes = plt.subplots(1, 4, figsize=(26, 5.2))
+    fig, ax = plt.subplots(figsize=(7.5, 5.2))
 
-    # 1) raw foot_force distribution (signed)
-    ax = axes[0]
     if raw.size > 0:
         q = float(np.quantile(np.abs(raw), 0.999))
         q = max(q, 1.0)
@@ -324,99 +315,6 @@ def plot_main_distributions(
         ax.legend(fontsize=8)
     else:
         ax.set_title("Foot Force Distribution (no data)")
-        ax.grid(True, alpha=0.25)
-
-    # 2) raw diff distribution (no preprocessing)
-    ax = axes[1]
-    if raw_abs_deriv.size > 0:
-        x_full = np.clip(raw_abs_deriv, 1e-8, None)
-        upper_q = float(np.quantile(x_full, raw_plot_upper_percentile / 100.0))
-        x = x_full[(x_full >= raw_plot_abs_min) & (x_full <= upper_q)]
-        if x.size == 0:
-            x = x_full[x_full <= upper_q]
-        if x.size == 0:
-            x = x_full
-
-        lo = float(np.quantile(x, 0.001))
-        hi = float(np.quantile(x, 0.999))
-        lo = max(lo, 1e-8)
-        if hi <= lo:
-            hi = max(lo * 10.0, 1.0)
-        bins = np.logspace(np.log10(lo), np.log10(hi), 220)
-        ax.hist(x, bins=bins, density=True, alpha=0.78, color="#06D6A0")
-        ax.set_xscale("log")
-        ax.set_title(
-            f"Raw |dF/dt| Distribution (No Preprocessing, >= {raw_plot_abs_min:.1e}, <=P{raw_plot_upper_percentile:.1f})\n"
-            f"mean={np.mean(x):.2f}, p95={np.quantile(x, 0.95):.2f}, p99={np.quantile(x, 0.99):.2f}"
-        )
-        ax.set_xlabel("raw |dF/d(monotonic_sec)| (log x)")
-        ax.set_ylabel("density")
-        ax.grid(True, which="both", alpha=0.25)
-    else:
-        ax.set_title("Raw |dF/dt| Distribution (No Preprocessing, no data)")
-        ax.grid(True, alpha=0.25)
-
-    # 3) preprocessed diff distribution
-    ax = axes[2]
-    if preproc_diff.size > 0:
-        mode = str(preproc_info.get("mode", "custom_divisor"))
-        if mode == "model_tanh":
-            bins = np.linspace(-1.0, 1.0, 220)
-            ax.hist(preproc_diff, bins=bins, density=True, alpha=0.8, color="#8338EC")
-            frac_small = float(np.mean(np.abs(preproc_diff) < 0.05))
-            frac_sat = float(np.mean(np.abs(preproc_diff) > 0.95))
-            s = float(preproc_info.get("d_force_scale", 0.0))
-            ax.set_title(
-                f"Model Preprocessed Diff: tanh(dF/dt / {s:.3g})\n"
-                f"frac(|x|<0.05)={frac_small:.2%}, frac(|x|>0.95)={frac_sat:.2%}"
-            )
-            ax.set_xlabel("preprocessed diff [-1, 1]")
-        elif mode == "signed_divisor":
-            q = float(np.quantile(np.abs(preproc_diff), 0.999))
-            q = max(q, 1e-6)
-            bins = np.linspace(-q, q, 240)
-            ax.hist(preproc_diff, bins=bins, density=True, alpha=0.8, color="#8338EC")
-            div_v = float(preproc_info.get("divisor_used", 0.0))
-            p = float(preproc_info.get("divisor_percentile", 0.0))
-            ax.set_title(
-                f"Preprocessed Diff (signed / P{p:.1f}(|x|), divisor={div_v:.3g})\n"
-                f"mean={np.mean(preproc_diff):.3f}, std={np.std(preproc_diff):.3f}"
-            )
-            ax.set_xlabel("preprocessed diff (signed)")
-        else:
-            bins = np.linspace(0.0, 1.0, 180)
-            ax.hist(preproc_diff, bins=bins, density=True, alpha=0.8, color="#8338EC")
-            frac_low = float(np.mean(preproc_diff < 0.05))
-            frac_high = float(np.mean(preproc_diff > 0.95))
-            div_v = float(preproc_info.get("divisor_used", 0.0))
-            ax.set_title(
-                f"Preprocessed Diff (x / divisor, divisor={div_v:.3g})\n"
-                f"frac(<0.05)={frac_low:.2%}, frac(>0.95)={frac_high:.2%}"
-            )
-            ax.set_xlabel("preprocessed diff [0, 1]")
-        ax.set_ylabel("density")
-        ax.grid(True, alpha=0.25)
-    else:
-        ax.set_title("Preprocessed Diff Distribution (no data)")
-        ax.grid(True, alpha=0.25)
-
-    # 4) legacy preprocessing: tanh(dF/dt / scale)
-    ax = axes[3]
-    if legacy_tanh_diff.size > 0:
-        bins = np.linspace(-1.0, 1.0, 220)
-        ax.hist(legacy_tanh_diff, bins=bins, density=True, alpha=0.8, color="#FF9F1C")
-        frac_small = float(np.mean(np.abs(legacy_tanh_diff) < 0.05))
-        frac_sat = float(np.mean(np.abs(legacy_tanh_diff) > 0.95))
-        s = float(legacy_tanh_info.get("d_force_scale", 0.0))
-        ax.set_title(
-            "Legacy Preprocessed Diff (raw-like outlier filtered)\n"
-            f"tanh(dF/dt / {s:.3g}), frac(|x|<0.05)={frac_small:.2%}, frac(|x|>0.95)={frac_sat:.2%}"
-        )
-        ax.set_xlabel("legacy preprocessed diff [-1, 1]")
-        ax.set_ylabel("density")
-        ax.grid(True, alpha=0.25)
-    else:
-        ax.set_title("Legacy Preprocessed Diff (no data)")
         ax.grid(True, alpha=0.25)
 
     plt.tight_layout()
@@ -750,13 +648,6 @@ def main():
 
     plot_main_distributions(
         raw=raw,
-        raw_abs_deriv=raw_abs_deriv,
-        preproc_diff=preproc_diff,
-        preproc_info=preproc_info,
-        legacy_tanh_diff=legacy_tanh_diff,
-        legacy_tanh_info=legacy_tanh_info,
-        raw_plot_upper_percentile=args.raw_plot_upper_percentile,
-        raw_plot_abs_min=args.raw_plot_abs_min,
         out_path=dist_path,
     )
 
