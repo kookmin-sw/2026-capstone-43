@@ -200,7 +200,7 @@ SpatialAST-FOA 실험에서는 활동 유형별 공간음향 추정 성능을 �
 > 아래 spectrogram은 같은 utterance에 대해 clean reference, noisy input, enhanced output을 비교한 결과입니다. Noisy input에서 넓게 퍼져 있던 로봇 구동 소음 성분이 enhanced output에서 줄어들고, clean reference에 가까워지는 양상을 확인할 수 있습니다.
 >
 > <p align="center">
->   <img src="./LRDSE/assets/readme/stft_clean_noisy_enhanced.png" width="100%" alt="Denoising STFT comparison">
+>   <img src="./LRDSE/assets/readme/demo_stft_noisy_enhanced_clean.png" width="100%" alt="Denoising STFT comparison">
 > </p>
 >
 > #### Audio Samples
@@ -242,7 +242,7 @@ SpatialAST-FOA 실험에서는 활동 유형별 공간음향 추정 성능을 �
 > </table>
 >
 > #### 학습 수렴 결과
-> Random seed를 바꿔 condition model과 no-condition model을 각각 5회 학습한 뒤 loss 수렴 양상을 비교했습니다. 단순 contact condition만 사용한 경우 충분히 학습하면 큰 품질 차이는 나타나지 않았지만, noise 제거의 힌트로 사용될 수 있음을 파악했습니다. 추후, foot force 값 자체를 더 정교하게 전처리해 condition으로 전달하면 로봇 소음 패턴을 더 잘 반영할 수 있을 것으로 기대합니다.
+> Random seed로 condition model과 no-condition model을 각각 5회 학습한 뒤 loss 수렴 양상을 비교했습니다. 단순 contact condition만 사용한 경우 초반 학습에서 loss 수렴 속도가 빨라지는 효과가 있었고, 이를 통해 robot condition이 noise 제거의 힌트로 사용될 수 있음을 확인했습니다. 다만 충분히 학습하면 최종 품질 차이는 크게 나타나지 않았기 때문에, 추후 foot force 값 자체를 더 정교하게 전처리해 condition으로 전달하면 로봇 소음 패턴을 더 잘 반영할 수 있을 것으로 기대합니다.
 >
 > <p align="center">
 >   <img src="./LRDSE/assets/readme/result_avg.png" width="48%" alt="Denoising average loss convergence">
