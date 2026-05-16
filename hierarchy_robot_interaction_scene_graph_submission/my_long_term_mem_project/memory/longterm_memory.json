@@ -1,0 +1,1241 @@
+{
+    "(-6.66, 0.17, -10.95)": [
+        {
+            "objectType": "picture",
+            "position": {
+                "x": -6.99612283706665,
+                "y": 1.7500003576278687,
+                "z": -9.588186264038086
+            },
+            "objectName": "Wendover Art # Loft II"
+        },
+        {
+            "objectType": "candle",
+            "position": {
+                "x": -7.428299427032471,
+                "y": 0.6611114740371704,
+                "z": -13.268187522888184
+            },
+            "objectName": "CANDLE HOLDER by XXXL"
+        },
+        {
+            "objectType": "picture",
+            "position": {
+                "x": -7.735000133514404,
+                "y": 1.1656166315078735,
+                "z": -12.207820892333984
+            },
+            "objectName": "Arata 08"
+        },
+        {
+            "objectType": "lamp",
+            "position": {
+                "x": -6.538666725158691,
+                "y": 2.3995866775512695,
+                "z": -13.373185157775879
+            },
+            "objectName": "Hemisphere Geode Chandelier, Bronze"
+        },
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -7.227381229400635,
+                "y": 0.2553514242172241,
+                "z": -10.061853408813477
+            },
+            "objectName": "Magnolia Home Hillcrest Cottonbale Ottoman By Joanna Gaines"
+        },
+        {
+            "objectType": "mirror",
+            "position": {
+                "x": -6.972542762756348,
+                "y": 1.7500005960464478,
+                "z": -9.402318000793457
+            },
+            "objectName": "Trianon Mirror"
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -6.745599746704102,
+                "y": 1.3932887315750122,
+                "z": -13.777917861938477
+            }
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -7.824999809265137,
+                "y": 1.393288254737854,
+                "z": -8.812064170837402
+            }
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -7.824999809265137,
+                "y": 1.393288254737854,
+                "z": -10.193991661071777
+            }
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -7.824999809265137,
+                "y": 1.3932887315750122,
+                "z": -13.146702766418457
+            }
+        },
+        {
+            "objectType": "art_frame",
+            "position": {
+                "x": -6.5771164894104,
+                "y": 8.046627044677734e-07,
+                "z": -13.439757347106934
+            },
+            "objectName": "Reese 2 Drawer Nightstand"
+        },
+        {
+            "objectType": "dressing_table",
+            "position": {
+                "x": -7.513200283050537,
+                "y": 7.152557373046875e-07,
+                "z": -11.692249298095703
+            },
+            "objectName": "Gelvin Dresser with Mirror"
+        }
+    ],
+    "(-6.45, 0.17, -6.50)": [
+        {
+            "objectType": "picture",
+            "position": {
+                "x": -7.246201992034912,
+                "y": 1.8300000429153442,
+                "z": -8.04749870300293
+            },
+            "objectName": "Cork pin board"
+        },
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -6.738192081451416,
+                "y": 0.39010974764823914,
+                "z": -7.035515785217285
+            },
+            "objectName": "Phoebe Office Chair, Blue"
+        },
+        {
+            "objectType": "computer",
+            "position": {
+                "x": -7.518558025360107,
+                "y": 1.0050156116485596,
+                "z": -7.0510640144348145
+            },
+            "objectName": "APPLE iMac 5K 27\""
+        },
+        {
+            "objectType": "Book",
+            "position": {
+                "x": -7.300000190734863,
+                "y": 0.8500000238418579,
+                "z": -6.199999809265137
+            }
+        },
+        {
+            "objectType": "couch",
+            "position": {
+                "x": -6.4138054847717285,
+                "y": 0.3809305429458618,
+                "z": -4.764334678649902
+            },
+            "objectName": "Emmy Sofa 92'', Kalahari Leather - Black / Walnut"
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -7.824999809265137,
+                "y": 1.393288254737854,
+                "z": -5.2399773597717285
+            }
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -7.824999809265137,
+                "y": 1.393288254737854,
+                "z": -7.101899147033691
+            }
+        },
+        {
+            "objectType": "drawer_desk",
+            "position": {
+                "x": -7.270206928253174,
+                "y": 0.3810144066810608,
+                "z": -7.060749530792236
+            },
+            "objectName": "Athens Executive Desk, Nimbus"
+        }
+    ],
+    "(-4.90, 0.17, -2.80)": [
+        {
+            "objectType": "tv",
+            "position": {
+                "x": -6.825695514678955,
+                "y": 1.75,
+                "z": -2.583775043487549
+            },
+            "objectName": "Flat TV"
+        },
+        {
+            "objectType": "table",
+            "position": {
+                "x": -5.636738300323486,
+                "y": 0.20891468226909637,
+                "z": -3.3084707260131836
+            },
+            "objectName": "Melinda Round Coffee Table"
+        },
+        {
+            "objectType": "couch",
+            "position": {
+                "x": -4.546543121337891,
+                "y": 0.38093042373657227,
+                "z": -2.023977279663086
+            },
+            "objectName": "Emmy Sofa 92'', Kalahari Leather - Black / Walnut"
+        },
+        {
+            "objectType": "carpet",
+            "position": {
+                "x": -5.342084884643555,
+                "y": 0.010000212118029594,
+                "z": -3.5985052585601807
+            },
+            "objectName": "Loloi # Adler Rug"
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -6.451357841491699,
+                "y": 1.393288016319275,
+                "z": -1.690313458442688
+            }
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -7.298435688018799,
+                "y": 1.3932881355285645,
+                "z": -3.187626361846924
+            }
+        },
+        {
+            "objectType": "cabinet",
+            "position": {
+                "x": -6.668325424194336,
+                "y": 1.4901161193847656e-07,
+                "z": -2.675098419189453
+            },
+            "objectName": "Noah 66 Inch Tv Stand, Rustic White"
+        }
+    ],
+    "(-5.80, 0.17, 2.70)": [
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -5.257354259490967,
+                "y": 0.4016963243484497,
+                "z": 1.4710513353347778
+            },
+            "objectName": "Matias 7 Piece Dining Set With Cobbler Chairs, Brown"
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -6.116726875305176,
+                "y": 1.3932876586914062,
+                "z": 2.7460708618164062
+            }
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -6.116726875305176,
+                "y": 1.3932876586914062,
+                "z": 0.8837593197822571
+            }
+        }
+    ],
+    "(-5.35, 0.17, 6.45)": [
+        {
+            "objectType": "lamp_stand",
+            "position": {
+                "x": -5.224457263946533,
+                "y": 1.0459848642349243,
+                "z": 8.76963996887207
+            },
+            "objectName": "Tulip Light Family"
+        },
+        {
+            "objectType": "screen",
+            "position": {
+                "x": -5.771617412567139,
+                "y": 1.074999451637268,
+                "z": 7.2253804206848145
+            },
+            "objectName": "MOUCHARABIEH 3 Panels"
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -6.116726875305176,
+                "y": 1.3932875394821167,
+                "z": 6.7403059005737305
+            }
+        },
+        {
+            "objectType": "art_frame",
+            "position": {
+                "x": -5.0746169090271,
+                "y": -5.066394805908203e-07,
+                "z": 8.693408012390137
+            },
+            "objectName": "Theia Night Stand"
+        }
+    ],
+    "(-4.98, 0.17, -10.95)": [
+        {
+            "objectType": "carpet",
+            "position": {
+                "x": -4.665558815002441,
+                "y": 0.006050526164472103,
+                "z": -8.829792976379395
+            },
+            "objectName": "Hayon X Nani Runner"
+        },
+        {
+            "objectType": "carpet",
+            "position": {
+                "x": -5.456573486328125,
+                "y": 0.0022183710243552923,
+                "z": -11.646148681640625
+            },
+            "objectName": "Indra rug 6x9, Poppy"
+        },
+        {
+            "objectType": "lamp",
+            "position": {
+                "x": -4.329737186431885,
+                "y": 2.3995866775512695,
+                "z": -13.373185157775879
+            },
+            "objectName": "Hemisphere Geode Chandelier, Bronze"
+        },
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -4.03912353515625,
+                "y": 0.4193917512893677,
+                "z": -10.294021606445312
+            },
+            "objectName": "Magnolia Home Hillcrest Cottonbale Chair By Joanna Gaines"
+        },
+        {
+            "objectType": "picture",
+            "position": {
+                "x": -4.092465400695801,
+                "y": 1.7500003576278687,
+                "z": -9.588186264038086
+            },
+            "objectName": "Wendover Art # Loft I"
+        },
+        {
+            "objectType": "bed",
+            "position": {
+                "x": -5.472655773162842,
+                "y": 0.6980586051940918,
+                "z": -12.657689094543457
+            },
+            "objectName": "Sophia II Eastern King Upholstered Panel Bed"
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": -4.253379821777344,
+                "y": 1.3932887315750122,
+                "z": -13.777917861938477
+            }
+        },
+        {
+            "objectType": "art_frame",
+            "position": {
+                "x": -4.3681864738464355,
+                "y": 8.046627044677734e-07,
+                "z": -13.439757347106934
+            },
+            "objectName": "Reese 2 Drawer Nightstand"
+        }
+    ],
+    "(-4.98, 0.17, -6.65)": [
+        {
+            "objectType": "table",
+            "position": {
+                "x": -5.16797399520874,
+                "y": 0.30083131790161133,
+                "z": -5.557650566101074
+            },
+            "objectName": "Freya 2 Piece Set Nesting End Tables"
+        }
+    ],
+    "(-5.60, 0.17, 2.80)": [
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -4.627480506896973,
+                "y": 0.4016963243484497,
+                "z": 2.895110607147217
+            },
+            "objectName": "Matias 7 Piece Dining Set With Cobbler Chairs, Brown"
+        },
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -5.257354259490967,
+                "y": 0.4016963243484497,
+                "z": 2.2001137733459473
+            },
+            "objectName": "Matias 7 Piece Dining Set With Cobbler Chairs, Brown"
+        },
+        {
+            "objectType": "Tissue_Box",
+            "position": {
+                "x": -4.570000171661377,
+                "y": 0.8999999761581421,
+                "z": 2.5999999046325684
+            }
+        }
+    ],
+    "(-4.98, 0.17, 6.25)": [
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -5.376774311065674,
+                "y": 0.385663777589798,
+                "z": 5.342390060424805
+            },
+            "objectName": "Margot LHF Chaise, Old Rose Velvet"
+        }
+    ],
+    "(-2.85, 0.17, -10.80)": [
+        {
+            "objectType": "picture",
+            "position": {
+                "x": -3.9184298515319824,
+                "y": 1.7500009536743164,
+                "z": -9.397493362426758
+            },
+            "objectName": "PICTURE, BROOKLYN BRIDGE II"
+        },
+        {
+            "objectType": "plant",
+            "position": {
+                "x": -3.707226514816284,
+                "y": 0.9435194134712219,
+                "z": -13.35336685180664
+            },
+            "objectName": "Classic"
+        },
+        {
+            "objectType": "cabinet",
+            "position": {
+                "x": -3.5925469398498535,
+                "y": 0.45764511823654175,
+                "z": -11.75611400604248
+            },
+            "objectName": "Reese Wide Dresser"
+        },
+        {
+            "objectType": "mirror",
+            "position": {
+                "x": -3.3435401916503906,
+                "y": 1.4177088737487793,
+                "z": -11.755546569824219
+            },
+            "objectName": "Amelie 51.5'' Wooden Arched Dresser Mirror"
+        },
+        {
+            "objectType": "lamp",
+            "position": {
+                "x": -2.92219877243042,
+                "y": 0.9103395342826843,
+                "z": -11.301437377929688
+            },
+            "objectName": "Kone Table Lamp, Black"
+        },
+        {
+            "objectType": "art_frame",
+            "position": {
+                "x": -2.903653860092163,
+                "y": 6.854534149169922e-07,
+                "z": -11.44953441619873
+            },
+            "objectName": "Casablanca Mirrored 3-Drawer Nightstand"
+        }
+    ],
+    "(-3.30, 0.17, -6.65)": [
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -3.643688917160034,
+                "y": 0.39982688426971436,
+                "z": -4.627142429351807
+            },
+            "objectName": "Lina Swivel Dining Arm Chair, Leather - Latte"
+        }
+    ],
+    "(-3.08, 0.17, -2.01)": [
+        {
+            "objectType": "table",
+            "position": {
+                "x": -3.413090944290161,
+                "y": 0.3008311688899994,
+                "z": -2.779686689376831
+            },
+            "objectName": "Freya 2 Piece Set Nesting End Tables"
+        }
+    ],
+    "(-3.30, 0.17, 1.95)": [
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -4.002294540405273,
+                "y": 0.4016963243484497,
+                "z": 2.2001142501831055
+            },
+            "objectName": "Matias 7 Piece Dining Set With Cobbler Chairs, Brown"
+        },
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -4.002294540405273,
+                "y": 0.4016963243484497,
+                "z": 1.4710514545440674
+            },
+            "objectName": "Matias 7 Piece Dining Set With Cobbler Chairs, Brown"
+        },
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -4.6274800300598145,
+                "y": 0.4016963243484497,
+                "z": 0.7757341265678406
+            },
+            "objectName": "Matias 7 Piece Dining Set With Cobbler Chairs, Brown"
+        },
+        {
+            "objectType": "table",
+            "position": {
+                "x": -4.628061294555664,
+                "y": 0.3809998035430908,
+                "z": 1.8354233503341675
+            },
+            "objectName": "Matias 7 Piece Dining Set With Cobbler Chairs, Brown"
+        }
+    ],
+    "(-3.30, 0.17, 6.25)": [
+        {
+            "objectType": "carpet",
+            "position": {
+                "x": -3.467843532562256,
+                "y": 0.009999604895710945,
+                "z": 6.590843200683594
+            },
+            "objectName": "Loloi # Anastasia Rug"
+        },
+        {
+            "objectType": "dresser",
+            "position": {
+                "x": -3.5807273387908936,
+                "y": 0.9403079748153687,
+                "z": 4.815356731414795
+            },
+            "objectName": "Emily Dresser/Mirror"
+        },
+        {
+            "objectType": "Alarm_Clock",
+            "position": {
+                "x": -3.5799999237060547,
+                "y": 0.9800000190734863,
+                "z": 5.0
+            }
+        },
+        {
+            "objectType": "bed",
+            "position": {
+                "x": -3.547837257385254,
+                "y": 0.8072916269302368,
+                "z": 7.80672025680542
+            },
+            "objectName": "Hayworth 83'' King Bed"
+        }
+    ],
+    "(-1.62, 0.17, -10.95)": [
+        {
+            "objectType": "flowerpot",
+            "position": {
+                "x": -1.5565056800842285,
+                "y": 1.750002384185791,
+                "z": -9.692853927612305
+            },
+            "objectName": "Hanging plant"
+        },
+        {
+            "objectType": "bed",
+            "position": {
+                "x": -2.1102888584136963,
+                "y": 0.6850445866584778,
+                "z": -12.758917808532715
+            },
+            "objectName": "Magnolia Home Laverty Queen Metal Bed By Joanna Gaines"
+        },
+        {
+            "objectType": "carpet",
+            "position": {
+                "x": -1.8060826063156128,
+                "y": 0.010000708512961864,
+                "z": -11.871429443359375
+            },
+            "objectName": "Loloi # Anastasia Rug"
+        }
+    ],
+    "(-2.15, 0.17, -6.65)": [
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -2.353872537612915,
+                "y": 0.19239696860313416,
+                "z": -5.721869468688965
+            },
+            "objectName": "Lepli 106x106"
+        },
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -1.405665636062622,
+                "y": 0.40709948539733887,
+                "z": -6.662837505340576
+            },
+            "objectName": "ABC Armchair"
+        },
+        {
+            "objectType": "seat",
+            "position": {
+                "x": -2.343806505203247,
+                "y": 0.4070994555950165,
+                "z": -7.638663291931152
+            },
+            "objectName": "ABC Armchair"
+        },
+        {
+            "objectType": "table",
+            "position": {
+                "x": -1.5980452299118042,
+                "y": 0.30496081709861755,
+                "z": -7.345967769622803
+            },
+            "objectName": "Carrinna 24'' End Table in Oscuro"
+        },
+        {
+            "objectType": "carpet",
+            "position": {
+                "x": -2.2132461071014404,
+                "y": 0.00990640465170145,
+                "z": -6.7985968589782715
+            },
+            "objectName": "Jaden 8' Round Hand Loomed Rug, Silver"
+        }
+    ],
+    "(-1.62, 0.17, -2.35)": [
+        {
+            "objectType": "bottle",
+            "position": {
+                "x": -1.0030992031097412,
+                "y": 1.75,
+                "z": -0.7041876912117004
+            },
+            "objectName": "30 bottle wine rack"
+        },
+        {
+            "objectType": "Box",
+            "position": {
+                "x": -1.850126028060913,
+                "y": 0.1682330071926117,
+                "z": -2.198852062225342
+            }
+        },
+        {
+            "objectType": "bench",
+            "position": {
+                "x": -1.2132424116134644,
+                "y": 0.2333361953496933,
+                "z": -3.369422435760498
+            },
+            "objectName": "Robin Dining Bench"
+        },
+        {
+            "objectType": "carpet",
+            "position": {
+                "x": -1.0060498714447021,
+                "y": 1.6299997568130493,
+                "z": -3.3549997806549072
+            },
+            "objectName": "Hayon X Nani Tapestry/Rug"
+        }
+    ],
+    "(-2.60, 0.17, 1.95)": [
+        {
+            "objectType": "counter",
+            "position": {
+                "x": -1.4169222116470337,
+                "y": 0.45039379596710205,
+                "z": 1.8319141864776611
+            },
+            "objectName": "Island, Classic"
+        },
+        {
+            "objectType": "stool",
+            "position": {
+                "x": -2.0828616619110107,
+                "y": 0.36016780138015747,
+                "z": 1.0084028244018555
+            },
+            "objectName": "Brunel Bar Stool"
+        },
+        {
+            "objectType": "stool",
+            "position": {
+                "x": -2.0828616619110107,
+                "y": 0.3601677417755127,
+                "z": 1.8393241167068481
+            },
+            "objectName": "Brunel Bar Stool"
+        },
+        {
+            "objectType": "stool",
+            "position": {
+                "x": -2.0828616619110107,
+                "y": 0.3601677119731903,
+                "z": 2.670245409011841
+            },
+            "objectName": "Brunel Bar Stool"
+        },
+        {
+            "objectType": "Mug",
+            "position": {
+                "x": -1.3200000524520874,
+                "y": 0.9599999785423279,
+                "z": 2.3499999046325684
+            }
+        },
+        {
+            "objectType": "stool",
+            "position": {
+                "x": -2.0828616619110107,
+                "y": 0.3601677715778351,
+                "z": 1.423863410949707
+            },
+            "objectName": "Brunel Bar Stool"
+        },
+        {
+            "objectType": "stool",
+            "position": {
+                "x": -2.0828616619110107,
+                "y": 0.3601677119731903,
+                "z": 2.2547848224639893
+            },
+            "objectName": "Brunel Bar Stool"
+        }
+    ],
+    "(-1.62, 0.17, 6.10)": [
+        {
+            "objectType": "mirror",
+            "position": {
+                "x": -1.0141507387161255,
+                "y": 1.307707667350769,
+                "z": 7.077028274536133
+            },
+            "objectName": "Amelie 51.5'' Wooden Arched Dresser Mirror"
+        },
+        {
+            "objectType": "plant",
+            "position": {
+                "x": -1.3558799028396606,
+                "y": 0.9435181021690369,
+                "z": 8.617819786071777
+            },
+            "objectName": "Classic"
+        },
+        {
+            "objectType": "lamp_stand",
+            "position": {
+                "x": -1.8712176084518433,
+                "y": 1.0459848642349243,
+                "z": 8.76963996887207
+            },
+            "objectName": "Tulip Light Family"
+        },
+        {
+            "objectType": "bathrobe",
+            "position": {
+                "x": -1.3309396505355835,
+                "y": -4.172325134277344e-07,
+                "z": 7.082601070404053
+            },
+            "objectName": "AUDREY MIRRORED VANITY DESK"
+        },
+        {
+            "objectType": "art_frame",
+            "position": {
+                "x": -2.021057605743408,
+                "y": -5.066394805908203e-07,
+                "z": 8.693408012390137
+            },
+            "objectName": "Theia Night Stand"
+        }
+    ],
+    "(0.06, 0.17, -10.95)": [
+        {
+            "objectType": "plant",
+            "position": {
+                "x": 0.7545956373214722,
+                "y": 1.7499969005584717,
+                "z": -9.669364929199219
+            },
+            "objectName": "Hanging plant"
+        },
+        {
+            "objectType": "mirror",
+            "position": {
+                "x": 0.8079880475997925,
+                "y": 0.9390860199928284,
+                "z": -13.364733695983887
+            },
+            "objectName": "IKORNNES standing mirror"
+        },
+        {
+            "objectType": "seat",
+            "position": {
+                "x": 0.6392595171928406,
+                "y": 0.4621315598487854,
+                "z": -10.036530494689941
+            },
+            "objectName": "GUTMANNFACTORY Sessel, light blue"
+        },
+        {
+            "objectType": "carpet",
+            "position": {
+                "x": 0.1841990053653717,
+                "y": 0.010000737383961678,
+                "z": -12.371854782104492
+            },
+            "objectName": "Loloi # Anastasia Rug"
+        },
+        {
+            "objectType": "carpet",
+            "position": {
+                "x": -0.5816537141799927,
+                "y": 0.010000630281865597,
+                "z": -10.579972267150879
+            },
+            "objectName": "Loloi # Anastasia Rug"
+        },
+        {
+            "objectType": "plant",
+            "position": {
+                "x": -0.6853091716766357,
+                "y": 0.9435194134712219,
+                "z": -13.35336685180664
+            },
+            "objectName": "Classic"
+        },
+        {
+            "objectType": "flower_stand",
+            "position": {
+                "x": 0.2025129199028015,
+                "y": 1.7500032186508179,
+                "z": -9.761478424072266
+            },
+            "objectName": "Hanging plant"
+        },
+        {
+            "objectType": "dresser",
+            "position": {
+                "x": -0.5627340078353882,
+                "y": 0.8781877756118774,
+                "z": -9.829724311828613
+            },
+            "objectName": "Casablanca Console with Mirror"
+        },
+        {
+            "objectType": "plant",
+            "position": {
+                "x": -0.18143177032470703,
+                "y": 0.5035608410835266,
+                "z": -13.363229751586914
+            },
+            "objectName": "Petunia Summer Sky 50 Plants +20 FREE"
+        },
+        {
+            "objectType": "mirror",
+            "position": {
+                "x": 1.0651824474334717,
+                "y": 1.2518706321716309,
+                "z": -11.645044326782227
+            },
+            "objectName": "Casablanca Triple Wall Mirror"
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": 1.2211716175079346,
+                "y": 1.3932887315750122,
+                "z": -13.083723068237305
+            }
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": 1.2211716175079346,
+                "y": 1.393288254737854,
+                "z": -10.19555377960205
+            }
+        },
+        {
+            "objectType": "window",
+            "position": {
+                "x": 0.029096100479364395,
+                "y": 1.3932887315750122,
+                "z": -13.777917861938477
+            }
+        },
+        {
+            "objectType": "cabinet",
+            "position": {
+                "x": 0.86650151014328,
+                "y": 6.854534149169922e-07,
+                "z": -11.601173400878906
+            },
+            "objectName": "Casablanca Buffet"
+        }
+    ],
+    "(0.06, 0.17, -6.65)": [
+        {
+            "objectType": "cabinet",
+            "position": {
+                "x": -0.7417101860046387,
+                "y": 1.4342124462127686,
+                "z": -8.135894775390625
+            },
+            "objectName": "Regal/Regale"
+        },
+        {
+            "objectType": "towel",
+            "position": {
+                "x": -0.7309576272964478,
+                "y": 0.8482052683830261,
+                "z": -8.133135795593262
+            },
+            "objectName": "Regal/Regale"
+        },
+        {
+            "objectType": "toilet",
+            "position": {
+                "x": 0.8613958358764648,
+                "y": 0.2724274694919586,
+                "z": -6.444606304168701
+            },
+            "objectName": "WC/Toilette Duravit ME by Starck"
+        },
+        {
+            "objectType": "shelf",
+            "position": {
+                "x": 0.9711716175079346,
+                "y": 0.8343997597694397,
+                "z": -7.223714828491211
+            },
+            "objectName": "Gestell/cadre"
+        },
+        {
+            "objectType": "towel",
+            "position": {
+                "x": -0.7414907217025757,
+                "y": 1.1621571779251099,
+                "z": -8.133445739746094
+            },
+            "objectName": "Regal/Regale"
+        },
+        {
+            "objectType": "towel",
+            "position": {
+                "x": -0.7309576869010925,
+                "y": 1.0916987657546997,
+                "z": -8.133135795593262
+            },
+            "objectName": "Regal/Regale"
+        },
+        {
+            "objectType": "towel",
+            "position": {
+                "x": -0.7414905428886414,
+                "y": 0.9186630249023438,
+                "z": -8.133238792419434
+            },
+            "objectName": "Regal/Regale"
+        },
+        {
+            "objectType": "towel",
+            "position": {
+                "x": -0.7367002964019775,
+                "y": 0.8850834965705872,
+                "z": -8.133296966552734
+            },
+            "objectName": "Regal/Regale"
+        },
+        {
+            "objectType": "washbasin",
+            "position": {
+                "x": -0.5894080400466919,
+                "y": 1.1404101848602295,
+                "z": -7.078292369842529
+            },
+            "objectName": "Geberit Citterio Waschstisch/zone lavabo 1184 x 554 x 504 mm"
+        },
+        {
+            "objectType": "door",
+            "position": {
+                "x": 1.2211716175079346,
+                "y": 1.1200002431869507,
+                "z": -4.845717430114746
+            }
+        },
+        {
+            "objectType": "mirror",
+            "position": {
+                "x": 0.05972493812441826,
+                "y": 1.3077083826065063,
+                "z": -5.995140552520752
+            },
+            "objectName": "Amelie 51.5'' Wooden Arched Dresser Mirror"
+        },
+        {
+            "objectType": "coat_hanger",
+            "position": {
+                "x": -0.9968995451927185,
+                "y": 0.9228399991989136,
+                "z": -5.828746318817139
+            },
+            "objectName": "Metal Coat Rack"
+        },
+        {
+            "objectType": "towel",
+            "position": {
+                "x": -0.7348563075065613,
+                "y": 1.125972867012024,
+                "z": -8.132875442504883
+            },
+            "objectName": "Regal/Regale"
+        },
+        {
+            "objectType": "dresser",
+            "position": {
+                "x": 0.03036610037088394,
+                "y": 3.5762786865234375e-07,
+                "z": -5.809292316436768
+            },
+            "objectName": "Blue Burlington Dresser (Base)"
+        }
+    ],
+    "(0.06, 0.17, -2.35)": [
+        {
+            "objectType": "toilet",
+            "position": {
+                "x": 0.37960341572761536,
+                "y": 0.5232763290405273,
+                "z": -3.6944503784179688
+            },
+            "objectName": "WC/Toilette Villeroy & Boch Venticello"
+        },
+        {
+            "objectType": "rack",
+            "position": {
+                "x": -0.675000011920929,
+                "y": 0.38000014424324036,
+                "z": -2.293086290359497
+            },
+            "objectName": "Brookline Bath Rack with 4 Tiers"
+        },
+        {
+            "objectType": "vase",
+            "position": {
+                "x": -0.7411599159240723,
+                "y": 0.1198219433426857,
+                "z": -3.239316701889038
+            },
+            "objectName": "Azure Waste Bin- 22x24 cms"
+        },
+        {
+            "objectType": "laundry_basket",
+            "position": {
+                "x": -0.6547354459762573,
+                "y": 0.3204536736011505,
+                "z": -1.7706822156906128
+            },
+            "objectName": "Small Tower Laundry Hamper, White"
+        },
+        {
+            "objectType": "cabinet",
+            "position": {
+                "x": 0.9019389152526855,
+                "y": 1.259635090827942,
+                "z": -2.0660011768341064
+            },
+            "objectName": "Waschplatz/zone lavabo Bodenschatz Creativa"
+        },
+        {
+            "objectType": "mirror",
+            "position": {
+                "x": -0.563267707824707,
+                "y": 0.8256964683532715,
+                "z": -3.6532745361328125
+            },
+            "objectName": "Aubrey Floor Mirror"
+        },
+        {
+            "objectType": "bag",
+            "position": {
+                "x": 0.7694717049598694,
+                "y": 0.0,
+                "z": -0.4815686047077179
+            },
+            "objectName": "Smeg Fridge FAB32VS7"
+        }
+    ],
+    "(0.06, 0.17, 1.95)": [
+        {
+            "objectType": "washer_dryer",
+            "position": {
+                "x": 0.8706601858139038,
+                "y": 0.48498302698135376,
+                "z": 0.3038482069969177
+            },
+            "objectName": "Lg free standing washing machine"
+        },
+        {
+            "objectType": "Apple",
+            "position": {
+                "x": -1.2200000286102295,
+                "y": 0.9599999785423279,
+                "z": 1.6200000047683716
+            }
+        },
+        {
+            "objectType": "Pan",
+            "position": {
+                "x": 0.699999988079071,
+                "y": 0.9599999785423279,
+                "z": 3.5
+            }
+        },
+        {
+            "objectType": "kitchen_counter",
+            "position": {
+                "x": 0.8048619031906128,
+                "y": 1.399625539779663,
+                "z": 2.5162761211395264
+            },
+            "objectName": "kitchen"
+        },
+        {
+            "objectType": "Microwave",
+            "position": {
+                "x": 0.699999988079071,
+                "y": 1.0499999523162842,
+                "z": 2.430000066757202
+            }
+        }
+    ],
+    "(-0.00, 0.17, 6.33)": [
+        {
+            "objectType": "bathtub",
+            "position": {
+                "x": 0.7807216048240662,
+                "y": 0.45104631781578064,
+                "z": 8.16879940032959
+            },
+            "objectName": "Clearwater Slipper Bathroom Suite - Traditional Edwardian - LF4BC,"
+        },
+        {
+            "objectType": "mirror",
+            "position": {
+                "x": -0.8228119015693665,
+                "y": 1.5150082111358643,
+                "z": 7.987651348114014
+            },
+            "objectName": "Archway Mirror 127cm x 91cm Champagne Silver, Champagne silver"
+        },
+        {
+            "objectType": "shelf",
+            "position": {
+                "x": 0.9711716175079346,
+                "y": 0.8343989253044128,
+                "z": 6.945009708404541
+            },
+            "objectName": "Gestell/cadre"
+        },
+        {
+            "objectType": "shower",
+            "position": {
+                "x": 0.6925012469291687,
+                "y": 1.0621596574783325,
+                "z": 5.31614351272583
+            },
+            "objectName": "Dusche/douche New Classic"
+        },
+        {
+            "objectType": "toilet",
+            "position": {
+                "x": -0.40219998359680176,
+                "y": 0.5311156511306763,
+                "z": 4.809727668762207
+            },
+            "objectName": "Toilette/toilette Casual"
+        },
+        {
+            "objectType": "mirror",
+            "position": {
+                "x": 0.04692060127854347,
+                "y": 0.8048434853553772,
+                "z": 8.832216262817383
+            },
+            "objectName": "KNAPPER standing mirror"
+        },
+        {
+            "objectType": "sink_cabinet",
+            "position": {
+                "x": -0.6000000238418579,
+                "y": -4.76837158203125e-07,
+                "z": 8.46737003326416
+            },
+            "objectName": "Alka Basin Unit"
+        },
+        {
+            "objectType": "sink_cabinet",
+            "position": {
+                "x": -0.6000000238418579,
+                "y": -4.172325134277344e-07,
+                "z": 7.46737003326416
+            },
+            "objectName": "Alka Basin Unit"
+        }
+    ]
+}

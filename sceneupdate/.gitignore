@@ -1,0 +1,16 @@
+build/
+install/
+log/
+logs/
+data/
+models/
+react_debug/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+.DS_Store
+.vscode/
+*.pt
+.aider*

@@ -1,0 +1,92 @@
+[
+    {
+        "example": "EXAMPLE 1",
+        "task": "Go to the Apple in the kitchen on floor 1.",
+        "decomposition": [
+            "# Task Description: Go to the Apple in the kitchen on floor 1.",
+            "# GENERAL TASK DECOMPOSITION",
+            "# CODE",
+            "def go_to_the_apple_in_the_kitchen_on_floor_1(robot):",
+            "   # 0: go to the Apple in the kitchen on floor 1.",
+            "   GoToObject(robot, {'object': 'Apple', 'room': 'kitchen', 'floor': 1,})"
+        ]
+    },
+    {
+        "example": "EXAMPLE 2",
+        "task": "Go to the pillow in bedroom_1 on floor 1.",
+        "decomposition": [
+            "# Task Description: Go to the pillow in bedroom_1 on floor 1.",
+            "# GENERAL TASK DECOMPOSITION",
+            "# CODE",
+            "def go_to_the_pillow_in_bedroom_1_on_floor_1(robot):",
+            "   # 0: go to the pillow in bedroom_1 on floor 1.",
+            "   GoToObject(robot, {'object': 'Pillow', 'room': 'bedroom_1', 'floor': 1,})"
+        ]
+    },
+    {
+        "example": "EXAMPLE 3",
+        "task": "Go to the pillow in bedroom on floor 1.",
+        "decomposition": [
+            "# Task Description: Go to the pillow in bedroom on floor 1.",
+            "# GENERAL TASK DECOMPOSITION",
+            "# CODE",
+            "def go_to_the_pillow_in_bathroom_on_floor_1(robot):",
+            "   # 0: go to the pillow in bedroom_1 on floor 1.",
+            "   GoToObject(robot, {'object': 'Pillow', 'room': 'bedroom', 'floor': 1,})"
+        ]
+    },
+    {
+        "example": "EXAMPLE 4",
+        "task": "Find an Bread.",
+        "decomposition": [
+            "# Task Description: Find an Bread.",
+            "# GENERAL TASK DECOMPOSITION",
+            "# CODE",
+            "def find_an_bread(robot):",
+            "    # 0: Explore the Bread.",
+            "    available_positions = [",
+            "        (1.25, 0, -1.75),",
+            "        (-1.0, 0, 0),",
+            "        (-0.25, 0, -1.5),",
+            "        (-1.0, 0, -1.5),",
+            "        (0.5, 0, 1.5),",
+            "        (1.5, 0, -0.25),",
+            "        (1.5, 0, 1.0),",
+            "        (-2.0, 0, 2.0)",
+            "    ]",
+            "    Explore(robot,'Bread',available_positions)"
+        ]
+    },
+    {
+        "example": "EXAMPLE 5",
+        "task": "Pick up the apple in kitchen on floor 1.",
+        "decomposition": [
+            "# Task Description: Pick up the apple in kitchen on floor 1.",
+            "# GENERAL TASK DECOMPOSITION",
+            "# CODE",
+            "def pick_up_apple_in_kitchen_on_floor_1(robot):",
+            "    # 0: go to the apple in the kitchen on floor 1.",
+            "    GoToObject(robot, {'object': 'Apple', 'room': 'kitchen', 'floor': 1})",
+            "    # 1: pick up the apple.",
+            "    PickupObject(robot, 'Apple')"
+        ]
+    },
+    {
+        "example": "EXAMPLE 6",
+        "task": "Pick up the potato in kitchen on floor 1 and put it on the table in dining room on floor 1.",
+        "decomposition": [
+            "# Task Description: Pick up the potato in kitchen on floor 1 and put it on the table in dining room on floor 1.",
+            "# GENERAL TASK DECOMPOSITION",
+            "# CODE",
+            "def pick_up_potato_and_put_it_on_table_in_dining_room_on_floor_1(robot):",
+            "    # 0: go to the potato in the kitchen on floor 1.",
+            "    GoToObject(robot, {'object': 'Potato', 'room': 'kitchen', 'floor': 1})",
+            "    # 1: pick up the potato.",
+            "    PickupObject(robot, 'Potato')",
+            "    # 2: go to the table in the dining room on floor 1.",
+            "    GoToObject(robot, {'object': 'Table', 'room': 'dining room', 'floor': 1})",
+            "    # 3: put the potato on the table.",
+            "    PutObject(robot, 'Potato', 'Table')"
+        ]
+    }
+]
