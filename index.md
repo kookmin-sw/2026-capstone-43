@@ -71,14 +71,13 @@
   <b>🎧 1. SpatialAudio (유동현)</b><br>
   로봇 관점의 기하학적 맥락과 앰비소닉(Ambisonics) 오디오를 결합한 공간 음향 인지 시스템입니다.
   <ul>
-    <li><b>주요 기능</b>: FOA 기반 음원 위치 추적 및 SpatialAST 모델을 통한 성능 고도화</li>
-    <li><b>차별점</b>: 시각 정보(<code>V_sphere</code>)와 오디오 정보(<code>A_sphere</code>)를 정합하여 비가시 영역의 소리까지 통합 인지</li>
+    <li><b>주요 기능</b>: HM3D 기반 LOS/NLOS·FOV/OOF 공간음향 데이터 생성, FOA 방향 단서 추출, SpatialAST-FOA 모델 학습 및 진단 시각화</li>
+    <li><b>차별점</b>: 시각 정보(<code>V_sphere</code>)와 오디오 정보(<code>A_sphere</code>)를 같은 구면 좌표계로 정합하여 보이지 않는 영역의 음원까지 통합 인지</li>
     <li><b>주요 참고 논문</b>:
       <ul>
-        <li>ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning</li>
-        <li>REACT: Real-time Efficient Attribute Clustering and Transfer for Updatable 3D Scene Graph</li>
-        <li>SayPlan: Grounding Large Language Models using 3D Scene Graphs for Scalable Robot Task Planning</li>
-        <li>RoboSpatial: Teaching Spatial Understanding to 2D and 3D Vision-Language Models for Robotics</li>
+        <li>BAT: Learning to Reason about Spatial Sounds with Large Language Models</li>
+        <li>Sci-Phi: A Large Language Model Spatial Audio Descriptor</li>
+        <li>Hear you are: Teaching LLMs Spatial Reasoning with Vision and Spatial Sound</li>
       </ul>
     </li>
   </ul>
@@ -158,10 +157,65 @@
 ## 🎬 DEMO (팀원별 결과 및 시각 자료)
 
 ### 🎧 1. SpatialAudio
-> ![동현](https://github.com/user-attachments/assets/702748cf-909e-4741-9c31-7501b0b73d3b)
-> 앰비소닉(Ambisonics) 오디오와 기하학적 맥락을 결합한 시공간 음향 인지 결과입니다.
-> * **오디오 인지 파이프라인 데모**
->   * (여기에 데모 영상 링크나 결과물 이미지를 추가해 주세요.)
+
+앰비소닉(FOA/AmbiX) 오디오와 로봇 관점 RGB/Depth 기하 정보를 함께 사용해, 음원이 보이는 영역(FOV)과 화면 밖 영역(OOF), 직접 경로(LOS)와 차폐 경로(NLOS)에서 어떻게 관측되는지 진단하는 공간 음향 인지 파이프라인입니다.
+
+#### SpatialAST-FOA 모델 구조
+
+<img src="./SpatialAudio/15_model_architectures/SpatialAST_FOA.png" width="100%" alt="SpatialAST-FOA architecture">
+
+#### HM3D LOS/NLOS 파이프라인 대표 결과
+
+`SpatialAudio/02_pipeline/example_outputs`에서 대표 4개 케이스를 골라 정리했습니다. `14_overview.png`는 RGB, Depth, PointCloud, beam map, intensity vector를 한 번에 보여주는 샘플 진단 화면이고, `15_beam_filtered_overlays.gif`는 시간 구간별 beamforming 결과가 시야 위에 어떻게 누적되는지 보여주는 overlay GIF입니다.
+
+| Case | Overview | Windowed Beam Overlay |
+| --- | --- | --- |
+| **LOS + FOV**<br>전방에 보이는 직접 경로 음원<br>`00006-HkseAnWCgqk` | <img src="./SpatialAudio/02_pipeline/example_outputs/00006-HkseAnWCgqk__mic0005__src0001__dry_a6c3f408/14_overview.png" width="320" alt="LOS FOV overview"> | <img src="./SpatialAudio/02_pipeline/example_outputs/00006-HkseAnWCgqk__mic0005__src0001__dry_a6c3f408/15_windowed_beam/15_beam_filtered_overlays.gif" width="320" alt="LOS FOV windowed beam overlay GIF"> |
+| **LOS + OOF**<br>직접 경로지만 화면 밖에 있는 음원<br>`00016-qk9eeNeR4vw` | <img src="./SpatialAudio/02_pipeline/example_outputs/00016-qk9eeNeR4vw__mic0000__src0002__dry_cf144ad3/14_overview.png" width="320" alt="LOS OOF overview"> | <img src="./SpatialAudio/02_pipeline/example_outputs/00016-qk9eeNeR4vw__mic0000__src0002__dry_cf144ad3/15_windowed_beam/15_beam_filtered_overlays.gif" width="320" alt="LOS OOF windowed beam overlay GIF"> |
+| **NLOS + FOV**<br>시야 안에 있지만 차폐·반사 영향을 받는 음원<br>`00031-Wo6kuutE9i7` | <img src="./SpatialAudio/02_pipeline/example_outputs/00031-Wo6kuutE9i7__mic0002__src0006__dry_eef93265/14_overview.png" width="320" alt="NLOS FOV overview"> | <img src="./SpatialAudio/02_pipeline/example_outputs/00031-Wo6kuutE9i7__mic0002__src0006__dry_eef93265/15_windowed_beam/15_beam_filtered_overlays.gif" width="320" alt="NLOS FOV windowed beam overlay GIF"> |
+| **NLOS + OOF**<br>화면 밖에서 차폐된 상태로 들어오는 음원<br>`00081-5biL7VEkByM` | <img src="./SpatialAudio/02_pipeline/example_outputs/00081-5biL7VEkByM__mic0008__src0003__dry_8da425dd/14_overview.png" width="320" alt="NLOS OOF overview"> | <img src="./SpatialAudio/02_pipeline/example_outputs/00081-5biL7VEkByM__mic0008__src0003__dry_8da425dd/15_windowed_beam/15_beam_filtered_overlays.gif" width="320" alt="NLOS OOF windowed beam overlay GIF"> |
+
+#### 실행 예시
+
+파이프라인 전체 시각화:
+
+```bash
+cd SpatialAudio/02_pipeline
+
+python run_pipeline.py \
+  --dataset-root /path/to/dataset_root \
+  --manifest val \
+  --limit 10 \
+  --output-root /path/to/output_dir \
+  --foa-channel-order WYZX \
+  --enable-output15
+```
+
+FOA wav를 구면 오디오 표현(`A_sphere`)으로 변환:
+
+```bash
+cd SpatialAudio/10_spherical_audio
+pip install -r requirements.txt
+
+python run_audio_mvp.py \
+  --input /path/to/foa.wav \
+  --output_dir outputs/demo \
+  --channel_order WYZX \
+  --num_az_bins 24 \
+  --num_el_bins 8 \
+  --aggregation both
+```
+
+SpatialAST-FOA 모델 smoke test:
+
+```bash
+cd SpatialAudio/03_spatialast_FOA
+pip install -r requirements.txt
+
+python tools/forward_test.py
+python tools/train_smoke_test.py
+python tools/check_no_timm_import.py
+```
 
 <br>
 
@@ -249,5 +303,6 @@
 
 ### 1️⃣ 저장소 Clone
 ```bash
-git clone [https://github.com/kookmin-sw/2026-capstone-43.git](https://github.com/kookmin-sw/2026-capstone-43.git)
+git clone https://github.com/kookmin-sw/2026-capstone-43.git
 cd 2026-capstone-43
+```
