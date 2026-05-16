@@ -1,4 +1,3 @@
-<p align="center">
   <img src="https://github.com/user-attachments/assets/948dfaa9-a3a2-4f47-8ae0-6376b43308b8" width="100%" alt="project banner" />
 </p>
 
@@ -160,16 +159,18 @@
 ## 🎬 DEMO (팀원별 결과 및 시각 자료)
 
 ### 🎧 1. SpatialAudio
+> <img width="5572" height="2956" alt="동현" src="https://github.com/user-attachments/assets/702748cf-909e-4741-9c31-7501b0b73d3b" />
 > 앰비소닉(Ambisonics) 오디오와 기하학적 맥락을 결합한 시공간 음향 인지 결과입니다.
-* **오디오 인지 파이프라인 데모**
-  * (여기에 데모 영상 링크나 결과물 이미지를 추가해 주세요.)
+> * **오디오 인지 파이프라인 데모**
+>   * (여기에 데모 영상 링크나 결과물 이미지를 추가해 주세요.)
 
 <br>
 
 ### 🔇 2. Denoising
+> <img width="5572" height="2956" alt="재우" src="https://github.com/user-attachments/assets/92645586-2c26-40d1-974d-e1f449cd836c" />
 > 사족보행 로봇의 구동 소음 환경에서 음성 명령만을 깨끗하게 추출한 결과입니다.
-* **음성 향상(Speech Enhancement) 전/후 비교**
-  * (여기에 오디오 샘플 링크나 디노이징 전후 스펙트로그램 이미지를 추가해 주세요.)
+> * **음성 향상(Speech Enhancement) 전/후 비교**
+>   * (여기에 오디오 샘플 링크나 디노이징 전후 스펙트로그램 이미지를 추가해 주세요.)
 
 <br>
 
@@ -207,13 +208,14 @@
 > <iframe width="100%" height="450" src="https://www.youtube.com/embed/n9BuyLzmbgs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 ### 🤲 4. Tactile
+> <img width="5572" height="2956" alt="근서" src="https://github.com/user-attachments/assets/e94bc65f-fa96-4270-b100-8f296ef1571c" />
 > RGB-Pose 데이터를 바탕으로 실시간 3D 환경을 렌더링한 Continual Gaussian Splatting 매핑 결과입니다.
-* **TF를 이용한 실시간 카메라 Pose 추정 시각화 결과**
-  <img width="990" height="591" alt="image" src="https://github.com/user-attachments/assets/43d2e54d-18d9-470f-bba8-90725e4f5b54" />
+> * **TF를 이용한 실시간 카메라 Pose 추정 시각화 결과**
+>   <img width="990" height="591" alt="image" src="https://github.com/user-attachments/assets/43d2e54d-18d9-470f-bba8-90725e4f5b54" />
 <br>
 
 ### 🤖 5. Task Execution
->
+> <img width="5572" height="3087" alt="Untitled" src="https://github.com/user-attachments/assets/58378522-1e78-4607-88d3-adad2ca5c9d4" />
 > #### 📦 SceneUpdate — Isaac Sim 시뮬레이션 기반 빈공간 씬그래프 & Task Planning
 > Isaac Sim 환경에서 Depth 기반 실시간 빈공간 추정을 씬그래프에 통합하고, LLM planner로 pick-and-place 태스크를 수행합니다.
 >
