@@ -45,7 +45,7 @@
 ## 3. 팀 소개
 
 | 이름 | 역할 | 담당 내용 | GitHub 담당 하위 폴더 |
-| --- | --- | --- | --- |
+| -------- | --- | --- | --- |
 | 류재우 | 팀장 | Legged Robot noise speech enhancement 연구 및 LRDSE 구현 | `LRDSE` |
 | 이성빈 | 팀원 | Scene Graph 기반 환경 인식, Free Space VLM 파인튜닝 파이프라인 구현 | `sceneupdate`, `freespacepipeline` |
 | 유동현 | 팀원 | Spatial Audio 기반 로봇 공간 음향 인지 연구 및 구현 | `SpatialAudio` |
