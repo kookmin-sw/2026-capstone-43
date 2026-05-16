@@ -6,7 +6,25 @@
 기본 학습 경로는 `train_sgmse.py`입니다.  
 noisy sample 폴더에 `anchor` / `lowstate` 파일이 있으면 `foot_force`와 그 derivative를 8ch auxiliary condition으로 사용할 수 있습니다.
 
----
+```text
+LRDSE/
+├── train_sgmse.py              # SGMSE speech enhancement 학습 / 검증 / 샘플 저장
+├── denoise_sgmse.py            # 학습된 SGMSE checkpoint로 noisy wav denoising
+├── train_rddm.py               # RDDM 실험 코드
+├── dataset.py                  # paired clean/noisy dataset, condition 로딩
+├── src/
+│   ├── audio/preprocess.py     # wav crop, STFT, spec transform, inverse transform
+│   ├── check/                  # dataset/model/condition sanity check 유틸
+│   ├── condition/preprocess.py # foot_force condition token 생성
+│   ├── models/                 # SGMSE / RDDM / condition encoder model wrapper
+│   ├── plot/                   # STFT/loss/condition 시각화 유틸
+│   └── prepare/                # manifest / noisy data 생성 유틸
+├── data/
+│   ├── manifest.csv            # 현재 paired manifest
+│   └── noisy/                  # noisy wav와 condition segment 파일
+├── checkpoints/                # 학습 checkpoint 저장 위치
+└── outputs/                    # debug/plot output 저장 위치
+```
 
 ## 1. 연구 배경
 
@@ -72,16 +90,14 @@ Enhanced speech
 
 ---
 
-## 4. 주요 실험 관점
-
-비교해야 하는 기본 실험은 다음과 같습니다.
-
-```text
-No condition baseline
-    - audio만 사용한 speech enhancement
-
-Foot force condition model
-    - audio + foot_force condition 사용
+```bash
+python3 -m src.prepare.build_manifest \
+  --noisy-root ./data/noisy \
+  --clean-root /path/to/clean \
+  --out ./data/manifest.csv \
+  --target-sr 16000 \
+  --val-ratio 0.1 \
+  --split-by speaker
 ```
 
 단순히 train loss만 비교하기보다 validation loss, enhanced wav, contact noise가 강한 구간의 spectrogram, 실제 청감 결과를 함께 확인하는 것이 좋습니다.
@@ -125,13 +141,16 @@ python3 train_sgmse.py \
 
 ### 6.2 foot_force condition 학습
 
-`lowstate_segment.jsonl`과 `anchor_segment.json`이 noisy sample 폴더에 있을 때 사용합니다.
+## Temp Contact Condition 학습
+
+Foot force contact channel을 쓰려면 `--use-temp-condition`을 추가합니다. 현재 SGMSE path는 `backbone=ncsnpp_v2` 입력을 `[x.real, x.imag, y.real, y.imag, foot0, foot1, foot2, foot3]` 8채널로 구성합니다.
+각 foot channel은 audio frame의 `CLOCK_MONOTONIC` time window 안에서 해당 foot force가 `50`을 넘으면 `1`, 아니면 `0`입니다. 기본값은 foot force timestamp를 `+58.5ms` 늦춘 뒤 정렬합니다.
 
 ```bash
 python3 train_sgmse.py \
   --manifest ./data/manifest_train.csv \
   --val-manifest ./data/manifest_val.csv \
-  --save-dir ./checkpoints/sgmse_aux \
+  --save-dir ./checkpoints/sgmse_temp_contact \
   --device cuda \
   --batch-size 4 \
   --num-workers 2 \
@@ -182,50 +201,82 @@ python3 train_sgmse.py \
   --disable-checkpoint-save
 ```
 
-### 7.2 foot_force condition checkpoint로 denoising
+Step별 checkpoint도 남기려면 `--save-step-checkpoints`를 추가합니다.
+
+## SGMSE Denoising 추론
+
+학습된 `latest.pt` 또는 `best.pt`를 불러와 특정 noisy wav를 denoising할 때:
 
 ```bash
-python3 train_sgmse.py \
-  --manifest ./data/manifest_train.csv \
-  --val-manifest ./data/manifest_val.csv \
-  --save-dir ./outputs/denoise_sgmse_aux \
-  --resume ./checkpoints/sgmse_aux/best.pt \
-  --device cuda \
-  --batch-size 1 \
-  --num-workers 0 \
-  --max-steps 1 \
-  --lr 0 \
-  --sample-every 1 \
-  --num-sample-wavs 5 \
-  --sample-max-sec 0 \
-  --disable-checkpoint-save \
-  --use-aux-cond \
-  --aux-cond-dim 8
+python3 denoise_sgmse.py \
+  --checkpoint ./checkpoints/sgmse_se/latest.pt \
+  --noisy-wav /path/to/noisy.wav \
+  --out ./outputs/denoise_sgmse/noisy_enhanced.wav \
+  --device cuda
+```
+
+출력 경로를 생략하면 `./outputs/denoise_sgmse/<파일명>_enhanced.wav`로 저장합니다.
+
+```bash
+python3 denoise_sgmse.py \
+  --checkpoint ./checkpoints/sgmse_se/best.pt \
+  --noisy-wav ./data/noisy/.../sample.wav \
+  --sampling-N 30
+```
+
+Aux condition으로 학습한 checkpoint라면 noisy wav의 parent directory를 `run_dir`로 자동 사용합니다. 별도 위치를 쓰려면 `--run-dir /path/to/run_dir`를 지정합니다.
+
+## Loss 시각화
+
+```bash
+python3 -m src.plot.plot_epoch_loss \
+  --csv ./checkpoints/sgmse_se/epoch_losses.csv \
+  --out ./outputs/plots/epoch_loss.png \
+  --smooth-window 3
 ```
 
 결과 wav는 아래 위치에 저장됩니다.
 
-```text
-outputs/denoise_sgmse/samples/step_*/
-├── *_noisy_full.wav
-├── *_clean_full.wav
-└── *_enhanced_full.wav
+```bash
+python3 -m src.prepare.make_noisy_data \
+  --source-root /path/to/source_speech_root \
+  --noise-root /path/to/robot_noise_root \
+  --out-root ./data/noisy \
+  --snr-min -5 \
+  --snr-max 5 \
+  --seed 0
 ```
 
 `*_enhanced_full.wav`가 denoising 결과입니다.
 
 ---
 
-## 8. 참고 연구 흐름
+```bash
+# dataset 로딩과 STFT inverse check
+python3 -m src.check.check_dataset \
+  --manifest ./data/manifest.csv \
+  --num-samples 4 \
+  --save-debug
 
-LRDSE는 다음 흐름을 참고합니다.
+# RDDM forward/backward smoke test
+python3 -m src.check.check_model_forward \
+  --manifest ./data/manifest.csv \
+  --batch-size 1 \
+  --device cpu \
+  --dim 8 \
+  --dim-mults '(1, 2, 4)' \
+  --timesteps 10 \
+  --sampling-timesteps 2
 
-- SGMSE: complex STFT domain에서 score-based generative model을 사용하는 speech enhancement
-- Diffusion-based speech enhancement: noisy speech에서 clean speech distribution으로 복원하는 generative approach
-- RDDM: restoration 문제에서 residual diffusion과 noise diffusion을 분리해 해석하는 관점
-- Robot state-conditioned enhancement: audio 외부의 robot state를 condition으로 사용해 robot self-generated noise를 제거하는 방향
+# wav의 STFT plot 저장
+python3 -m src.plot.plot_stft --wav ./data/noisy/.../sample.wav --out ./outputs/debug/stft_plot.png
 
----
+# data/noisy 아래 wav duration 확인
+python3 -m src.check.check_duration --root ./data/noisy
+
+# lowstate foot force 통계 확인
+python3 -m src.check.check_max_foot_force --root ./data/noisy --pattern lowstate_segment.jsonl
+```
 
 ## 9. References
 

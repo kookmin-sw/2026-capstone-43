@@ -1,6 +1,7 @@
 # src/condition/preprocess.py
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Optional, Tuple, List
 import json
@@ -21,8 +22,8 @@ class ConditionPreprocessConfig:
 
         diff 4ch:
             dFdt = (F[t] - F[t-1]) / (t[t] - t[t-1])
-            p90 = percentile(|dFdt|, 90)
-            D_norm = clip(dFdt / p90, -1, 1)
+            D_norm = clip(dFdt / d_force_scale, -1, 1)
+            d_force_scale=255 means dFdt in [-255, 255] maps to [-1, 1]
 
     output:
         cond_8ch:
@@ -35,9 +36,9 @@ class ConditionPreprocessConfig:
     """
     raw_force_scale: float = 220.0
 
-    # backward compatibility용 legacy field (현재 tanh는 사용하지 않음)
-    d_force_scale: float = 2872.58
-    # dFdt 정규화 분모를 |dFdt| percentile로 계산
+    # dFdt normalization denominator. 255 maps [-255, 255] to [-1, 1].
+    d_force_scale: float = 255.0
+    # backward compatibility용 legacy field (현재 정규화에는 사용하지 않음)
     d_force_percentile: float = 80.0
 
     # foot_force smoothing window (1이면 smoothing 없음)
@@ -208,6 +209,56 @@ def load_lowstate_time_and_force(lowstate_path: str) -> Tuple[np.ndarray, np.nda
     return t, f
 
 
+def _append_segment_boundary_anchors(
+    anchor_path: str,
+    sample_idx: np.ndarray,
+    mono_sec: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    meta_path = Path(anchor_path).with_name("segment_meta.json")
+    if not meta_path.is_file():
+        return sample_idx, mono_sec
+
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return sample_idx, mono_sec
+
+    if not isinstance(meta, dict):
+        return sample_idx, mono_sec
+
+    extra_samples = []
+    extra_times = []
+
+    start_ns = meta.get("noise_start_clock_monotonic_ns", None)
+    if isinstance(start_ns, (int, float)):
+        extra_samples.append(0.0)
+        extra_times.append(float(start_ns) / 1e9)
+
+    end_ns = meta.get("noise_end_clock_monotonic_ns", None)
+    duration_sec = meta.get("duration_sec", None)
+    sr = meta.get("source_sr", meta.get("noise_sr", None))
+    if (
+        isinstance(end_ns, (int, float))
+        and isinstance(duration_sec, (int, float))
+        and isinstance(sr, (int, float))
+        and float(duration_sec) > 0.0
+        and float(sr) > 0.0
+    ):
+        extra_samples.append(round(float(duration_sec) * float(sr)))
+        extra_times.append(float(end_ns) / 1e9)
+
+    if not extra_samples:
+        return sample_idx, mono_sec
+
+    sample_idx = np.concatenate(
+        [sample_idx, np.asarray(extra_samples, dtype=np.float64)]
+    )
+    mono_sec = np.concatenate(
+        [mono_sec, np.asarray(extra_times, dtype=np.float64)]
+    )
+    return sample_idx, mono_sec
+
+
 def load_anchor_sample_to_time(anchor_path: str) -> Tuple[np.ndarray, np.ndarray]:
     raw = json.loads(Path(anchor_path).read_text(encoding="utf-8"))
 
@@ -254,6 +305,11 @@ def load_anchor_sample_to_time(anchor_path: str) -> Tuple[np.ndarray, np.ndarray
 
     sample_idx = np.asarray(sample_idx, dtype=np.float64)
     mono_sec = np.asarray(mono_sec, dtype=np.float64)
+    sample_idx, mono_sec = _append_segment_boundary_anchors(
+        anchor_path=anchor_path,
+        sample_idx=sample_idx,
+        mono_sec=mono_sec,
+    )
 
     order = np.argsort(sample_idx)
     sample_idx = sample_idx[order]
@@ -336,15 +392,7 @@ def compute_force_and_derivative(
     d_fdt = np.zeros_like(df, dtype=np.float64)
     d_fdt[valid] = df[valid] / dt[valid, None]
 
-    p = float(np.clip(cfg.d_force_percentile, 0.0, 100.0))
-    finite_abs = np.abs(d_fdt[np.isfinite(d_fdt)])
-    if finite_abs.size == 0:
-        divisor = cfg.eps
-    else:
-        divisor = float(np.quantile(finite_abs, p / 100.0))
-        if (not math.isfinite(divisor)) or divisor <= cfg.eps:
-            divisor = max(float(np.max(finite_abs)), cfg.eps)
-
+    divisor = max(float(cfg.d_force_scale), cfg.eps)
     deriv_norm = d_fdt / divisor
     deriv_norm = np.clip(deriv_norm, -1.0, 1.0)
 
@@ -352,6 +400,150 @@ def compute_force_and_derivative(
     deriv_on_low[1:] = deriv_norm
 
     return t_low, force_norm, deriv_on_low
+
+
+@lru_cache(maxsize=2048)
+def load_condition_source_cached(
+    run_dir: str,
+    raw_force_scale: float,
+    d_force_scale: float,
+    smooth_win: int,
+    eps: float,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    cfg = ConditionPreprocessConfig(
+        raw_force_scale=float(raw_force_scale),
+        d_force_scale=float(d_force_scale),
+        smooth_win=int(smooth_win),
+        eps=float(eps),
+    )
+    lowstate_path = find_lowstate_file(run_dir)
+    anchor_path = find_anchor_file(run_dir)
+
+    t_low, foot_force = load_lowstate_time_and_force(lowstate_path)
+    anchor_sample_idx, anchor_mono_sec = load_anchor_sample_to_time(anchor_path)
+    t_low, force_norm, deriv_on_low = compute_force_and_derivative(
+        t_low=t_low,
+        foot_force=foot_force,
+        cfg=cfg,
+    )
+    return t_low, force_norm, deriv_on_low, anchor_sample_idx, anchor_mono_sec
+
+
+@lru_cache(maxsize=2048)
+def load_temp_contact_source_cached(
+    run_dir: str,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    run_dir = str(Path(run_dir).expanduser().resolve())
+    lowstate_path = find_lowstate_file(run_dir)
+    anchor_path = find_anchor_file(run_dir)
+
+    t_low, foot_force = load_lowstate_time_and_force(lowstate_path)
+    anchor_sample_idx, anchor_mono_sec = load_anchor_sample_to_time(anchor_path)
+    return t_low, foot_force, anchor_sample_idx, anchor_mono_sec
+
+
+def build_frame_time_edges(frame_times: np.ndarray, eps: float = 1e-8) -> np.ndarray:
+    frame_times = np.asarray(frame_times, dtype=np.float64)
+    if frame_times.ndim != 1:
+        raise ValueError(f"Expected frame_times [T], got {frame_times.shape}")
+    if frame_times.size <= 0:
+        raise ValueError("frame_times must be non-empty")
+
+    if frame_times.size == 1:
+        half_step = 0.5 * eps
+        return np.asarray(
+            [frame_times[0] - half_step, frame_times[0] + half_step],
+            dtype=np.float64,
+        )
+
+    mids = 0.5 * (frame_times[:-1] + frame_times[1:])
+    first_step = max(float(frame_times[1] - frame_times[0]), eps)
+    last_step = max(float(frame_times[-1] - frame_times[-2]), eps)
+
+    edges = np.empty((frame_times.size + 1,), dtype=np.float64)
+    edges[1:-1] = mids
+    edges[0] = frame_times[0] - 0.5 * first_step
+    edges[-1] = frame_times[-1] + 0.5 * last_step
+    return edges
+
+
+def build_temp_contact_frames(
+    run_dir: str,
+    crop_start_sample: int,
+    num_frames: int,
+    hop_length: int,
+    contact_threshold: float = 50.0,
+    contact_lag_ms: float = 58.5,
+    eps: float = 1e-8,
+) -> torch.Tensor:
+    """
+    Build per-foot frame-wise contact-state channels aligned to audio STFT frames.
+
+    foot_force timestamps are shifted later by contact_lag_ms before alignment.
+    Output shape is [4, T]. A foot channel is 1 when any shifted lowstate sample
+    inside that audio frame's monotonic-time window has force > contact_threshold.
+    """
+    if num_frames <= 0:
+        raise ValueError(f"num_frames must be positive, got {num_frames}")
+    if hop_length <= 0:
+        raise ValueError(f"hop_length must be positive, got {hop_length}")
+
+    t_low, foot_force, anchor_sample_idx, anchor_mono_sec = (
+        load_temp_contact_source_cached(str(Path(run_dir).expanduser().resolve()))
+    )
+
+    frame_samples = int(crop_start_sample) + (
+        np.arange(int(num_frames), dtype=np.float64) * float(hop_length)
+    )
+    frame_times = np.interp(frame_samples, anchor_sample_idx, anchor_mono_sec)
+    frame_edges = build_frame_time_edges(frame_times, eps=float(eps))
+
+    shifted_times = t_low + (float(contact_lag_ms) / 1000.0)
+    contact = foot_force > float(contact_threshold)
+    out = np.zeros((4, int(num_frames)), dtype=np.float32)
+    if shifted_times.size == 0:
+        return torch.from_numpy(out)
+
+    for frame_idx in range(int(num_frames)):
+        if frame_idx == int(num_frames) - 1:
+            in_frame = (
+                (shifted_times >= frame_edges[frame_idx])
+                & (shifted_times <= frame_edges[frame_idx + 1])
+            )
+        else:
+            in_frame = (
+                (shifted_times >= frame_edges[frame_idx])
+                & (shifted_times < frame_edges[frame_idx + 1])
+            )
+        if np.any(in_frame):
+            out[:, frame_idx] = np.any(contact[in_frame], axis=0).astype(np.float32)
+
+    return torch.from_numpy(out)
+
+
+def build_temp_contact_condition_for_train(
+    run_dir: str,
+    crop_start_sample: int,
+    num_frames: int,
+    hop_length: int,
+    freq_bins: int,
+    contact_threshold: float = 50.0,
+    contact_lag_ms: float = 58.5,
+    eps: float = 1e-8,
+) -> torch.Tensor:
+    if freq_bins <= 0:
+        raise ValueError(f"freq_bins must be positive, got {freq_bins}")
+
+    frames = build_temp_contact_frames(
+        run_dir=run_dir,
+        crop_start_sample=crop_start_sample,
+        num_frames=num_frames,
+        hop_length=hop_length,
+        contact_threshold=contact_threshold,
+        contact_lag_ms=contact_lag_ms,
+        eps=eps,
+    ).float()
+    return frames.view(4, 1, int(num_frames)).expand(4, int(freq_bins), int(num_frames)).contiguous()
 
 
 def build_condition_tokens_from_crop_window(
@@ -376,7 +568,7 @@ def build_condition_tokens_from_crop_window(
 
         cond_times:
             [condition_num_frames]
-            padding 위치는 0
+            absolute monotonic time (sec). padding 위치는 0
 
         real_token_count:
             crop 구간 안에서 실제로 발견된 lowstate sample 수
@@ -544,7 +736,9 @@ def preprocess_condition_for_train(
 
         query_mono_times:
             [num_frames]
-            STFT frame query용 절대 monotonic time (sec).
+            STFT frame query용 crop-relative monotonic time (sec).
+            absolute monotonic time은 audio/lowstate 정렬에만 사용하고,
+            모델 time embedding에는 crop 시작 시간을 뺀 상대 시간을 사용한다.
 
         real_token_count:
             crop 구간 안에 실제로 들어온 lowstate sample 수
@@ -552,16 +746,15 @@ def preprocess_condition_for_train(
     if cfg is None:
         cfg = ConditionPreprocessConfig()
 
-    lowstate_path = find_lowstate_file(run_dir)
-    anchor_path = find_anchor_file(run_dir)
-
-    t_low, foot_force = load_lowstate_time_and_force(lowstate_path)
-    anchor_sample_idx, anchor_mono_sec = load_anchor_sample_to_time(anchor_path)
-
-    t_low, force_norm, deriv_on_low = compute_force_and_derivative(
-        t_low=t_low,
-        foot_force=foot_force,
-        cfg=cfg,
+    run_dir = str(Path(run_dir).expanduser().resolve())
+    t_low, force_norm, deriv_on_low, anchor_sample_idx, anchor_mono_sec = (
+        load_condition_source_cached(
+            run_dir,
+            float(cfg.raw_force_scale),
+            float(cfg.d_force_scale),
+            int(cfg.smooth_win),
+            float(cfg.eps),
+        )
     )
 
     crop_start_sample = int(crop_start_sample)
@@ -585,7 +778,7 @@ def preprocess_condition_for_train(
     if crop_end_time < crop_start_time:
         crop_start_time, crop_end_time = crop_end_time, crop_start_time
 
-    cond_np, mask_np, cond_times_np, real_token_count = build_condition_tokens_from_crop_window(
+    cond_np, mask_np, cond_abs_times_np, real_token_count = build_condition_tokens_from_crop_window(
         t_low=t_low,
         force_norm=force_norm,
         deriv_on_low=deriv_on_low,
@@ -593,6 +786,9 @@ def preprocess_condition_for_train(
         crop_end_time=crop_end_time,
         condition_num_frames=cfg.condition_num_frames,
     )
+
+    cond_times_np = np.zeros_like(cond_abs_times_np, dtype=np.float64)
+    cond_times_np[mask_np] = np.maximum(cond_abs_times_np[mask_np] - crop_start_time, 0.0)
 
     cond_8ch = torch.from_numpy(cond_np).float()
     cond_10ch = torch.from_numpy(
@@ -613,6 +809,8 @@ def preprocess_condition_for_train(
         anchor_sample_idx,
         anchor_mono_sec,
     ).astype(np.float64)
+    query_abs_mono_times_np = query_mono_times_np
+    query_mono_times_np = np.maximum(query_abs_mono_times_np - crop_start_time, 0.0)
     query_mono_times = torch.from_numpy(query_mono_times_np).to(torch.float64)
 
     return {
@@ -622,6 +820,8 @@ def preprocess_condition_for_train(
         "cond_times": cond_times,
         "query_mono_times": query_mono_times,
         "real_token_count": torch.tensor(real_token_count, dtype=torch.long),
-        "crop_start_time": torch.tensor(crop_start_time, dtype=torch.float32),
-        "crop_end_time": torch.tensor(crop_end_time, dtype=torch.float32),
+        "crop_start_time": torch.tensor(crop_start_time, dtype=torch.float64),
+        "crop_end_time": torch.tensor(crop_end_time, dtype=torch.float64),
+        "cond_abs_mono_times": torch.from_numpy(cond_abs_times_np).to(torch.float64),
+        "query_abs_mono_times": torch.from_numpy(query_abs_mono_times_np).to(torch.float64),
     }

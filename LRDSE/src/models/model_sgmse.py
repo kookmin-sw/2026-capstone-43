@@ -10,15 +10,14 @@ an SGMSE+/score-based wrapper:
     x_t = mean + std * z
     model predicts score / denoiser / data depending on loss_type
 
-Optional aux_cond support is included for the user's foot_force condition.
-It is encoded as context tokens and consumed by attention blocks in the
-backbone (cross-attention style), instead of direct additive injection into `y`.
+Optional temp_condition support adds four binary per-foot contact channels
+before the NCSN++ backbone.
 """
 
 import time
 from math import ceil
 import warnings
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import torch
 import torch.distributed as dist
@@ -52,66 +51,6 @@ from ..lrdse_sgmse.sdes import SDERegistry
 from ..lrdse_sgmse.util.other import pad_spec, si_sdr
 
 
-class AuxConditionContextEncoder(nn.Module):
-    """
-    Encode auxiliary condition tokens for cross-attention.
-
-    Expected input:
-        aux_cond: [B, aux_cond_dim, K]
-
-    Output:
-        context: [B, hidden_dim, K]
-    """
-
-    def __init__(
-        self,
-        aux_cond_dim: int = 8,
-        hidden_dim: int = 128,
-        num_layers: int = 3,
-        aux_scale_init: float = 0.1,
-    ):
-        super().__init__()
-        # Keep num_layers argument for compatibility; this encoder does token-wise
-        # projection only (no Conv1d token mixing).
-        _ = num_layers
-        self.value_proj = nn.Linear(aux_cond_dim, hidden_dim)
-        self.fuse = nn.Sequential(
-            nn.SiLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-        )
-        self.out_dim = hidden_dim
-        self.context_scale = nn.Parameter(torch.tensor(float(aux_scale_init)))
-
-    def forward(
-        self,
-        aux_cond: torch.Tensor,
-        aux_cond_times: Optional[torch.Tensor] = None,
-        aux_cond_mask: Optional[torch.Tensor] = None,
-    ) -> torch.Tensor:
-        if aux_cond.dim() != 3:
-            raise ValueError(
-                f"Expected aux_cond shape [B, C_aux, K], got {tuple(aux_cond.shape)}"
-            )
-        if aux_cond.size(1) != self.value_proj.in_features:
-            raise ValueError(
-                f"Expected aux_cond channel dim={self.value_proj.in_features}, got {aux_cond.size(1)}"
-            )
-
-        _ = aux_cond_times
-        aux = aux_cond.to(dtype=torch.float32)
-        fused = self.fuse(self.value_proj(aux.transpose(1, 2)))
-
-        if aux_cond_mask is not None:
-            mask = aux_cond_mask
-            if mask.dim() == 3 and mask.size(1) == 1:
-                mask = mask.squeeze(1)
-            mask = mask.to(device=fused.device, dtype=fused.dtype).unsqueeze(-1)
-            fused = fused * mask
-
-        # Return context as [B, H, K] for attention blocks.
-        return self.context_scale * fused.transpose(1, 2).contiguous()
-
-
 class ScoreModel(pl.LightningModule):
     @staticmethod
     def add_argparse_args(parser):
@@ -129,13 +68,7 @@ class ScoreModel(pl.LightningModule):
         parser.add_argument("--l1_weight", type=float, default=0.001)
         parser.add_argument("--pesq_weight", type=float, default=0.0)
         parser.add_argument("--sr", type=int, default=16000)
-        parser.add_argument("--use_aux_cond", action="store_true")
-        parser.add_argument("--aux_cond_dim", type=int, default=8)
-        parser.add_argument("--aux_hidden_dim", type=int, default=128)
-        parser.add_argument("--aux_scale_init", type=float, default=0.1)
-        parser.add_argument("--aux_time_scale", type=float, default=1000.0)
-        parser.add_argument("--aux_time_embed_dim", type=int, default=128)
-        parser.add_argument("--aux_time_max_period", type=float, default=10000.0)
+        parser.add_argument("--use_temp_condition", action="store_true")
         return parser
 
     def __init__(
@@ -157,13 +90,7 @@ class ScoreModel(pl.LightningModule):
         pesq_weight: float = 0.0,
         sr: int = 16000,
         data_module_cls=None,
-        use_aux_cond: bool = False,
-        aux_cond_dim: int = 8,
-        aux_hidden_dim: int = 128,
-        aux_scale_init: float = 0.1,
-        aux_time_scale: float = 1000.0,
-        aux_time_embed_dim: int = 128,
-        aux_time_max_period: float = 10000.0,
+        use_temp_condition: bool = False,
         **kwargs,
     ):
         super().__init__()
@@ -171,29 +98,13 @@ class ScoreModel(pl.LightningModule):
         self.backbone = backbone
         dnn_cls = BackboneRegistry.get_by_name(backbone)
         dnn_kwargs = dict(kwargs)
-        if use_aux_cond and backbone == "ncsnpp_v2":
-            dnn_kwargs["aux_context_dim"] = aux_hidden_dim
-            dnn_kwargs["aux_time_scale"] = aux_time_scale
-            dnn_kwargs["aux_time_embed_dim"] = aux_time_embed_dim
-            dnn_kwargs["aux_time_max_period"] = aux_time_max_period
+        self.use_temp_condition = bool(use_temp_condition)
+        if self.backbone == "ncsnpp_v2":
+            dnn_kwargs["input_channels"] = 8 if self.use_temp_condition else 4
         self.dnn = dnn_cls(**dnn_kwargs)
 
         sde_cls = SDERegistry.get_by_name(sde)
         self.sde = sde_cls(**kwargs)
-
-        self.use_aux_cond = bool(use_aux_cond)
-        self.aux_time_scale = aux_time_scale
-        self.aux_time_embed_dim = aux_time_embed_dim
-        self.aux_time_max_period = aux_time_max_period
-        self.aux_context_encoder = (
-            AuxConditionContextEncoder(
-                aux_cond_dim=aux_cond_dim,
-                hidden_dim=aux_hidden_dim,
-                aux_scale_init=aux_scale_init,
-            )
-            if self.use_aux_cond
-            else None
-        )
 
         self.lr = lr
         self.ema_decay = ema_decay
@@ -226,10 +137,7 @@ class ScoreModel(pl.LightningModule):
         )
 
     def ema_parameters(self):
-        params = list(self.dnn.parameters())
-        if self.aux_context_encoder is not None:
-            params.extend(self.aux_context_encoder.parameters())
-        return params
+        return list(self.dnn.parameters())
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -245,7 +153,7 @@ class ScoreModel(pl.LightningModule):
         except Exception as e:
             warnings.warn(
                 "Failed to load EMA state_dict. This can happen when loading an "
-                f"older checkpoint that did not track aux condition parameters. Error: {e}"
+                f"older checkpoint with different model parameters. Error: {e}"
             )
             self.ema = ExponentialMovingAverage(self.ema_parameters(), decay=self.ema_decay)
             self._error_loading_ema = False
@@ -285,91 +193,40 @@ class ScoreModel(pl.LightningModule):
         torch.Tensor,
         torch.Tensor,
         Optional[torch.Tensor],
-        Optional[torch.Tensor],
-        Optional[torch.Tensor],
-        Optional[torch.Tensor],
     ]:
         """
         Supported batch formats:
             (clean_spec, noisy_spec)
-            (clean_spec, noisy_spec, aux_cond)
-            (clean_spec, noisy_spec, aux_cond, aux_cond_times, aux_cond_mask, aux_query_times)
-            {"x"/"clean": clean_spec, "y"/"noisy": noisy_spec, "aux_cond": aux}
-            dict may additionally include:
-                aux_cond_times / cond_times
-                aux_cond_mask / cond_mask
-                aux_query_times / query_mono_times
+            (clean_spec, noisy_spec, temp_condition)
+            {"x"/"clean": clean_spec, "y"/"noisy": noisy_spec, "temp_condition": temp_condition}
         """
         if isinstance(batch, dict):
             x = batch.get("x", batch.get("clean", batch.get("clean_spec")))
             y = batch.get("y", batch.get("noisy", batch.get("noisy_spec")))
-            aux_cond = batch.get("aux_cond", batch.get("condition", None))
-            aux_cond_times = batch.get("aux_cond_times", batch.get("cond_times", None))
-            aux_cond_mask = batch.get("aux_cond_mask", batch.get("cond_mask", None))
-            aux_query_times = batch.get(
-                "aux_query_times",
-                batch.get("query_mono_times", batch.get("query_times", None)),
-            )
+            temp_condition = batch.get("temp_condition", batch.get("contact_condition", None))
             if x is None or y is None:
                 raise KeyError(
                     "Dict batch must contain x/clean/clean_spec and y/noisy/noisy_spec."
                 )
-            return x, y, aux_cond, aux_cond_times, aux_cond_mask, aux_query_times
+            return x, y, temp_condition
 
         if isinstance(batch, (tuple, list)):
             if len(batch) == 2:
                 x, y = batch
-                return x, y, None, None, None, None
-            if len(batch) >= 3:
-                x, y, aux_cond = batch[:3]
-                aux_cond_times = batch[3] if len(batch) >= 4 else None
-                aux_cond_mask = batch[4] if len(batch) >= 5 else None
-                aux_query_times = batch[5] if len(batch) >= 6 else None
-                return x, y, aux_cond, aux_cond_times, aux_cond_mask, aux_query_times
+                return x, y, None
+            if len(batch) == 3:
+                x, y, temp_condition = batch
+                return x, y, temp_condition
 
         raise TypeError(
-            "Batch must be (x, y), (x, y, aux_cond), or a dict containing clean/noisy tensors."
+            "Batch must be (x, y), (x, y, temp_condition), or a dict containing clean/noisy tensors."
         )
 
-    def _augment_condition(
+    def _make_score_fn(
         self,
-        y: torch.Tensor,
-        aux_cond: Optional[torch.Tensor] = None,
-    ) -> torch.Tensor:
-        # Keep noisy condition unchanged. Aux information is injected via
-        # cross-attention context inside the backbone attention blocks.
-        return y
-
-    def _encode_aux_context(
-        self,
-        aux_cond: Optional[torch.Tensor],
-        aux_cond_times: Optional[torch.Tensor],
-        aux_cond_mask: Optional[torch.Tensor],
-        device: torch.device,
-        dtype: torch.dtype,
-    ) -> Optional[torch.Tensor]:
-        if not self.use_aux_cond or aux_cond is None or self.aux_context_encoder is None:
-            return None
-        aux_cond = aux_cond.to(device=device, non_blocking=True)
-        if aux_cond_times is not None:
-            aux_cond_times = aux_cond_times.to(device=device, non_blocking=True)
-        if aux_cond_mask is not None:
-            aux_cond_mask = aux_cond_mask.to(device=device, non_blocking=True)
-        aux_ctx = self.aux_context_encoder(
-            aux_cond=aux_cond,
-            aux_cond_times=aux_cond_times,
-            aux_cond_mask=aux_cond_mask,
-        )
-        return aux_ctx.to(device=device, dtype=dtype)
-
-    def _make_score_fn_with_aux(
-        self,
-        aux_cond: Optional[torch.Tensor],
-        aux_cond_times: Optional[torch.Tensor] = None,
-        aux_cond_mask: Optional[torch.Tensor] = None,
-        aux_query_times: Optional[torch.Tensor] = None,
+        temp_condition: Optional[torch.Tensor] = None,
     ):
-        if aux_cond is None:
+        if temp_condition is None:
             return self
 
         def score_fn(x_t, y, t, *args):
@@ -377,10 +234,7 @@ class ScoreModel(pl.LightningModule):
                 x_t,
                 y,
                 t,
-                aux_cond=aux_cond,
-                aux_cond_times=aux_cond_times,
-                aux_cond_mask=aux_cond_mask,
-                aux_query_times=aux_query_times,
+                temp_condition=temp_condition,
             )
 
         return score_fn
@@ -450,12 +304,12 @@ class ScoreModel(pl.LightningModule):
         return loss
 
     def _step(self, batch, batch_idx):
-        x, y, aux_cond, aux_cond_times, aux_cond_mask, aux_query_times = self._split_batch(batch)
+        x, y, temp_condition = self._split_batch(batch)
         t = torch.rand(x.shape[0], device=x.device) * (self.sde.T - self.t_eps) + self.t_eps
 
         # Keep the diffusion bridge identical to the original SGMSE+ formulation:
         # p_t(x_t | x_0, y) uses the observed noisy spectrogram y.
-        # Aux condition is injected only into the score network via forward(..., aux_cond).
+        # Temp condition is injected only into the score network input channels.
         mean, std = self.sde.marginal_prob(x, y, t)
         z = torch.randn_like(x)
         sigma = std[:, None, None, None]
@@ -465,10 +319,7 @@ class ScoreModel(pl.LightningModule):
             x_t,
             y,
             t,
-            aux_cond=aux_cond,
-            aux_cond_times=aux_cond_times,
-            aux_cond_mask=aux_cond_mask,
-            aux_query_times=aux_query_times,
+            temp_condition=temp_condition,
         )
         loss = self._loss(forward_out, x_t, z, t, mean, x)
         return loss
@@ -544,45 +395,19 @@ class ScoreModel(pl.LightningModule):
         x_t: torch.Tensor,
         y: torch.Tensor,
         t: torch.Tensor,
-        aux_cond: Optional[torch.Tensor] = None,
-        aux_cond_times: Optional[torch.Tensor] = None,
-        aux_cond_mask: Optional[torch.Tensor] = None,
-        aux_query_times: Optional[torch.Tensor] = None,
+        temp_condition: Optional[torch.Tensor] = None,
     ):
-        if aux_cond_times is not None:
-            if aux_cond_times.dim() == 1:
-                aux_cond_times = aux_cond_times.unsqueeze(0)
-            aux_cond_times = aux_cond_times.to(device=y.device, non_blocking=True)
-        if aux_cond_mask is not None:
-            if aux_cond_mask.dim() == 1:
-                aux_cond_mask = aux_cond_mask.unsqueeze(0)
-            aux_cond_mask = aux_cond_mask.to(device=y.device, non_blocking=True)
-        if aux_query_times is not None:
-            if aux_query_times.dim() == 1:
-                aux_query_times = aux_query_times.unsqueeze(0)
-            aux_query_times = aux_query_times.to(device=y.device, non_blocking=True)
-
-        y_cond = self._augment_condition(y, aux_cond)
-        aux_context = self._encode_aux_context(
-            aux_cond=aux_cond,
-            aux_cond_times=aux_cond_times,
-            aux_cond_mask=aux_cond_mask,
-            device=y.device,
-            dtype=y.real.dtype if torch.is_complex(y) else y.dtype,
-        )
-
         if self.backbone == "ncsnpp_v2":
             dnn_in_x = self._c_in(t) * x_t
-            dnn_in_y = self._c_in(t) * y_cond
-            dnn_out = self.dnn(
-                dnn_in_x,
-                dnn_in_y,
-                t,
-                aux_context=aux_context,
-                aux_cond_times=aux_cond_times,
-                aux_query_times=aux_query_times,
-                aux_cond_mask=aux_cond_mask,
-            )
+            dnn_in_y = self._c_in(t) * y
+            if temp_condition is not None:
+                temp_condition = temp_condition.to(
+                    device=dnn_in_x.device,
+                    dtype=dnn_in_x.real.dtype,
+                    non_blocking=True,
+                )
+
+            dnn_out = self.dnn(dnn_in_x, dnn_in_y, t, temp_condition=temp_condition)
 
             if self.network_scaling == "1/sigma":
                 std = self.sde._std(t)
@@ -600,7 +425,9 @@ class ScoreModel(pl.LightningModule):
 
             raise ValueError(f"Invalid loss_type for ncsnpp_v2: {self.loss_type}")
 
-        dnn_input = torch.cat([x_t, y_cond], dim=1)
+        if temp_condition is not None:
+            raise RuntimeError("temp_condition is only supported for backbone='ncsnpp_v2'")
+        dnn_input = torch.cat([x_t, y], dim=1)
         return -self.dnn(dnn_input, t)
 
     def _c_in(self, t):
@@ -642,22 +469,14 @@ class ScoreModel(pl.LightningModule):
         y,
         N=None,
         minibatch=None,
-        aux_cond: Optional[torch.Tensor] = None,
-        aux_cond_times: Optional[torch.Tensor] = None,
-        aux_cond_mask: Optional[torch.Tensor] = None,
-        aux_query_times: Optional[torch.Tensor] = None,
+        temp_condition: Optional[torch.Tensor] = None,
         **kwargs,
     ):
         N = self.sde.N if N is None else N
         sde = self.sde.copy()
         sde.N = N
         kwargs = {"eps": self.t_eps, **kwargs}
-        score_fn = self._make_score_fn_with_aux(
-            aux_cond=aux_cond,
-            aux_cond_times=aux_cond_times,
-            aux_cond_mask=aux_cond_mask,
-            aux_query_times=aux_query_times,
-        )
+        score_fn = self._make_score_fn(temp_condition=temp_condition)
 
         if minibatch is None:
             return sampling.get_pc_sampler(
@@ -675,28 +494,12 @@ class ScoreModel(pl.LightningModule):
             samples, ns = [], []
             for i in range(int(ceil(total / minibatch))):
                 y_mini = y[i * minibatch : (i + 1) * minibatch]
-                aux_mini = None if aux_cond is None else aux_cond[i * minibatch : (i + 1) * minibatch]
-                aux_times_mini = (
+                temp_mini = (
                     None
-                    if aux_cond_times is None
-                    else aux_cond_times[i * minibatch : (i + 1) * minibatch]
+                    if temp_condition is None
+                    else temp_condition[i * minibatch : (i + 1) * minibatch]
                 )
-                aux_mask_mini = (
-                    None
-                    if aux_cond_mask is None
-                    else aux_cond_mask[i * minibatch : (i + 1) * minibatch]
-                )
-                aux_query_times_mini = (
-                    None
-                    if aux_query_times is None
-                    else aux_query_times[i * minibatch : (i + 1) * minibatch]
-                )
-                score_fn_mini = self._make_score_fn_with_aux(
-                    aux_cond=aux_mini,
-                    aux_cond_times=aux_times_mini,
-                    aux_cond_mask=aux_mask_mini,
-                    aux_query_times=aux_query_times_mini,
-                )
+                score_fn_mini = self._make_score_fn(temp_condition=temp_mini)
                 sampler = sampling.get_pc_sampler(
                     predictor_name,
                     corrector_name,
@@ -717,22 +520,14 @@ class ScoreModel(pl.LightningModule):
         y,
         N=None,
         minibatch=None,
-        aux_cond: Optional[torch.Tensor] = None,
-        aux_cond_times: Optional[torch.Tensor] = None,
-        aux_cond_mask: Optional[torch.Tensor] = None,
-        aux_query_times: Optional[torch.Tensor] = None,
+        temp_condition: Optional[torch.Tensor] = None,
         **kwargs,
     ):
         N = self.sde.N if N is None else N
         sde = self.sde.copy()
         sde.N = N
         kwargs = {"eps": self.t_eps, **kwargs}
-        score_fn = self._make_score_fn_with_aux(
-            aux_cond=aux_cond,
-            aux_cond_times=aux_cond_times,
-            aux_cond_mask=aux_cond_mask,
-            aux_query_times=aux_query_times,
-        )
+        score_fn = self._make_score_fn(temp_condition=temp_condition)
 
         if minibatch is None:
             return sampling.get_ode_sampler(sde, score_fn, y=y, **kwargs)
@@ -743,28 +538,12 @@ class ScoreModel(pl.LightningModule):
             samples, ns = [], []
             for i in range(int(ceil(total / minibatch))):
                 y_mini = y[i * minibatch : (i + 1) * minibatch]
-                aux_mini = None if aux_cond is None else aux_cond[i * minibatch : (i + 1) * minibatch]
-                aux_times_mini = (
+                temp_mini = (
                     None
-                    if aux_cond_times is None
-                    else aux_cond_times[i * minibatch : (i + 1) * minibatch]
+                    if temp_condition is None
+                    else temp_condition[i * minibatch : (i + 1) * minibatch]
                 )
-                aux_mask_mini = (
-                    None
-                    if aux_cond_mask is None
-                    else aux_cond_mask[i * minibatch : (i + 1) * minibatch]
-                )
-                aux_query_times_mini = (
-                    None
-                    if aux_query_times is None
-                    else aux_query_times[i * minibatch : (i + 1) * minibatch]
-                )
-                score_fn_mini = self._make_score_fn_with_aux(
-                    aux_cond=aux_mini,
-                    aux_cond_times=aux_times_mini,
-                    aux_cond_mask=aux_mask_mini,
-                    aux_query_times=aux_query_times_mini,
-                )
+                score_fn_mini = self._make_score_fn(temp_condition=temp_mini)
                 sampler = sampling.get_ode_sampler(sde, score_fn_mini, y=y_mini, **kwargs)
                 sample, n = sampler()
                 samples.append(sample)
@@ -779,20 +558,12 @@ class ScoreModel(pl.LightningModule):
         y,
         sampler_type="ode",
         N=None,
-        aux_cond=None,
-        aux_cond_times: Optional[torch.Tensor] = None,
-        aux_cond_mask: Optional[torch.Tensor] = None,
-        aux_query_times: Optional[torch.Tensor] = None,
+        temp_condition: Optional[torch.Tensor] = None,
         **kwargs,
     ):
         sde = self.sde.copy()
         sde.N = N if N is not None else sde.N
-        score_fn = self._make_score_fn_with_aux(
-            aux_cond=aux_cond,
-            aux_cond_times=aux_cond_times,
-            aux_cond_mask=aux_cond_mask,
-            aux_query_times=aux_query_times,
-        )
+        score_fn = self._make_score_fn(temp_condition=temp_condition)
         return sampling.get_sb_sampler(sde, score_fn, y=y, sampler_type=sampler_type, **kwargs)
 
     def train_dataloader(self):
@@ -849,10 +620,7 @@ class ScoreModel(pl.LightningModule):
         corrector_steps=1,
         snr=0.5,
         timeit=False,
-        aux_cond: Optional[torch.Tensor] = None,
-        aux_cond_times: Optional[torch.Tensor] = None,
-        aux_cond_mask: Optional[torch.Tensor] = None,
-        aux_query_times: Optional[torch.Tensor] = None,
+        temp_condition: Optional[torch.Tensor] = None,
         **kwargs,
     ):
         """One-call speech enhancement of noisy waveform `y`."""
@@ -867,14 +635,8 @@ class ScoreModel(pl.LightningModule):
         Y = torch.unsqueeze(self._forward_transform(self._stft(y)), 0)
         Y = pad_spec(Y).to(device)
 
-        if aux_cond is not None:
-            aux_cond = aux_cond.to(device)
-        if aux_cond_times is not None:
-            aux_cond_times = aux_cond_times.to(device)
-        if aux_cond_mask is not None:
-            aux_cond_mask = aux_cond_mask.to(device)
-        if aux_query_times is not None:
-            aux_query_times = aux_query_times.to(device)
+        if temp_condition is not None:
+            temp_condition = temp_condition.to(device)
 
         if self.sde.__class__.__name__ == "OUVESDE":
             if self.sde.sampler_type == "pc":
@@ -886,20 +648,14 @@ class ScoreModel(pl.LightningModule):
                     corrector_steps=corrector_steps,
                     snr=snr,
                     intermediate=False,
-                    aux_cond=aux_cond,
-                    aux_cond_times=aux_cond_times,
-                    aux_cond_mask=aux_cond_mask,
-                    aux_query_times=aux_query_times,
+                    temp_condition=temp_condition,
                     **kwargs,
                 )
             elif self.sde.sampler_type == "ode":
                 sampler = self.get_ode_sampler(
                     Y,
                     N=N,
-                    aux_cond=aux_cond,
-                    aux_cond_times=aux_cond_times,
-                    aux_cond_mask=aux_cond_mask,
-                    aux_query_times=aux_query_times,
+                    temp_condition=temp_condition,
                     **kwargs,
                 )
             else:
@@ -910,10 +666,7 @@ class ScoreModel(pl.LightningModule):
                 sde=self.sde,
                 y=Y,
                 sampler_type=self.sde.sampler_type,
-                aux_cond=aux_cond,
-                aux_cond_times=aux_cond_times,
-                aux_cond_mask=aux_cond_mask,
-                aux_query_times=aux_query_times,
+                temp_condition=temp_condition,
             )
         else:
             raise ValueError(
