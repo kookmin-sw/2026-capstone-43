@@ -14,7 +14,7 @@ ConceptGraph, SayPlan 등 기존 연구에서 씬그래프는 LLM/VLM이 공간 
 
 ### 이전 연구(SceneUpdate)에서 확인한 한계
 
-이 문제를 해결하고자 이전 프로젝트([SceneUpdate](https://github.com/LEESB17/sceneupdate/tree/sungbin))에서는 씬그래프에 빈 공간 정보를 통합하는 두 가지 방식을 구현했습니다:
+이 문제를 해결하고자 이전 프로젝트([SceneUpdate](https://github.com/kookmin-sw/2026-capstone-43/tree/master/sceneupdate))에서는 씬그래프에 빈 공간 정보를 통합하는 두 가지 방식을 구현했습니다:
 
 - **오프라인 Precomputed Free Space**: ConceptGraph 데이터 기반 표면 빈 공간 사전 계산
 - **실시간 Free Space Update**: Depth 카메라 + Occupancy Grid 비동기 갱신
