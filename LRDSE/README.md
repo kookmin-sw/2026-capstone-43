@@ -1,152 +1,65 @@
 # LRDSE
 
-**LRDSE**는 *Legged Robot Diffusion Speech Enhancement*를 위한 연구 코드입니다.  
-목표는 사족보행 로봇이 이동하거나 발을 지면에 접촉할 때 발생하는 불규칙적이고 non-stationary한 robot noise를 줄이고, 사람 음성을 더 명확하게 복원하는 것입니다.
+> 4족 보행 로봇의 주행 소음 환경에서 로봇 센서 정보를 활용해 음성을 복원하는 Robot-Aware Speech Enhancement 프로젝트입니다.
 
-기본 학습 경로는 `train_sgmse.py`입니다.  
-noisy sample 폴더에 `anchor` / `lowstate` 파일이 있으면 `foot_force`와 그 derivative를 8ch auxiliary condition으로 사용할 수 있습니다.
+## 1. 소개
 
-```text
-LRDSE/
-├── train_sgmse.py              # SGMSE speech enhancement 학습 / 검증 / 샘플 저장
-├── denoise_sgmse.py            # 학습된 SGMSE checkpoint로 noisy wav denoising
-├── train_rddm.py               # RDDM 실험 코드
-├── dataset.py                  # paired clean/noisy dataset, condition 로딩
-├── src/
-│   ├── audio/preprocess.py     # wav crop, STFT, spec transform, inverse transform
-│   ├── check/                  # dataset/model/condition sanity check 유틸
-│   ├── condition/preprocess.py # foot_force condition token 생성
-│   ├── models/                 # SGMSE / RDDM / condition encoder model wrapper
-│   ├── plot/                   # STFT/loss/condition 시각화 유틸
-│   └── prepare/                # manifest / noisy data 생성 유틸
-├── data/
-│   ├── manifest.csv            # 현재 paired manifest
-│   └── noisy/                  # noisy wav와 condition segment 파일
-├── checkpoints/                # 학습 checkpoint 저장 위치
-└── outputs/                    # debug/plot output 저장 위치
-```
+LRDSE는 로봇 주행 중 발생하는 foot contact, 발 충격, 관절 움직임 기반 소음이 음성 신호에 섞이는 상황을 다룹니다. 일반적인 speech enhancement 모델은 noisy speech만 입력으로 사용하지만, 본 프로젝트는 robot foot force / contact condition을 함께 사용하여 로봇 소음에 더 강한 음성 복원을 목표로 합니다.
 
-## 1. 연구 배경
+기본 학습 경로는 `train_sgmse.py`의 SGMSE 기반 모델입니다. Clean speech와 quadruped robot noise가 섞인 noisy speech를 paired manifest로 학습하며, noisy sample 폴더에 robot `anchor` / `lowstate` 파일이 있으면 foot force 기반 auxiliary condition도 함께 사용할 수 있습니다.
 
-일반적인 speech enhancement는 배경 noise, 실내 환경 noise, 잡음이 섞인 음성 등을 제거하는 데 초점을 둡니다. 하지만 legged robot 환경에서는 robot 자체의 움직임이 noise 발생 원인이 됩니다.
+<p align="center">
+  <a href="./assets/readme/poster.jpg">
+    <img src="./assets/readme/poster.jpg" width="900" alt="LRDSE poster">
+  </a>
+</p>
 
-특히 Unitree GO2와 같은 사족보행 로봇은 발이 지면에 반복적으로 닿고 떨어지며, 이 과정에서 순간적이고 불규칙적인 contact noise가 발생할 수 있습니다. 이 noise는 단순히 일정하게 유지되는 stationary noise가 아니라, 보행 패턴, 속도, 자세, 회전, 지면 상태에 따라 계속 변하는 non-stationary noise입니다.
+## 2. 사용법 및 폴더 소개
 
-따라서 본 프로젝트는 speech enhancement 문제를 단순 audio-only denoising으로 보지 않고, robot state를 함께 사용하는 conditional speech enhancement 문제로 다룹니다.
-
----
-
-## 2. 핵심 아이디어
-
-LRDSE의 핵심 아이디어는 robot noise가 발 접촉과 강하게 관련될 수 있다는 점을 이용하는 것입니다.
-
-`lowstate`에서 얻은 `foot_force`는 각 발의 접촉 상태를 설명할 수 있는 cue로 사용할 수 있습니다. 이 프로젝트에서는 다음 8ch 값을 auxiliary condition으로 사용합니다.
-
-```text
-4ch foot_force
-4ch foot_force derivative
-```
-
-`foot_force`는 현재 발 접촉의 크기 정보를 제공하고, derivative는 접촉 변화가 급격히 발생하는 순간을 강조합니다. 이를 diffusion speech enhancement model에 condition으로 제공하면, model이 speech 성분과 foot-contact 기반 robot noise를 더 잘 구분할 수 있을 것으로 기대합니다.
-
-단, 현재 구현에서 `foot_force`는 speech enhancement를 위한 auxiliary cue로 사용됩니다. 정확한 물리 단위의 Ground Reaction Force를 직접 추정하거나 보정하는 것이 목표는 아닙니다.
-
----
-
-## 3. 전체 pipeline
-
-```text
-Clean speech
-    +
-Robot noise recording
-    +
-Robot state logs
-    |
-    v
-Noisy data generation
-    |
-    ├── noisy wav
-    ├── anchor_segment.json
-    ├── lowstate_segment.jsonl
-    ├── highstate_segment.jsonl
-    └── segment_meta.json
-    |
-    v
-Manifest
-    |
-    v
-STFT preprocessing
-    |
-    ├── noisy complex spectrogram
-    ├── clean complex spectrogram
-    └── foot_force auxiliary condition
-    |
-    v
-SGMSE-based diffusion speech enhancement
-    |
-    v
-Enhanced speech
-```
-
----
-
-```bash
-python3 -m src.prepare.build_manifest \
-  --noisy-root ./data/noisy \
-  --clean-root /path/to/clean \
-  --out ./data/manifest.csv \
-  --target-sr 16000 \
-  --val-ratio 0.1 \
-  --split-by speaker
-```
-
-단순히 train loss만 비교하기보다 validation loss, enhanced wav, contact noise가 강한 구간의 spectrogram, 실제 청감 결과를 함께 확인하는 것이 좋습니다.
-
----
-
-## 5. 실행 위치
-
-모든 명령은 `LRDSE` 디렉터리에서 실행합니다.
+사용하는 환경에 맞춰 주요 패키지를 설치합니다. CUDA를 사용할 경우 PyTorch는 로컬 CUDA 버전에 맞는 wheel로 설치해야 합니다.
 
 ```bash
 cd /home/jaewoo/MAIR/ryu/robot_denoising/2026-capstone-43/LRDSE
-```
-
-필요 패키지는 환경에 맞게 설치합니다.
-
-```bash
 python3 -m pip install torch torchaudio numpy scipy soundfile matplotlib
 ```
 
----
+### 학습 데이터 전제
 
-## 6. SGMSE 학습
+`data/` 아래의 음성 데이터와 로봇 로그는 용량이 커서 저장소에 포함하지 않았습니다. 아래 학습 명령은 `data/manifest_train.csv`와 `data/manifest_val.csv`가 이미 준비되어 있다고 가정합니다.
 
-### 6.1 No condition 학습
+`manifest`에는 최소한 아래 정보가 필요합니다.
+
+- `noisy_wav`: noisy speech wav/flac 경로
+- `clean_wav`: clean speech wav/flac 경로
+- `valid`: 학습에 사용할 row 여부
+- `speaker_id`, `book_id`, `source_id`: split과 sample 식별용 정보
+
+Condition 학습을 사용하려면 `noisy_wav`가 들어 있는 sample 폴더에 robot state segment 파일도 함께 있어야 합니다.
+
+```text
+<sample_dir>/
+├── <source_id>.wav
+├── anchor_segment.json
+├── lowstate_segment.jsonl
+├── highstate_segment.jsonl
+└── segment_meta.json
+```
+
+### 학습
 
 ```bash
+# 기본 SGMSE 학습
 python3 train_sgmse.py \
   --manifest ./data/manifest_train.csv \
   --val-manifest ./data/manifest_val.csv \
   --save-dir ./checkpoints/sgmse_se \
   --device cuda \
   --batch-size 4 \
-  --num-workers 2 \
-  --lr 1e-4 \
-  --max-epochs 300 \
-  --save-every-epochs 5 \
-  --sample-every-epochs 50 \
-  --num-sample-wavs 1
+  --max-epochs 300
 ```
 
-### 6.2 foot_force condition 학습
-
-## Temp Contact Condition 학습
-
-Foot force contact channel을 쓰려면 `--use-temp-condition`을 추가합니다. 현재 SGMSE path는 `backbone=ncsnpp_v2` 입력을 `[x.real, x.imag, y.real, y.imag, foot0, foot1, foot2, foot3]` 8채널로 구성합니다.
-각 foot channel은 audio frame의 `CLOCK_MONOTONIC` time window 안에서 해당 foot force가 `50`을 넘으면 `1`, 아니면 `0`입니다. 기본값은 foot force timestamp를 `+58.5ms` 늦춘 뒤 정렬합니다.
-
 ```bash
+# Foot contact condition을 사용하는 학습
 python3 train_sgmse.py \
   --manifest ./data/manifest_train.csv \
   --val-manifest ./data/manifest_val.csv \
@@ -156,56 +69,10 @@ python3 train_sgmse.py \
   --num-workers 2 \
   --lr 1e-4 \
   --max-epochs 300 \
-  --save-every-epochs 5 \
-  --sample-every-epochs 50 \
-  --num-sample-wavs 1 \
-  --use-aux-cond \
-  --aux-cond-dim 8
+  --use-temp-condition
 ```
 
-학습 결과는 `--save-dir` 아래에 저장됩니다.
-
-```text
-checkpoints/sgmse_aux/
-├── latest.pt
-├── best.pt
-├── args.json
-├── epoch_losses.csv
-└── samples/
-```
-
----
-
-## 7. 학습된 가중치로 denoising
-
-현재 코드는 별도 `denoise.py`가 아니라 `train_sgmse.py`의 sample 저장 기능으로 denoising 결과를 생성합니다.
-
-`--resume`에 학습된 checkpoint를 넣고, `--sample-every 1`을 사용하면 validation manifest의 sample에 대해 enhanced wav가 저장됩니다.
-
-### 7.1 No condition checkpoint로 denoising
-
-```bash
-python3 train_sgmse.py \
-  --manifest ./data/manifest_train.csv \
-  --val-manifest ./data/manifest_val.csv \
-  --save-dir ./outputs/denoise_sgmse \
-  --resume ./checkpoints/sgmse_se/best.pt \
-  --device cuda \
-  --batch-size 1 \
-  --num-workers 0 \
-  --max-steps 1 \
-  --lr 0 \
-  --sample-every 1 \
-  --num-sample-wavs 5 \
-  --sample-max-sec 0 \
-  --disable-checkpoint-save
-```
-
-Step별 checkpoint도 남기려면 `--save-step-checkpoints`를 추가합니다.
-
-## SGMSE Denoising 추론
-
-학습된 `latest.pt` 또는 `best.pt`를 불러와 특정 noisy wav를 denoising할 때:
+### 추론
 
 ```bash
 python3 denoise_sgmse.py \
@@ -215,79 +82,115 @@ python3 denoise_sgmse.py \
   --device cuda
 ```
 
-출력 경로를 생략하면 `./outputs/denoise_sgmse/<파일명>_enhanced.wav`로 저장합니다.
+폴더 구조:
 
-```bash
-python3 denoise_sgmse.py \
-  --checkpoint ./checkpoints/sgmse_se/best.pt \
-  --noisy-wav ./data/noisy/.../sample.wav \
-  --sampling-N 30
+```text
+LRDSE/
+├── train_sgmse.py              # SGMSE speech enhancement 학습 / 검증 / 샘플 저장
+├── denoise_sgmse.py            # 학습된 SGMSE checkpoint로 noisy wav denoising
+├── train_condition_encoder.py  # foot force 기반 condition encoder 실험
+├── train_rddm.py               # RDDM 실험 코드
+├── dataset.py                  # paired clean/noisy dataset, condition 로딩
+├── src/
+│   ├── audio/preprocess.py     # wav crop, STFT, spec transform, inverse transform
+│   ├── check/                  # dataset/model/condition sanity check 유틸
+│   ├── condition/preprocess.py # foot force / contact condition token 생성
+│   ├── models/                 # SGMSE / RDDM / condition encoder model wrapper
+│   ├── plot/                   # STFT/loss/condition 시각화 유틸
+│   └── prepare/                # manifest / noisy data 생성 유틸
+├── assets/readme/              # README 시각 자료
+├── data/                       # manifest 및 noisy sample, 원본 데이터는 용량 문제로 미포함
+├── checkpoints/                # 학습 checkpoint 저장 위치
+└── outputs/                    # debug/plot output 저장 위치
 ```
 
-Aux condition으로 학습한 checkpoint라면 noisy wav의 parent directory를 `run_dir`로 자동 사용합니다. 별도 위치를 쓰려면 `--run-dir /path/to/run_dir`를 지정합니다.
+## 3. 연구 내용
 
-## Loss 시각화
+### 3.1 Dataset 구성
 
-```bash
-python3 -m src.plot.plot_epoch_loss \
-  --csv ./checkpoints/sgmse_se/epoch_losses.csv \
-  --out ./outputs/plots/epoch_loss.png \
-  --smooth-window 3
+Speech dataset은 SonicSim의 데이터 생성 코드를 일부 변형하여 구성했습니다. 데이터 생성 시 microphone과 speech source 사이의 LOS(Line-of-Sight)가 유지되도록 하여, 벽이나 장애물에 의해 직접 경로가 가려지는 상황을 제외하고 로봇 소음에 의한 음성 저하에 집중할 수 있도록 했습니다.
+
+<p align="center">
+  <img src="./assets/readme/Moving_RIR.png" width="760" alt="Moving RIR microphone path and source position">
+</p>
+
+위 그림에서는 speech source의 위치, microphone의 위치, 그리고 microphone의 이동 경로를 확인할 수 있습니다. 실제 로봇이 움직이는 상황에서는 source와 microphone의 상대 위치가 계속 변하므로 RIR(Room Impulse Response)도 시간에 따라 달라집니다. 따라서 고정된 RIR을 사용하는 대신 SonicSim을 통해 moving RIR 기반 음성을 생성하여 더 자연스러운 음성 데이터를 만들었습니다.
+
+<p align="center">
+  <img src="./assets/readme/Go2_record.jpg" width="760" alt="Go2 robot noise and foot data recording">
+</p>
+
+Robot noise와 foot data는 Go2를 직접 구동하면서 녹음했습니다. 이때 robot noise audio와 foot force / state log가 같은 시간축에서 해석될 수 있도록 time sync를 맞춰 기록했습니다. 최종 dataset은 SonicSim으로 생성한 moving RIR 기반 speech에 Go2에서 기록한 robot noise를 혼합하고, 같은 시간 구간의 foot force log를 condition으로 연결하여 구성했습니다.
+
+### 3.2 Robot Condition 분석
+
+Robot noise와 직접적으로 관련된 foot force 정보를 condition으로 사용할 수 있는지 확인하기 위해, 먼저 foot force와 robot noise의 관계를 분석했습니다.
+
+아래 그림은 각 발 센서 값이 시간에 따라 변하는 정도, 즉 foot force 미분값의 절대값과 noise waveform을 같은 시간축에 겹쳐 비교한 결과입니다. Noise의 peak가 나타나는 순간에 발에 가해지는 압력 변화 또한 peak를 보이는 양상이 나타났고, 이를 통해 foot force와 robot noise가 높은 상관 관계를 가진다는 점을 확인할 수 있습니다.
+
+<p align="center">
+  <img src="./assets/readme/foot_force_diff%20and%20noise.png" width="900" alt="Foot force derivative magnitude and robot noise overlay">
+</p>
+
+### 3.3 전처리 과정
+
+전처리는 robot foot force 정보를 speech enhancement 모델에 넣을 수 있는 condition channel로 변환하고, 이를 audio frame과 정렬하는 과정입니다.
+
+```text
+Clean Speech + Robot Noise
+        ↓
+Noisy Speech
+        +
+Foot Force / Contact Signal
+        ↓
+SGMSE-based Speech Enhancement
 ```
 
-결과 wav는 아래 위치에 저장됩니다.
+전처리 과정은 다음 순서로 진행됩니다.
 
-```bash
-python3 -m src.prepare.make_noisy_data \
-  --source-root /path/to/source_speech_root \
-  --noise-root /path/to/robot_noise_root \
-  --out-root ./data/noisy \
-  --snr-min -5 \
-  --snr-max 5 \
-  --seed 0
-```
+1. `lowstate_segment.jsonl`에서 네 발의 `foot_force` 값을 읽습니다.
+2. `anchor_segment.json`과 `segment_meta.json`을 사용해 robot log의 `CLOCK_MONOTONIC` 시간축을 audio sample 시간축과 맞춥니다.
+3. Audio frame 구간마다 각 발의 force 값을 확인합니다.
+4. Foot force distribution을 분석해 contact 여부를 판단할 기준을 정합니다.
+5. 변환된 4개 foot contact channel을 SGMSE 입력에 auxiliary condition으로 붙입니다.
 
-`*_enhanced_full.wav`가 denoising 결과입니다.
+기본 audio preprocess 설정은 16 kHz mono 기준입니다. 학습에서는 waveform을 고정 길이로 crop/pad하고, 같은 crop 구간에 맞춰 robot condition도 함께 잘라 정렬합니다.
 
----
+- `target_sr=16000`
+- `n_fft=510`
+- `win_length=510`
+- `hop_length=128`
+- `num_frames=256`
+- `target_length=(num_frames - 1) * hop_length = 32640`
 
-```bash
-# dataset 로딩과 STFT inverse check
-python3 -m src.check.check_dataset \
-  --manifest ./data/manifest.csv \
-  --num-samples 4 \
-  --save-debug
+아래 그림은 foot force 값의 distribution을 확인한 결과입니다. 0에 가까운 값들이 만드는 큰 peak는 로봇의 발이 공중에 떠 있어 지면 압력이 거의 없는 구간이라고 가정했습니다. 따라서 이 peak가 끝나는 값을 기준으로 발이 지면에 닿았는지 여부를 나누고, 이를 contact condition으로 변환했습니다.
 
-# RDDM forward/backward smoke test
-python3 -m src.check.check_model_forward \
-  --manifest ./data/manifest.csv \
-  --batch-size 1 \
-  --device cpu \
-  --dim 8 \
-  --dim-mults '(1, 2, 4)' \
-  --timesteps 10 \
-  --sampling-timesteps 2
+<p align="center">
+  <img src="./assets/readme/distribution_overview.png" width="900" alt="Robot condition preprocessing distribution">
+</p>
 
-# wav의 STFT plot 저장
-python3 -m src.plot.plot_stft --wav ./data/noisy/.../sample.wav --out ./outputs/debug/stft_plot.png
+## 4. 결과
 
-# data/noisy 아래 wav duration 확인
-python3 -m src.check.check_duration --root ./data/noisy
+아래 결과는 random seed를 바꿔가며 condition model과 no-condition model을 각각 5회 학습했을 때의 loss 수렴 양상을 비교한 것입니다.
 
-# lowstate foot force 통계 확인
-python3 -m src.check.check_max_foot_force --root ./data/noisy --pattern lowstate_segment.jsonl
-```
+<p align="center">
+  <img src="./assets/readme/result_avg.png" width="760" alt="Average loss convergence result">
+</p>
 
-## 9. References
+<p align="center">
+  <img src="./assets/readme/result.png" width="820" alt="Loss convergence result by random seed">
+</p>
 
-- Simon Welker, Julius Richter, Timo Gerkmann, “Speech Enhancement with Score-Based Generative Models in the Complex STFT Domain”, Interspeech 2022.  
-  https://arxiv.org/abs/2203.17004
+실험 결과, 단순 contact condition을 추가했을 때 loss 수렴 양상에서 condition 사용 여부에 따른 뚜렷한 품질 차이는 확인되지 않았습니다. 또한 충분한 학습을 진행한 경우, 200 epoch 기준으로 condition model과 no-condition model의 복원 품질에는 큰 차이가 없었습니다.
 
-- Julius Richter, Simon Welker, Jean-Marie Lemercier, Bunlong Lay, Timo Gerkmann, “Speech Enhancement and Dereverberation with Diffusion-Based Generative Models”, IEEE/ACM TASLP 2023.  
-  https://arxiv.org/abs/2208.05830
+이는 현재 사용한 condition이 foot contact 여부만을 단순하게 전달하기 때문에, 로봇 소음의 세기나 동역학적 변화를 충분히 표현하지 못했을 가능성을 보여줍니다. 따라서 단순 contact 결과가 아니라 foot force 값을 더 정교하게 전처리하여 condition으로 전달한다면, 로봇 소음 패턴을 더 잘 반영하고 speech enhancement 성능을 개선할 수 있을 것으로 기대합니다.
 
-- Jiawei Liu, Qiang Wang, Huijie Fan, Yinong Wang, Yandong Tang, Liangqiong Qu, “Residual Denoising Diffusion Models”, CVPR 2024.  
-  https://arxiv.org/abs/2308.13712
+### Audio Samples
 
-- Unitree Robotics, Go2 SDK / LowState interface documentation.  
-  https://support.unitree.com/home/en/developer/Basic_services
+아래 sample은 약 17초 길이의 같은 utterance에 대해 noisy input, condition 기반 enhanced output, clean reference를 비교한 것입니다. GitHub README에서는 audio player가 직접 렌더링되지 않을 수 있으므로, wav 파일 링크를 클릭해 재생하거나 다운로드해서 비교합니다.
+
+| Type | Audio |
+|---|---|
+| Noisy input | [sample_noisy.wav](./assets/readme/audio/sample_noisy.wav) |
+| Enhanced output | [sample_enhanced_condition.wav](./assets/readme/audio/sample_enhanced_condition.wav) |
+| Clean reference | [sample_clean.wav](./assets/readme/audio/sample_clean.wav) |
